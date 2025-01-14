@@ -4,10 +4,11 @@ import rospy
 import rosnode
 from tensegrity.msg import State, Action
 from tensegrity_perception.srv import GetPose, GetPoseRequest, GetPoseResponse, GetBarHeight
+from astar import astar, rel_mov
 
 class MotionPlanner:
 
-	def __init__(self):
+	def __init__(self, start, goal, boundary, obstacles=[]):
 		sub_topic = '/state_msg'
 		pub_topic = '/action_msg'
 		self.sub = rospy.Subscriber(sub_topic,State,self.callback)
@@ -16,11 +17,30 @@ class MotionPlanner:
 		# load state-action transition dictionary
 		with open('../calibration/motion_primitives.pkl','rb') as f:
 			self.action_dict = pickle.load(f)
+		# print(self.action_dict)
+		# print(np.array(self.action_dict.values()))
 
 		# ordered list of motion primitives
 		self.primitives = ['100_100','120_120','140_140','100_120','120_100','100_140','140_100','120_140','140_120','ccw','cw']
 
+		self.primitive_workspace = []
+		for prim in self.primitives:
+			full_prim = self.action_dict[prim+"__"+prim]
+			angle = self.rotation_angle_from_matrix(full_prim[0])
+			simple_prim = [float(full_prim[1][0]), float(full_prim[1][1]),angle]
+			self.primitive_workspace.append(simple_prim)
+
 		# define start, goal, and obstacles
+		self.current_state = start
+		self.goal = goal
+		self.boundary = boundary
+		self.obstacles = obstacles
+
+		#Tunable parameters
+		self.obstacle_dim = (0.2,0.2)
+		self.goal_tol = 0.1
+		self.goal_rot_tol = np.pi/2
+		self.repeat_tol = 0.04 #Won't resample states this close
 
 		# run A star planner for the known start, goal, and obstacles
 		self.Astar()
@@ -53,12 +73,22 @@ class MotionPlanner:
 		self.pub.publish(action_msg)
 		self.action_sequence.pop(0)
 		self.count += 1
-
+	
+	def int_path_to_string_path(self, int_path):
+		return [self.primitives[i] for i in int_path]
+	
 	def Astar(self):
 		# put A star planning code here
 		# as a stand-in, we just do ccw 15 times
-		plan = [9 for x in range(15)]
-		self.action_sequence = [self.primitives[p] for p in plan]
+		# plan = [9 for x in range(15)]
+		# self.action_sequence = [self.primitives[p] for p in plan]
+		path, gait_path, gaits = astar(self.current_state,self.goal, self.primitive_workspace, \
+			tolerance=self.goal_tol, rot_tol=self.goal_rot_tol, obstacles=self.obstacles,\
+			repeat_tol = self.repeat_tol, single_push=False, \
+        	stochastic=False,heur_type="dist", boundary=self.boundary, obstacle_dims=self.obstacle_dims)
+		
+
+		self.action_sequence = self.int_path_to_string_path(path)
 
 	def run(self, rate):
 		while not rospy.is_shutdown():
@@ -98,9 +128,35 @@ class MotionPlanner:
 		except rospy.ServiceException as e:
 			rospy.loginfo(f"Service call failed: {e}")
 		return COM, principal_axis, endcaps
+	
+	def rotation_angle_from_matrix(self, matrix):
+		"""
+		Calculate the rotation angle in radians from a 2D rotation matrix using NumPy.
+
+		Args:
+			matrix (numpy.ndarray): A 2x2 rotation matrix
+									[[cos(theta), -sin(theta)],
+									[sin(theta),  cos(theta)]]
+
+		Returns:
+			float: The rotation angle in radians.
+		"""
+		# Ensure the input is a NumPy array
+		matrix = np.array(matrix)
+		
+		# Extract sine and cosine from the matrix
+		cos_theta = matrix[0, 0]
+		sin_theta = matrix[1, 0]
+
+		# Calculate the angle using arctan2
+		angle_radians = np.arctan2(sin_theta, cos_theta)
+		if angle_radians < 0: angle_radians += 2*np.pi
+
+		return float(angle_radians)
 
 
 if __name__ == '__main__':
+	x = MotionPlanner()
 	rospy.init_node('motion_planner')
 	planner = MotionPlanner()
 	rate = rospy.Rate(30)
