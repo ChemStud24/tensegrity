@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+import os
 import sys
 import serial
 import time
@@ -16,6 +18,7 @@ from scipy.spatial.transform import Rotation as R
 import rospy
 # from tensegrity.msg import Motor, Info, MotorsStamped, Sensor, SensorsStamped, Imu, ImuStamped
 from tensegrity.msg import Motor, Info, Sensor, Imu, TensegrityStamped
+import rospkg
 
 def flush(serial_port):
     serial_port.reset_input_buffer()
@@ -437,10 +440,8 @@ if __name__ == '__main__':
     my_listener = keyboard.Listener(on_press=onpress)
     my_listener.start()
 
-    # calibration_file = '../calibration/autocalibration.json'
-    calibration_file = '../calibration/alpha calibration.xls'
-    calibration_file = '../calibration/beta calibration 4.xls'
-    calibration_file = '../calibration/one-man calibration.json'
+    rospack = rospkg.RosPack()
+    calibration_file = os.path.join(rospack.get_path('tensegrity'),'calibration/calibration.json')
 
     # alpha calibration
     # m = np.array([0.01471,0.03030,0.02173,0.04449,0.05502,0.04038,0.03791,0.04207,0.04089])
@@ -482,7 +483,7 @@ if __name__ == '__main__':
     # beta flip
     # flip = [-1,-1,-1,1,-1,-1]
     # flip = [-1,-1,1,-1,-1,1]
-    flip = [1,1,-1,1,-1,1]
+    flip = [1,1,1,1,-1,1]
     acceleration = [0]*3
     orientation = [0]*3
     RANGE = 100#160#90#160 #mm #90

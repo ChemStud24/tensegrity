@@ -1,12 +1,12 @@
+#!/usr/bin/env python3
+import os
 import sys
 import json
 import rospy
+import rospkg
 import numpy as np
 from pynput import keyboard
 from tensegrity.msg import TensegrityStamped
-# talk to me
-# from gtts import gTTS
-# from playsound import playsound
 import pyttsx3
 
 short_lengths = range(180,80,-20)
@@ -14,16 +14,14 @@ short_lengths = range(180,80,-20)
 long_lengths = range(250,350,20)
 
 def speak(text,engine):
-    # tts = gTTS(text)
-    # tts.save('/home/willjohnson/tensegrity_ws/src/tensegrity/calibration/tts.mp3')
-    # playsound('/home/willjohnson/tensegrity_ws/src/tensegrity/calibration/tts.mp3')
     engine.say(text)
     engine.runAndWait()
 
-def calibrate(sensors,short_lengths,long_lengths,filename='../calibration/one-man calibration.json'):
+def calibrate(sensors,short_lengths,long_lengths,filepath,filename='calibration.json'):
     global quit
 
     # open the previous calibration file
+    filename = os.path.join(filepath,filename)
     data = json.load(open(filename))
     m = np.array(data.get('m'))
     b = np.array(data.get('b'))
@@ -109,4 +107,6 @@ if __name__ == '__main__':
     else:
         sensors = 'abcdefghi'
 
-    calibrate(sensors,short_lengths,long_lengths)
+    rospack = rospkg.RosPack()
+    package_path = rospack.get_path('tensegrity')
+    calibrate(sensors,short_lengths,long_lengths,os.path.join(package_path,'calibration'))

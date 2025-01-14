@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import sys
 import serial
 import time
@@ -16,6 +17,7 @@ from scipy import spatial
 import rospy
 # from tensegrity.msg import Motor, Info, MotorsStamped, Sensor, SensorsStamped, Imu, ImuStamped, Node, NodesStamped
 from tensegrity.msg import Motor, Info, Sensor, Imu, Node, Trajectory, TensegrityStamped, State, Action
+import rospkg
 
 # tracking
 import rosgraph
@@ -995,9 +997,8 @@ if __name__ == '__main__':
     with open('transformation_table.pkl','rb') as f:
         action_dict = pickle.load(f)
 
-    # calibration_file = '../calibration/autocalibration.json'
-    calibration_file = '../calibration/beta calibration 4.xls'
-    calibration_file = '../calibration/one-man calibration.json'
+    rospack = rospkg.RosPack()
+    calibration_file = os.path.join(rospack.get_path('tensegrity'),'calibration/calibration.json')
 
     m,b = read_calibration_file(calibration_file)
 

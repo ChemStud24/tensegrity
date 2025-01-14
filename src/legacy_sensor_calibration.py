@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+import os
 import sys
 import serial
 import time
@@ -22,6 +24,7 @@ import rospy
 # from tensegrity.msg import Motor, MotorsStamped, Sensor, SensorsStamped, ImuStamped, Imu
 from tensegrity.msg import Motor, Sensor, Imu, TensegrityStamped
 # from geometry_msgs.msg import QuaternionStamped
+import rospkg
 
 def flush(serial_port):
     serial_port.reset_input_buffer()
@@ -372,9 +375,8 @@ if __name__ == '__main__':
     my_listener = keyboard.Listener(on_press=onpress)
     my_listener.start()
 
-    calibration_file = '../calibration/alpha calibration.xls'
-    calibration_file = '../calibration/beta calibration 4.xls'
-    calibration_file = '../calibration/one-man calibration.json'
+    rospack = rospkg.RosPack()
+    calibration_file = os.path.join(rospack.get_path('tensegrity'),'calibration/calibration.json')
 
     num_sensors = 9# set number of strain sensors
     num_imus = 2#set number of inertial measurement units

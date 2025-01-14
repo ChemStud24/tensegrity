@@ -1,6 +1,9 @@
+#!/usr/bin/env python3
+import os
 import sys
 import json
 import rospy
+import rospkg
 import numpy as np
 from pynput import keyboard
 from tensegrity.msg import TensegrityStamped
@@ -12,15 +15,16 @@ from playsound import playsound
 short_lengths = range(220,70,-30)
 long_lengths = range(250,350,20)
 
-def speak(text):
+def speak(text,filepath):
     tts = gTTS(text)
-    tts.save('/home/willjohnson/catkin_ws/src/tensegrity/calibration/tts.mp3')
-    playsound('/home/willjohnson/catkin_ws/src/tensegrity/calibration/tts.mp3')
+    tts.save(os.path.join(filepath,'tts.mp3'))
+    playsound(os.path.join(filepath,'tts.mp3'))
 
-def calibrate(sensors,short_lengths,long_lengths,filename='../calibration/one-man calibration.json'):
+def calibrate(sensors,short_lengths,long_lengths,filepath,filename='calibration.json'):
     global quit
 
     # open the previous calibration file
+    filename = os.path.join(filepath,filename)
     data = json.load(open(filename))
     m = np.array(data.get('m'))
     b = np.array(data.get('b'))
@@ -29,7 +33,7 @@ def calibrate(sensors,short_lengths,long_lengths,filename='../calibration/one-ma
     all_lengths = []
     for sensor in sensors:
         print('\nCalibrating sensor ' + sensor.capitalize() + '...')
-        speak('Calibrating sensor ' + sensor.capitalize())
+        speak('Calibrating sensor ' + sensor.capitalize(),filepath)
         rospy.sleep(2)
 
         # figure out if it's a short sensor or a long sensor
@@ -41,7 +45,7 @@ def calibrate(sensors,short_lengths,long_lengths,filename='../calibration/one-ma
         # calibrate at five lengths
         cap = []
         print('Set length to...')
-        speak('Set length to')
+        speak('Set length to',filepath)
         for i,length in enumerate(lengths):
 
             if quit:
@@ -49,15 +53,15 @@ def calibrate(sensors,short_lengths,long_lengths,filename='../calibration/one-ma
 
             # speak instructions
             print(str(length) + ' mm')
-            speak(str(length) + ' millimeters')
+            speak(str(length) + ' millimeters',filepath)
             rospy.sleep(0.5)
-            speak('Measuring')
+            speak('Measuring',filepath)
 
             # measure capacitance
             cap.append(sensor_listener.capacitance[letter2number(sensor)])
             print('At length ' + str(length) + ' mm, sensor ' + sensor.capitalize() + ' has a capacitance of ' + str(cap[i]) + ' pF\n')
 
-            speak('Next')
+            speak('Next',filepath)
         # perform the linear fit
         fit = np.polyfit(lengths,cap,1)
         m[letter2number(sensor)] = fit[0]
@@ -105,4 +109,6 @@ if __name__ == '__main__':
     else:
         sensors = 'abcdefghi'
 
-    calibrate(sensors,short_lengths,long_lengths)
+    rospack = rospkg.RosPack()
+    package_path = rospack.get_path('tensegrity')
+    calibrate(sensors,short_lengths,long_lengths,os.path.join(package_path,'calibration'))
