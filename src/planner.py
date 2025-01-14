@@ -4,7 +4,7 @@ import rospy
 import rosnode
 from tensegrity.msg import State, Action
 from tensegrity_perception.srv import GetPose, GetPoseRequest, GetPoseResponse, GetBarHeight
-from astar import astar, rel_mov
+from astar import astar
 
 class MotionPlanner:
 
@@ -82,12 +82,11 @@ class MotionPlanner:
 		# as a stand-in, we just do ccw 15 times
 		# plan = [9 for x in range(15)]
 		# self.action_sequence = [self.primitives[p] for p in plan]
-		path, gait_path, gaits = astar(self.current_state,self.goal, self.primitive_workspace, \
+		path, self.expected_path= astar(self.current_state,self.goal, self.primitive_workspace, \
 			tolerance=self.goal_tol, rot_tol=self.goal_rot_tol, obstacles=self.obstacles,\
 			repeat_tol = self.repeat_tol, single_push=False, \
         	stochastic=False,heur_type="dist", boundary=self.boundary, obstacle_dims=self.obstacle_dims)
 		
-
 		self.action_sequence = self.int_path_to_string_path(path)
 
 	def run(self, rate):

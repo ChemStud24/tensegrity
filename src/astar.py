@@ -41,9 +41,6 @@ def astar(start, goal, gaits, obstacles=(),tolerance = 0.1, rot_tol = np.pi/4, r
         # Get the node with the lowest f_score value
         node = heapq.heappop(open_list)
         current = node[1]
-        # print(current)
-        # print(current)
-        # print(current)
 
         if coll_det(current, obstacles, boundary=boundary, obstacle_dims=obstacle_dims) or (len(closed_list)>0 and is_point_within_distance(current[:2], closed_list, repeat_tol)):
                 # print("Too close", neighbor)
@@ -53,12 +50,6 @@ def astar(start, goal, gaits, obstacles=(),tolerance = 0.1, rot_tol = np.pi/4, r
         print(str(current), str(g_score[current]), str(heuristic(current[:2], goal, obstacles, heur_type)), str(f_score[current]))
         if not single_push:
             closed_list.append(current[:2])
-        # ang_switch = np.pi/4
-        # if current[2] < ang_switch:
-        #     closed_list.append((current[0],current[1], 2*np.pi - current[2]))
-        # elif current[2] > 2*np.pi - ang_switch:
-        #     closed_list.append((current[0],current[1], 2*np.pi - current[2]))
-        # print(current)
 
         # If the goal is reached, reconstruct and return the path
         if l2_dist(current[:2], goal[:2])<= tolerance and min(abs(angle_norm(current[2]) - goal[2]), np.pi - abs(angle_norm(current[2]) - goal[2])) <= rot_tol :
@@ -72,13 +63,8 @@ def astar(start, goal, gaits, obstacles=(),tolerance = 0.1, rot_tol = np.pi/4, r
                 movements.append(move)
                 current = prev
             path.append(start)
-            return path[::-1], movements[::-1], gaits
+            return path[::-1], movements[::-1]
 
-            # while current in came_from:
-            #     path.append(current)
-            #     current = came_from[current][0]
-            # path.append(start)
-            # return path[::-1], gaits
 
         if single_push:
             if stochastic:
@@ -137,18 +123,4 @@ def astar(start, goal, gaits, obstacles=(),tolerance = 0.1, rot_tol = np.pi/4, r
 
     # Return empty path if no path found
     print("Can't Find Path")
-    return [], [], gaits
-
-# Example usage
-# grid = [
-#     [0, 1, 0, 0, 0],
-#     [0, 1, 0, 1, 0],
-#     [0, 0, 0, 1, 0],
-#     [0, 1, 0, 0, 0],
-#     [0, 0, 0, 0, 0],
-# ]
-# start = (0, 0)  # Start position
-# goal = (4, 4)   # Goal position
-
-# path = astar(grid, start, goal)
-# print("Path found:", path)
+    return [], []
