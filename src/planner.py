@@ -88,7 +88,7 @@ class MotionPlanner:
 		# as a stand-in, we just do ccw 15 times
 		# plan = [9 for x in range(15)]
 		# self.action_sequence = [self.primitives[p] for p in plan]
-		path, self.expected_path = astar(self.current_state,self.goal, self.primitive_workspace, \
+		self.expected_path, path = astar(self.current_state,self.goal, self.primitive_workspace, \
 			tolerance=self.goal_tol, rot_tol=self.goal_rot_tol, obstacles=self.obstacles,\
 			repeat_tol = self.repeat_tol, single_push=False, \
         	stochastic=False,heur_type="dist", boundary=self.boundary, obstacle_dims=self.obstacle_dim)
@@ -168,8 +168,7 @@ if __name__ == '__main__':
 	obstacles = ((-0.3,-0.2), (-0.3,-0.6), (-1.5, -1.0), (-1.5,-0.6))
 	boundary = (-3, 1, -1.4, 0.2)
 
-	x = MotionPlanner(start, goal, boundary)
 	rospy.init_node('motion_planner')
-	planner = MotionPlanner()
+	planner = MotionPlanner(start, goal, boundary)
 	rate = rospy.Rate(30)
 	planner.run(rate)

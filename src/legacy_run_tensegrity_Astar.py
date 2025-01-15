@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 import sys
 import serial
 import time
@@ -33,7 +34,7 @@ import pickle
 from plotting_utils import plot_MPC_prediction
 from symmetry_reduction_utils import *
 from Tensegrity_model_inputs import *
-from trajectory_superimposed import make_circle
+from points_superimposed import make_circle
 from math import ceil, sqrt
 
 def best_k_actions(state,action_dict,COM,principal_axis,trajectory,k=1):
@@ -994,11 +995,14 @@ if __name__ == '__main__':
     # tracker service
     is_tracker_initialized = True
 
-    with open('transformation_table.pkl','rb') as f:
+    # find the directory on the local machine
+    rospack = rospkg.RosPack()
+    package_path = rospack.get_path('tensegrity')
+
+    with open(os.path.join(package_path,'calibration/motion_primitives.pkl'),'rb') as f:
         action_dict = pickle.load(f)
 
-    rospack = rospkg.RosPack()
-    calibration_file = os.path.join(rospack.get_path('tensegrity'),'calibration/calibration.json')
+    calibration_file = os.path.join(package_path,'calibration/calibration.json')
 
     m,b = read_calibration_file(calibration_file)
 
@@ -1027,7 +1031,7 @@ if __name__ == '__main__':
     d_error = [0] * num_motors
     command = [0] * num_motors
     # beta flip
-    flip = [1,1,-1,1,-1,1]
+    flip = [1,1,1,1,-1,1]
     acceleration = [0]*3
     orientation = [0]*3
     endcaps = np.zeros((6,3))
