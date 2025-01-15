@@ -1,6 +1,9 @@
+#!/usr/bin/env python3
+import os
 import numpy as np
 import pickle
 import rospy
+import rospkg
 import rosnode
 from tensegrity.msg import State, Action
 from tensegrity_perception.srv import GetPose, GetPoseRequest, GetPoseResponse, GetBarHeight
@@ -15,7 +18,9 @@ class MotionPlanner:
 		self.pub = rospy.Publisher(pub_topic,Action,queue_size=10)
 
 		# load state-action transition dictionary
-		with open('../calibration/motion_primitives.pkl','rb') as f:
+		package_path = rospkg.RosPack().get_path('tensegrity')
+		filepath = os.path.join(package_path,'calibration/motion_primitives.pkl')
+		with open(filepath,'rb') as f:
 			self.action_dict = pickle.load(f)
 		# print(self.action_dict)
 		# print(np.array(self.action_dict.values()))
@@ -63,6 +68,7 @@ class MotionPlanner:
 			COM,principal_axis,_ = self.get_pose()
 		
 			# if we did, re-run the planner
+			print('I could replan here')
 			if False: # replace this with a reasonable condition
 				self.Astar()
 
@@ -82,10 +88,12 @@ class MotionPlanner:
 		# as a stand-in, we just do ccw 15 times
 		# plan = [9 for x in range(15)]
 		# self.action_sequence = [self.primitives[p] for p in plan]
-		path, self.expected_path= astar(self.current_state,self.goal, self.primitive_workspace, \
+		path, self.expected_path = astar(self.current_state,self.goal, self.primitive_workspace, \
 			tolerance=self.goal_tol, rot_tol=self.goal_rot_tol, obstacles=self.obstacles,\
 			repeat_tol = self.repeat_tol, single_push=False, \
-        	stochastic=False,heur_type="dist", boundary=self.boundary, obstacle_dims=self.obstacle_dims)
+        	stochastic=False,heur_type="dist", boundary=self.boundary, obstacle_dims=self.obstacle_dim)
+
+		print('Path: ',path)
 		
 		self.action_sequence = self.int_path_to_string_path(path)
 
@@ -155,7 +163,12 @@ class MotionPlanner:
 
 
 if __name__ == '__main__':
-	x = MotionPlanner()
+	start = (0.1, -1.0, np.pi/2)
+	goal = (-2, -0.2, np.pi/2)
+	obstacles = ((-0.3,-0.2), (-0.3,-0.6), (-1.5, -1.0), (-1.5,-0.6))
+	boundary = (-3, 1, -1.4, 0.2)
+
+	x = MotionPlanner(start, goal, boundary)
 	rospy.init_node('motion_planner')
 	planner = MotionPlanner()
 	rate = rospy.Rate(30)

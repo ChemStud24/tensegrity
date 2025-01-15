@@ -47,7 +47,7 @@ def astar(start, goal, gaits, obstacles=(),tolerance = 0.1, rot_tol = np.pi/4, r
                 closed_list.append(current[:2])
                 continue
 
-        print(str(current), str(g_score[current]), str(heuristic(current[:2], goal, obstacles, heur_type)), str(f_score[current]))
+        # print(str(current), str(g_score[current]), str(heuristic(current[:2], goal, obstacles, heur_type)), str(f_score[current]))
         if not single_push:
             closed_list.append(current[:2])
 
@@ -75,7 +75,7 @@ def astar(start, goal, gaits, obstacles=(),tolerance = 0.1, rot_tol = np.pi/4, r
         for k in range(len(gaits)):
             gait_num = gaits[k]
             dx , dy = rel_mov(gait_num[0], gait_num[1], current[2])
-            neighbor = (current[0]+dx, current[1]+dy, angle_norm(current[2]+gait_num[3]))
+            neighbor = (current[0]+dx, current[1]+dy, angle_norm(current[2]+gait_num[2]))
             
             tentative_g_score = g_score[current] + np.sqrt(dx**2 + dy**2)
             if tentative_g_score < g_score.get(neighbor, float('inf')):
