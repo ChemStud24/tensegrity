@@ -340,15 +340,15 @@ def read(serial_port):
                         command[i] = max([min([P*error[i] + I*cum_error[i] + D*d_error[i], 1]), -1])
                         speed = command[i] * max_speed * flip[i] 
                         send_command(serial_port, "d "+str(i+1)+" "+str(speed), 0)#run the motor at new speed                            
-                # print('State: ',state)
-                # # print(state)
-                # print("Position: ",pos)
-                # print("Target: ",states[state])
-                # # print(pos)
-                # # print(states[state])
-                # print("Done: ",done)
-                # print("Length: ",length)
-                # print("Capacitance: ",capacitance)
+                print('State: ',state)
+                # print(state)
+                print("Position: ",pos)
+                print("Target: ",states[state])
+                # print(pos)
+                # print(states[state])
+                print("Done: ",done)
+                print("Length: ",length)
+                print("Capacitance: ",capacitance)
                 count = count + 1     
                 if all(done):
                     state += 1
@@ -985,7 +985,7 @@ if __name__ == '__main__':
     # imu_pub = rospy.Publisher('imu_msg',ImuStamped,queue_size=10)
     # endcap_pub = rospy.Publisher('reconstruction_msg',NodesStamped,queue_size=100)
 
-    # rospy.Subscriber('reconstruction_msg',NodesStamped,state_recon_callback)
+    # rospy.Subscriber('recorrrrrsnstruction_msg',NodesStamped,state_recon_callback)
 
     ## keyboard listener for quitting
     keep_going = True
@@ -993,7 +993,7 @@ if __name__ == '__main__':
     my_listener.start()
 
     # tracker service
-    is_tracker_initialized = True
+    is_tracker_initialized = False
 
     # find the directory on the local machine
     rospack = rospkg.RosPack()
@@ -1031,7 +1031,7 @@ if __name__ == '__main__':
     d_error = [0] * num_motors
     command = [0] * num_motors
     # beta flip
-    flip = [1,1,1,1,-1,1]
+    flip = [-1,1,1,-1,-1,-1]
     acceleration = [0]*3
     orientation = [0]*3
     endcaps = np.zeros((6,3))

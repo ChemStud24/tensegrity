@@ -8,6 +8,8 @@ import rosnode
 from tensegrity.msg import State, Action
 from tensegrity_perception.srv import GetPose, GetPoseRequest, GetPoseResponse, GetBarHeight
 from astar import astar
+from scipy.spatial.transform import Rotation as R
+from Tensegrity_model_inputs import *
 
 class MotionPlanner:
 
@@ -53,17 +55,17 @@ class MotionPlanner:
 		self.count = 0
 
 		# determine if the tracking service is available for feedback
-		if '/tracking_service' in rosnode.get_node_names():
-			self.closed_loop = True
-		else:
-			self.closed_loop = False
+		# if '/tracking_service' in rosnode.get_node_names():
+		# 	self.closed_loop = True
+		# else:
+		# 	self.closed_loop = False
 
 	def callback(self,msg):
 		# receiving a state message means the robot is ready for the next action
 		print('Action ' + str(self.count))
 
 		# if tracking is available
-		if self.closed_loop:
+		if '/tracking_service' in rosnode.get_node_names():
 			# get pose to check if we deviated from the plan
 			COM,principal_axis,_ = self.get_pose()
 		
@@ -110,9 +112,9 @@ class MotionPlanner:
 		try:
 			request = GetPoseRequest()
 			get_pose_srv = rospy.ServiceProxy(service_name, GetPose)
-			# rospy.loginfo("Request sent. Waiting for response...")
+			rospy.loginfo("Request sent. Waiting for response...")
 			response: GetPoseResponse = get_pose_srv(request)
-			# rospy.loginfo(f"Got response. Request success: {response.success}")
+			rospy.loginfo(f"Got response. Request success: {response.success}")
 			if response.success:
 				for pose in response.poses:
 					
@@ -169,6 +171,6 @@ if __name__ == '__main__':
 	boundary = (-3, 1, -1.4, 0.2)
 
 	rospy.init_node('motion_planner')
-	planner = MotionPlanner(start, goal, boundary)
+	planner = MotionPlanner(start, goal, boundary, obstacles)
 	rate = rospy.Rate(30)
 	planner.run(rate)
