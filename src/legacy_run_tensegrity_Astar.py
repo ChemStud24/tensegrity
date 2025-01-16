@@ -1014,7 +1014,7 @@ if __name__ == '__main__':
     d_head_error = 0
     first_principal_projection = np.array([0,0,0])
 
-    max_speed = 99# set duty cycle as 99 for the max speed, resolution can be improved by changing the bits in C++ code 
+    max_speed = 0# set duty cycle as 99 for the max speed, resolution can be improved by changing the bits in C++ code 
     num_sensors = 9# set number of strain sensors
     num_motors = 6# set number of motors
     num_imus = 2#set number of inertial measurement units
@@ -1061,7 +1061,7 @@ if __name__ == '__main__':
     states = np.array([[0.0, 1.0, 0.1, 0.0, 1.0, 1.0], [0.8, 0.1, 1.0, 1.0, 0.1, 1.0], [0.8, 0.1, 0.0, 1.0, 1.0, 0.0], [0.1, 1.0, 1.0, 0.1, 1.0, 1.0], [0.1, 0.0, 1.0, 1.0, 0.0, 1.0],[0.8, 1.0, 0.1, 1.0, 1.0, 0.1]])#6 steps gait
     states = np.array([[0.0, 1.0, 0.1, 0.0, 1.0, 1.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]])#steps gait
     states = np.array([[0.0, 1.0, 1.0, 0.0, 1.0, 0.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]) # one step and recover
-    states = np.array([[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],[0.0, 1.0, 1.0, 0.0, 1.0, 0.1],
+    states = np.array([[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 1.0, 0.1],
                        [1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.0, 1.0, 0.1, 0.0],
                        [0.1, 1.0, 1.0, 0.1, 1.0, 1.0],[1.0, 0.0, 1.0, 0.1, 0.0, 1.0]]) # quasi-static rolling
 

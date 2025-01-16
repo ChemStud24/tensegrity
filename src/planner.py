@@ -71,7 +71,7 @@ class MotionPlanner:
 		
 			# if we did, re-run the planner
 			print('I could replan here')
-			if False: # replace this with a reasonable condition
+			if True: # replace this with a reasonable condition
 				self.Astar()
 
 		# publish results
