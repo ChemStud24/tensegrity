@@ -67,11 +67,12 @@ class MotionPlanner:
 		# if tracking is available
 		if '/tracking_service' in rosnode.get_node_names():
 			# get pose to check if we deviated from the plan
-			COM,principal_axis,_ = self.get_pose()
+			COM,axis,_ = self.get_pose()
 		
 			# if we did, re-run the planner
 			print('I could replan here')
 			if True: # replace this with a reasonable condition
+				self.current_state = (float(COM[0]),float(COM[1]),float(np.arctan2(axis[1],axis[0])))
 				self.Astar()
 
 		# publish results
@@ -97,7 +98,9 @@ class MotionPlanner:
 
 		print('Path: ',path)
 		
-		self.action_sequence = self.int_path_to_string_path(path)
+		# only update the path if we found a valid path
+		if len(path) > 0:
+			self.action_sequence = self.int_path_to_string_path(path)
 
 	def run(self, rate):
 		while not rospy.is_shutdown():
@@ -165,10 +168,15 @@ class MotionPlanner:
 
 
 if __name__ == '__main__':
-	start = (0.1, -1.0, np.pi/2)
-	goal = (-2, -0.2, np.pi/2)
-	obstacles = ((-0.3,-0.2), (-0.3,-0.6), (-1.5, -1.0), (-1.5,-0.6))
-	boundary = (-3, 1, -1.4, 0.2)
+	# start = (0.1, -1.0, np.pi/2)
+	# goal = (-2, -0.2, np.pi/2)
+	# obstacles = ((-0.3,-0.2), (-0.3,-0.6), (-1.5, -1.0), (-1.5,-0.6))
+	# boundary = (-3, 1, -1.4, 0.2)
+
+	start = (-0.1, 1.0, -np.pi/2)
+	goal = (2, 0.2, -np.pi/2)
+	obstacles = ((0.3,0.2), (0.3,0.6), (1.5, 1.0), (1.5,0.6))
+	boundary = (-1, 3, -0.2, 1.4)
 
 	rospy.init_node('motion_planner')
 	planner = MotionPlanner(start, goal, boundary, obstacles)
