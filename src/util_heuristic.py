@@ -188,7 +188,9 @@ def dist_heuristic(a, b, obstacles=[], k=0):
 
 ########
 def snap_to_grid(point, grid_step):
-    return ((round(point[0] / grid_step) * grid_step, round(point[1] / grid_step) * grid_step))
+    snapped_x = round(round(point[0] / grid_step) * grid_step, 10)
+    snapped_y = round(round(point[1] / grid_step) * grid_step, 10)
+    return (snapped_x, snapped_y)
 
 def simple_collision(point, obstacles, obstacle_size=(0.4, 0.27)):
     px, py = point
@@ -197,6 +199,54 @@ def simple_collision(point, obstacles, obstacle_size=(0.4, 0.27)):
         if (ox - half_w <= px <= ox + half_w) and (oy - half_h <= py <= oy + half_h):
             return True
     return False
+
+def fill_grid(goal, boundary, grid_step=0.1,obstacles=[], obstacle_size = (0.4, 0.27)):
+    #BFS from goal
+    h_val = {}
+    unassigned = set()
+    obs_loc = set()
+    goal = snap_to_grid(goal, grid_step)
+    # h_val[goal]=0
+    gaits = [[grid_step,0],[0,grid_step],[0,-grid_step],[-grid_step,0],\
+             [grid_step,grid_step],[-grid_step,grid_step],[grid_step,-grid_step],[-grid_step,-grid_step]]
+    
+    for i in np.arange(boundary[0],boundary[1]+grid_step, grid_step):
+        for j in np.arange(boundary[2],boundary[3]+grid_step, grid_step):
+            current = snap_to_grid((i,j),grid_step=grid_step)
+            if simple_collision((i,j),obstacles,obstacle_size):
+                h_val[current] = np.inf
+                obs_loc.add(current)
+                # all_points.remove()
+            else:
+                unassigned.add(current)
+
+    open_list = []
+    heapq.heappush(open_list, (0, goal))
+
+    while unassigned:
+        if not open_list:
+            break
+        node = heapq.heappop(open_list)
+        
+        current = snap_to_grid(node[1],grid_step)
+        if current in obs_loc or current not in unassigned:
+            continue
+
+        h_val[current] = node[0]
+        unassigned.remove(current)
+
+        for k in range(len(gaits)):
+            gait_num = gaits[k]
+            neighbor = (current[0]+gait_num[0], current[1]+gait_num[1])
+
+            if k <4:
+                cost = 1
+            else:
+                cost = np.sqrt(2)
+            heapq.heappush(open_list, (node[0]+cost, neighbor))
+
+    return h_val
+
 
 def wave_heuristic(start, goal, grid_step=0.1, obstacles=[]):
     start = snap_to_grid(start, grid_step)#now in the format (x,y)
