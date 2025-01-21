@@ -2,7 +2,7 @@ import heapq
 import numpy as np
 import random
 from close_node import is_point_within_distance
-from util_heuristic import wave_heuristic, dist_heuristic, l2_dist, coll_det
+from util_heuristic import dist_heuristic, l2_dist, coll_det, fill_grid, snap_to_grid
 
 
 def rel_mov(x, y, theta):
@@ -14,9 +14,10 @@ def rel_mov(x, y, theta):
 def angle_norm(x):
     return x % (2*np.pi)
 
-def heuristic(a, b, obstacles, heur_type, k=0, grid_step=0.01):
+def heuristic(a, b, obstacles, heur_type, grid_step, k=0,grid = []):
     if heur_type == "wave":
-        return wave_heuristic(a, b, obstacles=obstacles, grid_step=grid_step)
+        return grid[snap_to_grid(a[:2],grid_step)]
+    #wave_heuristic(a, b, obstacles=obstacles, grid_step=grid_step)
     else:
         return dist_heuristic(a, b, obstacles, k)
 
@@ -26,14 +27,17 @@ def heuristic(a, b, obstacles, heur_type, k=0, grid_step=0.01):
 
 # A* algorithm implementation
 def astar(start, goal, gaits, obstacles=(),tolerance = 0.1, rot_tol = np.pi/4, repeat_tol = 0.07, single_push = False, stochastic = True,\
-          heur_type = "dist", boundary = (-1,1,-1,1), obstacle_dims=(0.4,0.27)):
-
+          heur_type = "dist", boundary = (-1,1,-1,1), obstacle_dims=(0.4,0.27), grid_step = 0.01):
+    if heur_type == "wave":
+        h = fill_grid(goal[:2], boundary, grid_step)
+    else:
+        h = {}
     # Initialize open and closed lists
     open_list = []
     heapq.heappush(open_list, (0, start, -1))
     came_from = {}
     g_score = {start: 0}
-    f_score = {start: heuristic(start, goal, obstacles, heur_type)}
+    f_score = {start: heuristic(start, goal, obstacles, heur_type, grid_step, grid = h)}
     closed_list = [] #only used to check if already visited using kd tree
 
     while open_list:
@@ -81,10 +85,7 @@ def astar(start, goal, gaits, obstacles=(),tolerance = 0.1, rot_tol = np.pi/4, r
             if tentative_g_score < g_score.get(neighbor, float('inf')):
                 came_from[neighbor] = (current, k)
                 g_score[neighbor] = tentative_g_score
-                
-                f_score[neighbor] = tentative_g_score + heuristic(neighbor[:2], goal, obstacles, heur_type)
-                # if neighbor not in [i[1] for i in open_list]:
-                    # print(neighbor)
+                f_score[neighbor] = tentative_g_score + heuristic(neighbor[:2], goal, obstacles, heur_type, grid_step, grid = h)
                 if single_push:
                     if stochastic:
                         each_neighbor.append((f_score[neighbor], neighbor, k))
