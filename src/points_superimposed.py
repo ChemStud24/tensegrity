@@ -269,13 +269,13 @@ if __name__ == '__main__':
 		# 	starting_point = starting_point + 2*leg_length*np.array([0,np.cos(beta)])
 		# print(len(trajectory_sequence))
 	elif traj_name == "obstacles":
-		starting_point = [-0.1,1.0]
+		starting_point = [-0.15,1.1]
 		ending_point = [2,0.2]
 		robot_length = 0.30
 		radius = 0.1
 		# obstacle_point_1 = [0.68,0.1]
 		# obstacle_point_2 = [1.48,1.0]
-		obstacles = [[0.3,0.2],[0.3,0.6],[1.5,1.0],[1.5,0.6]]
+		obstacles = [[0.5,0.2],[0.5,0.6],[1.5,1.0],[1.5,0.6]]
 		t = np.linspace(0,2*np.pi,20)
 		robot_start = np.linspace(np.array(starting_point) - np.array([0,robot_length/2]),np.array(starting_point) + np.array([0,robot_length/2]),8)
 		robot_end = np.linspace(np.array(ending_point) - np.array([0,robot_length/2]),np.array(ending_point) + np.array([0,robot_length/2]),8)
