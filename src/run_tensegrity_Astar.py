@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+import os
 import time
 import math
 from math import cos, sin
@@ -7,10 +9,13 @@ import numpy as np
 from pynput import keyboard
 from scipy.spatial.transform import Rotation as R
 import rospy
+import rosnode
+import rospkg
 import socket
 #from tensegrity.msg import Motor, Info, MotorsStamped, Sensor, SensorsStamped, Imu, ImuStamped
-from tensegrity.msg import Motor, Info, Sensor, Imu, TensegrityStamped
+from tensegrity.msg import Motor, Info, Sensor, Imu, TensegrityStamped, State, Action
 #from geometry_msgs.msg import QuaternionStamped
+from symmetry_reduction_utils import *
 
 
 class FileError(Exception):
@@ -37,14 +42,20 @@ class TensegrityRobot:
         self.speed = [0] * self.num_motors
         self.flip = [1, 1, -1, 1, 1, 1] # flip direction of motors
         self.acceleration = [0] * 3
-        self.RANGE024 = 90
-        self.RANGE135 = 90
+        self.RANGE024 = 100
+        self.RANGE135 = 100
         self.max_speed = 0#80
         self.tol = 0.15
         self.low_tol = 0.15
         self.P = 6.0
         self.I = 0.01
         self.D = 0.5
+
+        # planning and control
+        self.prev_bottom_nodes = (0,2,5)
+        self.prev_gait = 'roll'
+        self.reverse_the_gait = False
+        self.action_sequence = [' _ ', ' _ ']
         
         self.num_steps = None
         self.state = None
@@ -70,13 +81,21 @@ class TensegrityRobot:
         self.offset = None # Nb of leading end ending 0 preventing errors 
 
         #keyboard variables
-        self.zero_pressed = False
-        self.one_pressed = False
-        self.two_pressed = False
-        self.three_pressed = False
-        self.four_pressed = False
-        self.five_pressed = False
+        # self.zero_pressed = False
+        # self.one_pressed = False
+        # self.two_pressed = False
+        # self.three_pressed = False
+        # self.four_pressed = False
+        # self.five_pressed = False
+
+        # init tracker
+        if '/tracking_service' in rosnode.get_node_names():
+            self.trajectory = [[0,0]]
+            self.init_tracker()
         
+        # communicating with the planner
+        self.action_sub = rospy.Subscriber('/action_msg',Action,self.mpc_callback)
+        self.state_pub = rospy.Publisher('/state_msg',State,queue_size=10)
 
     def initialize(self):
 
@@ -86,10 +105,8 @@ class TensegrityRobot:
         rospy.init_node('tensegrity')
         self.control_pub = rospy.Publisher('control_msg', TensegrityStamped, queue_size=10) ## correct ??
 
-        # calibration_file = '../calibration/calibration augustin.xls'
-        #calibration_file = '../calibration/beta calibration 4.xls'
-        # calibration_file = '/Users/augustin/Desktop/Tensegrity/Codes/calibration augustin.xls'
-        calibration_file = '../calibration/one-man calibration.json'
+        package_path = rospkg.RosPack().get_path('tensegrity')
+        calibration_file = os.path.join(package_path,'calibration/calibration.json')
         
         #self.m = np.array([0.04437, 0.06207, 0.02356, 0.04440, 0.04681, 0.05381, 0.02841, 0.03599, 0.03844])
         #self.b = np.array([15.763, 13.524, 15.708, 10.084, 15.628, 15.208, 16.356, 12.575, 13.506])
@@ -115,6 +132,12 @@ class TensegrityRobot:
         self.done = np.array([False] * self.num_motors)
         self.stop_msg = ' '.join(['0'] * (self.num_motors+2*self.offset))
         self.init_speed = 70
+
+        # gaits
+        roll = np.array([[1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 1.0, 0.1]])
+        cw = np.array([[1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1], [0, 0, 0, 1, 0, 1], [0, 0, 0, 0, 0, 0.7], [0, 0, 0.7, 0, 1, 1]])
+        ccw = np.array([[1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1], [1, 1, 1, 0, 1, 1], [1, 0, 1, 0, 1, 1], [0, 0, 0, 0, 0, 0]])
+        self.all_gaits = {'roll':roll,'ccw':ccw,'cw':cw}
 
     def read_calibration_file(self, filename):
         try : 
@@ -233,78 +256,78 @@ class TensegrityRobot:
         # Decode the data (assuming it's sent as a string)
         received_data = data.decode('utf-8')
         print(received_data)
-        try :
-            # Received data in the form "N_Arduino q0 q1 q2 q3 C0 C1 C2" where N_Arduino indicates the number of the Arduino of the received data
-            sensor_values = received_data.split()
-            # Convert the string values to actual float values and store them in an array
-            sensor_array = [float(value) for value in sensor_values]
-            print(sensor_array)
-            if(addr not in self.addresses):
-                self.addresses[int(sensor_array[0])] = addr
-            #print(sensor_array)
-            """
-            Following code of function read(self) configurated for a 3 bar tensegrity with following sensors
-            Rod 0 (red) has sensors C, E, and I (2, 4, and 8) and motors 2 and 4
-            Rod 1 (green) has sensors B, D, and H (1, 3, and 7) and motors 1 and 3
-            Rod 2 (blue) has sensors A, F, and G (0, 5, and 6) and motors 0 and 5
+        # try :
+        # Received data in the form "N_Arduino q0 q1 q2 q3 C0 C1 C2" where N_Arduino indicates the number of the Arduino of the received data
+        sensor_values = received_data.split()
+        # Convert the string values to actual float values and store them in an array
+        sensor_array = [float(value) for value in sensor_values]
+        print(sensor_array)
+        if(addr not in self.addresses):
+            self.addresses[int(sensor_array[0])] = addr
+        #print(sensor_array)
+        """
+        Following code of function read(self) configurated for a 3 bar tensegrity with following sensors
+        Rod 0 (red) has sensors C, E, and I (2, 4, and 8) and motors 2 and 4
+        Rod 1 (green) has sensors B, D, and H (1, 3, and 7) and motors 1 and 3
+        Rod 2 (blue) has sensors A, F, and G (0, 5, and 6) and motors 0 and 5
+        
+        The first IMU is on the blue bar and points from node 5 to node 4
+        The second IMU is on the red bar and points from node 1 to node 0
+        """
+        if(len(sensor_array) == 8) : #Number of data send space
+            self.which_Arduino = int(sensor_array[0])
+            if(sensor_array[5] == 0.2 or sensor_array[6] == 0.2 or sensor_array[7] == 0.2 ) :
+                print('MPR121 or I2C of Arduino '+str(i)+' wrongly initialized, please reboot Arduino')
+
+            if(int(sensor_array[0]) == 0) :
+                self.cap[4] = sensor_array[5]
+                self.cap[2] = sensor_array[6] 
+                self.cap[8] = sensor_array[7]
+            if(int(sensor_array[0]) == 1) :
+                self.cap[3] = sensor_array[5]
+                self.cap[1] = sensor_array[6] 
+                self.cap[7] = sensor_array[7]
+            if(int(sensor_array[0]) == 2) :
+                self.cap[5] = sensor_array[5]
+                self.cap[0] = sensor_array[6] 
+                self.cap[6] = sensor_array[7]
             
-            The first IMU is on the blue bar and points from node 5 to node 4
-            The second IMU is on the red bar and points from node 1 to node 0
-            """
-            if(len(sensor_array) == 8) : #Number of data send space
-                self.which_Arduino = int(sensor_array[0])
-                if(sensor_array[5] == 0.2 or sensor_array[6] == 0.2 or sensor_array[7] == 0.2 ) :
-                    print('MPR121 or I2C of Arduino '+str(i)+' wrongly initialized, please reboot Arduino')
+            #add control code here
+            if not 0.2 in self.cap: #Default capacitance value of MPR121
+                for i in range(len(self.cap)) :
+                    self.length[i] = (self.cap[i] - self.b[i]) / self.m[i] #mm 
+                #check if motor reached the target
+                for i in range(self.num_motors):
+                    if i < 3:
+                        self.pos[i] = (self.length[i] - self.min_length) / self.LEFT_RANGE# calculate the current position of the motor
+                    else:
+                        self.pos[i] = (self.length[i] - self.min_length) / self.RANGE# calculate the current position of the motor   
+            #read imu data
+            if(sensor_array[0] == 0) :
+                self.imu[1] = self.quat2vec(sensor_array[1:5])
 
-                if(int(sensor_array[0]) == 0) :
-                    self.cap[4] = sensor_array[5]
-                    self.cap[2] = sensor_array[6] 
-                    self.cap[8] = sensor_array[7]
-                if(int(sensor_array[0]) == 1) :
-                    self.cap[3] = sensor_array[5]
-                    self.cap[1] = sensor_array[6] 
-                    self.cap[7] = sensor_array[7]
-                if(int(sensor_array[0]) == 2) :
-                    self.cap[5] = sensor_array[5]
-                    self.cap[0] = sensor_array[6] 
-                    self.cap[6] = sensor_array[7]
-                
-                #add control code here
-                if not 0.2 in self.cap: #Default capacitance value of MPR121
-                    for i in range(len(self.cap)) :
-                        self.length[i] = (self.cap[i] - self.b[i]) / self.m[i] #mm 
-                    #check if motor reached the target
-                    for i in range(self.num_motors):
-                        if i < 3:
-                            self.pos[i] = (self.length[i] - self.min_length) / self.LEFT_RANGE# calculate the current position of the motor
-                        else:
-                            self.pos[i] = (self.length[i] - self.min_length) / self.RANGE# calculate the current position of the motor   
-                #read imu data
-                if(sensor_array[0] == 0) :
-                    self.imu[1] = self.quat2vec(sensor_array[1:5])
+            if(sensor_array[0] == 2) :
+                self.imu[0] = self.quat2vec(sensor_array[1:5])
 
-                if(sensor_array[0] == 2) :
-                    self.imu[0] = self.quat2vec(sensor_array[1:5])
+            #if(sensor_array[0] == 3) : If 3 IMU's used
+            #   self.imu[3] = self.quat2vec(sensor_array[1:5])
 
-                #if(sensor_array[0] == 3) : If 3 IMU's used
-                #   self.imu[3] = self.quat2vec(sensor_array[1:5])
-
-            else:
-                if (None in self.addresses) :
-                    for i in range(len(self.addresses)):
-                        if(self.addresses[i] == None) : 
-                            print('Arduino '+str(i)+' wrongly initialized, please reboot Arduino')
-                        else:     
-                            self.send_command(self.stop_msg, self.addresses[i],0)
-
-                else :
-                    print('+')
-                    for i in range(len(self.addresses)) :
+        else:
+            if (None in self.addresses) :
+                for i in range(len(self.addresses)):
+                    if(self.addresses[i] == None) : 
+                        print('Arduino '+str(i)+' wrongly initialized, please reboot Arduino')
+                    else:     
                         self.send_command(self.stop_msg, self.addresses[i],0)
+
+            else :
+                print('+')
+                for i in range(len(self.addresses)) :
+                    self.send_command(self.stop_msg, self.addresses[i],0)
             
-        except :
-            print('There has been an error')
-            print('Received data:', received_data)
+        # except :
+        #     print('There has been an error')
+        #     print('Received data:', received_data)
 
     def compute_command(self) :
         command_msg = self.stop_msg.split()
@@ -336,6 +359,36 @@ class TensegrityRobot:
                 self.done[i] = False
                 self.prev_error[i] = 0
                 self.cum_error[i] = 0
+            if 'planning' in self.action_sequence[0]:
+                state = 1
+            else:
+                # if it's a transition step
+                    # update the ranges
+                    if state % len(states) == 1:
+                    # if state % 2 == 1:
+                        # COM,principal_axis,endcaps = get_pose()
+
+                        # print('COM: ',COM)
+                        
+                        
+                        # print('Axis: ',principal_axis)
+                        # print('Endcaps: ',endcaps)
+                        # action = best_action(str(RANGE024) + "_" + str(RANGE135),action_dict,COM,principal_axis,trajectory)
+
+                        # if prev_gait == 'roll':
+                        #     prev_action = str(RANGE135) + "_" + str(RANGE024)
+                        # else:
+                        #     prev_action = prev_gait
+
+                        prev_action = str(RANGE135) + "_" + str(RANGE024)
+
+                        state_msg = State()
+                        state_msg.prev_action = prev_action
+                        state_msg.reverse_the_gait = self.reverse_the_gait
+                        self.state_pub.publish(state_msg)
+
+                        self.action_sequence = ['planning__planning' for act in action_sequence]
+
         print('State: ',self.state)
         # print(state)
         print("Position: ",self.pos)
@@ -349,6 +402,82 @@ class TensegrityRobot:
         self.send_command(' '.join(command_msg), self.addresses[self.which_Arduino],0)
         #self.send_command(self.stop_msg, self.addresses[self.which_Arduino],0)
         print('+++++')
+
+    def mpc_callback(self,msg):
+        print('Planning results are in!')
+
+        # record motion planning results
+        self.action_sequence = [act for act in msg.actions]
+        COMs = np.array([[com.x,com.y] for com in msg.COMs])
+        PAs = np.array([[pa.x,pa.y] for pa in msg.PAs])
+        endcaps = np.array([[end.x,end.y,end.z] for end in msg.endcaps])
+
+        # # ensure we incorporate the results in the next loop iteration
+        # global done
+        # global state
+        # for i in range(len(done)):
+        #     done[i] = True
+        # state = 0
+
+        # restart the step
+        for i in range(self.num_motors):
+            self.done[i] = False
+            self.prev_error[i] = 0
+            self.cum_error[i] = 0
+
+        # addjust the ranges and gait based on MPC results
+        action = self.action_sequence[0]
+
+        print('Action Sequence: ',self.action_sequence)
+                                
+        if action == 'cw':
+            self.states = self.all_gaits.get('cw')
+            # bottom_nodes = prev_nodes.get(prev_bottom_nodes)
+            bottom_nodes = self.prev_bottom_nodes
+            # prev_bottom_nodes = bottom_nodes
+            self.prev_bottom_nodes = prev_nodes.get(bottom_nodes)
+            print('Bottom Nodes: ',bottom_nodes)
+            self.states = transform_gait(self.states,bottom_nodes)
+            self.state = 1
+            self.prev_gait = 'cw'
+
+            self.RANGE024 = 100
+            self.RANGE135 = 100
+        elif action == 'ccw':
+            self.states = self.all_gaits.get('ccw')
+            bottom_nodes = self.prev_bottom_nodes
+            print('Bottom Nodes: ','Bottom Nodes: ',bottom_nodes)
+            self.states = transform_gait(states,bottom_nodes)
+            self.state = 1
+            self.prev_gait = 'ccw'
+
+            self.RANGE024 = 100
+            self.RANGE135 = 100
+        else:
+            # if we have successive rolling steps,
+            # change the ranges but skip the transition
+            if not self.prev_gait in ['cw','ccw']:
+                for i in range(self.num_motors):
+                    self.done[i] = True
+            self.states = self.all_gaits.get('roll')
+            # bottom_nodes = next_nodes.get(prev_bottom_nodes)
+            bottom_nodes = self.prev_bottom_nodes
+            # prev_bottom_nodes = bottom_nodes
+            self.prev_bottom_nodes = next_nodes.get(bottom_nodes)
+            print('Bottom Nodes: ',bottom_nodes)
+            self.states = transform_gait(self.states,bottom_nodes)
+            if self.reverse_the_gait:
+                self.states = reverse_gait(self.states,bottom_nodes)
+            self.state = 1
+            self.prev_gait = 'roll'
+            self.ranges = action.split('_')
+            self.RANGE024 = int(ranges[-1])
+            self.RANGE135 = int(ranges[-2])
+        print('Action: ',action)
+
+        # catch perception error
+        if self.states is None:
+            self.states = np.array([[1]*self.num_motors]*self.num_steps) # recover
 
     def on_press(self, key):
         print('press')
@@ -373,75 +502,75 @@ class TensegrityRobot:
                 # max_speed = 80
                 self.RANGE = 90
                 self.LEFT_RANGE = self.RANGE   
-            elif key == keyboard.KeyCode.from_char('f'):
-                self.keep_going = False
-                msg = self.stop_msg.split()
-                if self.zero_pressed:
-                    msg[0+self.offset] = str(self.init_speed)
-                    for i in range(len(self.addresses)) :
-                        self.send_command(' '.join(msg), self.addresses[i],0)
-                elif self.one_pressed:
-                    msg[1+self.offset] = str(self.init_speed)
-                    for i in range(len(self.addresses)) :
-                        self.send_command(' '.join(msg), self.addresses[i],0)
-                elif self.two_pressed:
-                    msg[2+self.offset] = str(self.init_speed)
-                    for i in range(len(self.addresses)) :
-                        self.send_command(' '.join(msg), self.addresses[i],0)
-                elif self.three_pressed:
-                    msg[3+self.offset] = str(self.init_speed)
-                    for i in range(len(self.addresses)) :
-                        self.send_command(' '.join(msg), self.addresses[i],0)
-                elif self.four_pressed:
-                    msg[4+self.offset] = str(self.init_speed)
-                    for i in range(len(self.addresses)) :
-                        self.send_command(' '.join(msg), self.addresses[i],0)
-                elif self.five_pressed:
-                    msg[5+self.offset] = str(self.init_speed)
-                    for i in range(len(self.addresses)) :
-                        self.send_command(' '.join(msg), self.addresses[i],0)
-            elif key == keyboard.KeyCode.from_char('b'):
-                self.keep_going = False
-                msg = self.stop_msg.split()
-                if self.zero_pressed:
-                    msg[0+self.offset] = str(-self.init_speed)
-                    for i in range(len(self.addresses)) :
-                        self.send_command(' '.join(msg), self.addresses[i],0)
-                elif self.one_pressed:
-                    msg[1+self.offset] = str(-self.init_speed)
-                    for i in range(len(self.addresses)) :
-                        self.send_command(' '.join(msg), self.addresses[i],0)
-                elif self.two_pressed:
-                    msg[2+self.offset] = str(-self.init_speed)
-                    for i in range(len(self.addresses)) :
-                        self.send_command(' '.join(msg), self.addresses[i],0)
-                elif self.three_pressed:
-                    msg[3+self.offset] = str(-self.init_speed)
-                    for i in range(len(self.addresses)) :
-                        self.send_command(' '.join(msg), self.addresses[i],0)
-                elif self.four_pressed:
-                    msg[4+self.offset] = str(-self.init_speed)
-                    for i in range(len(self.addresses)) :
-                        self.send_command(' '.join(msg), self.addresses[i],0)
-                elif self.five_pressed:
-                    msg[5+self.offset] = str(-self.init_speed)
-                    for i in range(len(self.addresses)) :
-                        self.send_command(' '.join(msg), self.addresses[i],0)
-            elif key == keyboard.KeyCode.from_char('0'):
-                self.zero_pressed = True
-            elif key == keyboard.KeyCode.from_char('1'):
-                self.one_pressed = True
-            elif key == keyboard.KeyCode.from_char('2'):
-                self.two_pressed = True
-            elif key == keyboard.KeyCode.from_char('3'):
-                self.three_pressed = True
-            elif key == keyboard.KeyCode.from_char('4'):
-                self.four_pressed = True
-            elif key == keyboard.KeyCode.from_char('5'):
-                self.five_pressed = True
-            elif key == keyboard.KeyCode.from_char('c'):
-                self.keep_going = False
-                self.calibration = True
+            # elif key == keyboard.KeyCode.from_char('f'):
+            #     self.keep_going = False
+            #     msg = self.stop_msg.split()
+            #     if self.zero_pressed:
+            #         msg[0+self.offset] = str(self.init_speed)
+            #         for i in range(len(self.addresses)) :
+            #             self.send_command(' '.join(msg), self.addresses[i],0)
+            #     elif self.one_pressed:
+            #         msg[1+self.offset] = str(self.init_speed)
+            #         for i in range(len(self.addresses)) :
+            #             self.send_command(' '.join(msg), self.addresses[i],0)
+            #     elif self.two_pressed:
+            #         msg[2+self.offset] = str(self.init_speed)
+            #         for i in range(len(self.addresses)) :
+            #             self.send_command(' '.join(msg), self.addresses[i],0)
+            #     elif self.three_pressed:
+            #         msg[3+self.offset] = str(self.init_speed)
+            #         for i in range(len(self.addresses)) :
+            #             self.send_command(' '.join(msg), self.addresses[i],0)
+            #     elif self.four_pressed:
+            #         msg[4+self.offset] = str(self.init_speed)
+            #         for i in range(len(self.addresses)) :
+            #             self.send_command(' '.join(msg), self.addresses[i],0)
+            #     elif self.five_pressed:
+            #         msg[5+self.offset] = str(self.init_speed)
+            #         for i in range(len(self.addresses)) :
+            #             self.send_command(' '.join(msg), self.addresses[i],0)
+            # elif key == keyboard.KeyCode.from_char('b'):
+            #     self.keep_going = False
+            #     msg = self.stop_msg.split()
+            #     if self.zero_pressed:
+            #         msg[0+self.offset] = str(-self.init_speed)
+            #         for i in range(len(self.addresses)) :
+            #             self.send_command(' '.join(msg), self.addresses[i],0)
+            #     elif self.one_pressed:
+            #         msg[1+self.offset] = str(-self.init_speed)
+            #         for i in range(len(self.addresses)) :
+            #             self.send_command(' '.join(msg), self.addresses[i],0)
+            #     elif self.two_pressed:
+            #         msg[2+self.offset] = str(-self.init_speed)
+            #         for i in range(len(self.addresses)) :
+            #             self.send_command(' '.join(msg), self.addresses[i],0)
+            #     elif self.three_pressed:
+            #         msg[3+self.offset] = str(-self.init_speed)
+            #         for i in range(len(self.addresses)) :
+            #             self.send_command(' '.join(msg), self.addresses[i],0)
+            #     elif self.four_pressed:
+            #         msg[4+self.offset] = str(-self.init_speed)
+            #         for i in range(len(self.addresses)) :
+            #             self.send_command(' '.join(msg), self.addresses[i],0)
+            #     elif self.five_pressed:
+            #         msg[5+self.offset] = str(-self.init_speed)
+            #         for i in range(len(self.addresses)) :
+            #             self.send_command(' '.join(msg), self.addresses[i],0)
+            # elif key == keyboard.KeyCode.from_char('0'):
+            #     self.zero_pressed = True
+            # elif key == keyboard.KeyCode.from_char('1'):
+            #     self.one_pressed = True
+            # elif key == keyboard.KeyCode.from_char('2'):
+            #     self.two_pressed = True
+            # elif key == keyboard.KeyCode.from_char('3'):
+            #     self.three_pressed = True
+            # elif key == keyboard.KeyCode.from_char('4'):
+            #     self.four_pressed = True
+            # elif key == keyboard.KeyCode.from_char('5'):
+            #     self.five_pressed = True
+            # elif key == keyboard.KeyCode.from_char('c'):
+            #     self.keep_going = False
+            #     self.calibration = True
 
         except AttributeError:
             pass
@@ -485,6 +614,48 @@ class TensegrityRobot:
         elif key == keyboard.KeyCode.from_char('b'):
             for i in range(len(self.addresses)) :
                     self.send_command(self.stop_msg, self.addresses[i],0)
+
+    def init_tracker(self):
+        print('i got to init_tracker')
+
+        # get cable lengths
+        while None in self.addresses:
+            self.read()
+            print('getting cable lengths...')
+
+        cable_length_msg = Float64MultiArray()
+        cable_length_msg.data = self.length
+
+        # get RGBD data
+        rgb_msg = rospy.wait_for_message('/rgb_images',Image,None)
+        depth_msg = rospy.wait_for_message('/depth_images',Image,None)
+
+        # send trajectory or other points to be superimposed
+        trajectory_x = Float64MultiArray()
+        trajectory_y = Float64MultiArray()
+        trajectory_x.data = self.trajectory[:,0].tolist()
+        trajectory_y.data = self.trajectory[:,1].tolist()
+
+        request = InitTrackerRequest()
+        request.rgb_im = rgb_msg
+        request.depth_im = depth_msg
+        request.cable_lengths = cable_length_msg
+        request.trajectory_x = trajectory_x
+        request.trajectory_y = trajectory_y
+
+        service_name = "init_tracker"
+        rospy.loginfo(f"Waiting for {service_name} service...")
+        rospy.wait_for_service(service_name)
+        rospy.loginfo(f"Found {service_name} service.")
+        try:
+            init_tracker_srv = rospy.ServiceProxy(service_name, InitTracker)
+            rospy.loginfo("Request sent. Waiting for response...")
+            response: InitTrackerResponse = init_tracker_srv(request)
+            rospy.loginfo(f"Got response. Request success: {response.success}")
+            return response.success
+        except rospy.ServiceException as e:
+            rospy.loginfo(f"Service call failed: {e}")
+        return False
             
     def run(self):
         print("Initializing")

@@ -21,7 +21,7 @@ class MotionPlanner:
 
 		# load state-action transition dictionary
 		package_path = rospkg.RosPack().get_path('tensegrity')
-		filepath = os.path.join(package_path,'calibration/motion_primitives.pkl')
+		filepath = os.path.join(package_path,'calibration/legacy_motion_primitives.pkl')
 		with open(filepath,'rb') as f:
 			self.action_dict = pickle.load(f)
 		# print(self.action_dict)

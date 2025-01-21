@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+import os
 import time
 import math
 from math import cos, sin
@@ -7,6 +9,7 @@ import numpy as np
 from pynput import keyboard
 from scipy.spatial.transform import Rotation as R
 import rospy
+import rospkg
 import socket
 #from tensegrity.msg import Motor, Info, MotorsStamped, Sensor, SensorsStamped, Imu, ImuStamped
 from tensegrity.msg import Motor, Info, Sensor, Imu, TensegrityStamped
@@ -82,10 +85,8 @@ class TensegrityRobot:
         rospy.init_node('tensegrity')
         self.control_pub = rospy.Publisher('control_msg', TensegrityStamped, queue_size=10) ## correct ??
 
-        # calibration_file = '../calibration/calibration augustin.xls'
-        #calibration_file = '../calibration/beta calibration 4.xls'
-        # calibration_file = '/Users/augustin/Desktop/Tensegrity/Codes/calibration augustin.xls'
-        calibration_file = '../calibration/one-man calibration.json'
+        package_path = rospkg.RosPack().get_path('tensegrity')
+        calibration_file = os.path.join(package_path,'calibration/calibration.json')
         
         #self.m = np.array([0.04437, 0.06207, 0.02356, 0.04440, 0.04681, 0.05381, 0.02841, 0.03599, 0.03844])
         #self.b = np.array([15.763, 13.524, 15.708, 10.084, 15.628, 15.208, 16.356, 12.575, 13.506])
