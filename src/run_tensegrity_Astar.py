@@ -12,6 +12,9 @@ import rospy
 import rosnode
 import rospkg
 import socket
+from std_msgs.msg import Float64MultiArray
+from sensor_msgs.msg import Image
+from tensegrity_perception.srv import InitTracker, InitTrackerRequest, InitTrackerResponse
 #from tensegrity.msg import Motor, Info, MotorsStamped, Sensor, SensorsStamped, Imu, ImuStamped
 from tensegrity.msg import Motor, Info, Sensor, Imu, TensegrityStamped, State, Action
 #from geometry_msgs.msg import QuaternionStamped
@@ -87,6 +90,20 @@ class TensegrityRobot:
         # self.three_pressed = False
         # self.four_pressed = False
         # self.five_pressed = False
+
+        print("Initializing")
+        self.initialize()
+        print("Running UDP connection with Arduino's: ")
+
+        # Create a UDP socket for receiving data
+        self.sock_receive = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock_send = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+        # Bind the socket to the address and port
+        self.sock_receive.bind((self.UDP_IP, self.UDP_PORT))
+        
+        # finishing setup.
+        print("Opened connection press s to stop motor and q to quit")
 
         # init tracker
         if '/tracking_service' in rosnode.get_node_names():
@@ -255,13 +272,13 @@ class TensegrityRobot:
         data, addr = self.sock_receive.recvfrom(255)  # Receive data (up to 255 bytes)
         # Decode the data (assuming it's sent as a string)
         received_data = data.decode('utf-8')
-        print(received_data)
+        print('The data I received: ',received_data)
         # try :
         # Received data in the form "N_Arduino q0 q1 q2 q3 C0 C1 C2" where N_Arduino indicates the number of the Arduino of the received data
         sensor_values = received_data.split()
         # Convert the string values to actual float values and store them in an array
         sensor_array = [float(value) for value in sensor_values]
-        print(sensor_array)
+        print('The formattted data: ',sensor_array)
         if(addr not in self.addresses):
             self.addresses[int(sensor_array[0])] = addr
         #print(sensor_array)
@@ -277,7 +294,7 @@ class TensegrityRobot:
         if(len(sensor_array) == 8) : #Number of data send space
             self.which_Arduino = int(sensor_array[0])
             if(sensor_array[5] == 0.2 or sensor_array[6] == 0.2 or sensor_array[7] == 0.2 ) :
-                print('MPR121 or I2C of Arduino '+str(i)+' wrongly initialized, please reboot Arduino')
+                print('MPR121 or I2C of Arduino '+str(self.which_Arduino)+' wrongly initialized, please reboot Arduino')
 
             if(int(sensor_array[0]) == 0) :
                 self.cap[4] = sensor_array[5]
@@ -299,9 +316,9 @@ class TensegrityRobot:
                 #check if motor reached the target
                 for i in range(self.num_motors):
                     if i < 3:
-                        self.pos[i] = (self.length[i] - self.min_length) / self.LEFT_RANGE# calculate the current position of the motor
+                        self.pos[i] = (self.length[i] - self.min_length) / self.RANGE135# calculate the current position of the motor
                     else:
-                        self.pos[i] = (self.length[i] - self.min_length) / self.RANGE# calculate the current position of the motor   
+                        self.pos[i] = (self.length[i] - self.min_length) / self.RANGE024# calculate the current position of the motor   
             #read imu data
             if(sensor_array[0] == 0) :
                 self.imu[1] = self.quat2vec(sensor_array[1:5])
@@ -633,8 +650,8 @@ class TensegrityRobot:
         # send trajectory or other points to be superimposed
         trajectory_x = Float64MultiArray()
         trajectory_y = Float64MultiArray()
-        trajectory_x.data = self.trajectory[:,0].tolist()
-        trajectory_y.data = self.trajectory[:,1].tolist()
+        # trajectory_x.data = self.trajectory[:,0].tolist()
+        # trajectory_y.data = self.trajectory[:,1].tolist()
 
         request = InitTrackerRequest()
         request.rgb_im = rgb_msg
@@ -658,19 +675,6 @@ class TensegrityRobot:
         return False
             
     def run(self):
-        print("Initializing")
-        self.initialize()
-        print("Running UDP connection with Arduino's: ")
-
-        # Create a UDP socket for receiving data
-        self.sock_receive = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock_send = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
-        # Bind the socket to the address and port
-        self.sock_receive.bind((self.UDP_IP, self.UDP_PORT))
-        
-        # finishing setup.
-        print("Opened connection press s to stop motor and q to quit")
         while not self.quitting :
             try : 
                 self.read()
