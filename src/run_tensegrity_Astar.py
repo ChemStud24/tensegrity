@@ -47,7 +47,7 @@ class TensegrityRobot:
         self.acceleration = [0] * 3
         self.RANGE024 = 100
         self.RANGE135 = 100
-        self.max_speed = 0#80
+        self.max_speed = 80
         self.tol = 0.15
         self.low_tol = 0.15
         self.P = 6.0
@@ -224,7 +224,8 @@ class TensegrityRobot:
         # gait info
         info = Info()
         info.min_length = self.min_length
-        info.RANGE = self.RANGE
+        info.RANGE024 = self.RANGE024
+        info.RANGE135 = self.RANGE135
         # info.LEFT_RANGE = self.LEFT_RANGE
         info.max_speed = self.max_speed
         info.tol = self.tol
@@ -371,17 +372,17 @@ class TensegrityRobot:
                 
         if all(self.done):
             self.state += 1
-            self.state %= self.num_steps
+            self.state %= len(self.states)#self.num_steps
             for i in range(self.num_motors):
                 self.done[i] = False
                 self.prev_error[i] = 0
                 self.cum_error[i] = 0
             if 'planning' in self.action_sequence[0]:
-                state = 1
+                self.state = 1
             else:
                 # if it's a transition step
                     # update the ranges
-                    if state % len(states) == 1:
+                    if self.state % len(self.states) == 1:
                     # if state % 2 == 1:
                         # COM,principal_axis,endcaps = get_pose()
 
@@ -397,14 +398,14 @@ class TensegrityRobot:
                         # else:
                         #     prev_action = prev_gait
 
-                        prev_action = str(RANGE135) + "_" + str(RANGE024)
+                        prev_action = str(self.RANGE135) + "_" + str(self.RANGE024)
 
                         state_msg = State()
                         state_msg.prev_action = prev_action
                         state_msg.reverse_the_gait = self.reverse_the_gait
                         self.state_pub.publish(state_msg)
 
-                        self.action_sequence = ['planning__planning' for act in action_sequence]
+                        self.action_sequence = ['planning__planning' for act in self.action_sequence]
 
         print('State: ',self.state)
         # print(state)
@@ -499,10 +500,11 @@ class TensegrityRobot:
     def on_press(self, key):
         print('press')
         try : 
-            if key == keyboard.KeyCode.from_char('q'):
+            # if key == keyboard.KeyCode.from_char('q'):
+            #     # self.quitting = True
+            #     raise S_Q_Pressed()
+            if key == keyboard.KeyCode.from_char('s'):
                 self.quitting = True
-                raise S_Q_Pressed()
-            elif key == keyboard.KeyCode.from_char('s'):
                 raise S_Q_Pressed()
             elif key == keyboard.KeyCode.from_char('r'):
                 self.states = np.array([[1.0]*self.num_motors]*self.num_steps)
