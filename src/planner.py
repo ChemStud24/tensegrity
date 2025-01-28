@@ -5,6 +5,7 @@ import pickle
 import rospy
 import rospkg
 import rosnode
+from geometry_msgs.msg import Point
 from tensegrity.msg import State, Action
 from tensegrity_perception.srv import GetPose, GetPoseRequest, GetPoseResponse, GetBarHeight
 from astar import astar
@@ -58,6 +59,8 @@ class MotionPlanner:
 		self.Astar()
 
 		self.count = 0
+		self.COMs = []
+		self.endcaps = []
 
 		# determine if the tracking service is available for feedback
 		# if '/tracking_service' in rosnode.get_node_names():
@@ -72,7 +75,7 @@ class MotionPlanner:
 		# if tracking is available
 		if '/tracking_service' in rosnode.get_node_names():
 			# get pose to check if we deviated from the plan
-			COM,axis,_ = self.get_pose()
+			COM,axis,self.endcaps = self.get_pose()
 		
 			# if we did, re-run the planner
 			print('I could replan here')
@@ -80,10 +83,24 @@ class MotionPlanner:
 				self.current_state = (float(COM[0]),float(COM[1]),float(np.arctan2(axis[1],axis[0])))
 				self.Astar()
 
+				# add current COM
+				self.COMs = [COM] + [[x,y] for x,y,_ in self.expected_path]
+
 		# publish results
 		action_msg = Action()
 		for act in self.action_sequence:
 			action_msg.actions.append(act)
+		for x,y in self.COMs:
+			point = Point()
+			point.x = x
+			point.y = y
+			action_msg.COMs.append(point)
+		for x,y,z in self.endcaps:
+			point = Point()
+			point.x = x
+			point.y = y
+			point.z = z
+			action_msg.endcaps.append(point)
 		self.pub.publish(action_msg)
 		self.action_sequence.pop(0)
 		self.count += 1
@@ -181,7 +198,7 @@ if __name__ == '__main__':
 
 	start = (-0.15, 1.1, -np.pi/2)
 	goal = (2, 0.2, -np.pi/2)
-	obstacles = ((0.5,0.2), (0.5,0.6), (1.5, 1.0), (1.5,0.6))
+	obstacles = ((0.3,0.2), (0.3,0.6), (1.5, 1.0), (1.5,0.6))
 	boundary = (-1, 3, -0.2, 1.4)
 
 	rospy.init_node('motion_planner')

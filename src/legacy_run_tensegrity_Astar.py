@@ -34,7 +34,7 @@ import pickle
 from plotting_utils import plot_MPC_prediction
 from symmetry_reduction_utils import *
 from Tensegrity_model_inputs import *
-from points_superimposed import make_circle
+from points_superimposed import make_circle, make_square
 from math import ceil, sqrt
 
 def best_k_actions(state,action_dict,COM,principal_axis,trajectory,k=1):
@@ -340,15 +340,15 @@ def read(serial_port):
                         command[i] = max([min([P*error[i] + I*cum_error[i] + D*d_error[i], 1]), -1])
                         speed = command[i] * max_speed * flip[i] 
                         send_command(serial_port, "d "+str(i+1)+" "+str(speed), 0)#run the motor at new speed                            
-                print('State: ',state)
-                # print(state)
-                print("Position: ",pos)
-                print("Target: ",states[state])
-                # print(pos)
-                # print(states[state])
-                print("Done: ",done)
-                print("Length: ",length)
-                print("Capacitance: ",capacitance)
+                # print('State: ',state)
+                # # print(state)
+                # print("Position: ",pos)
+                # print("Target: ",states[state])
+                # # print(pos)
+                # # print(states[state])
+                # print("Done: ",done)
+                # print("Length: ",length)
+                # print("Capacitance: ",capacitance)
                 count = count + 1     
                 if all(done):
                     state += 1
@@ -927,7 +927,9 @@ def mpc_callback(msg):
     if action == 'cw':
         states = all_gaits.get('cw')
         # bottom_nodes = prev_nodes.get(prev_bottom_nodes)
-        bottom_nodes = prev_bottom_nodes
+        bottom_nodes = bottom3(endcaps)
+        if not bottom_nodes in prev_nodes.keys(): # if pose tracking is wrong
+            bottom_nodes = prev_bottom_nodes
         # prev_bottom_nodes = bottom_nodes
         prev_bottom_nodes = prev_nodes.get(bottom_nodes)
         print('Bottom Nodes: ',bottom_nodes)
@@ -939,7 +941,9 @@ def mpc_callback(msg):
         RANGE135 = 100
     elif action == 'ccw':
         states = all_gaits.get('ccw')
-        bottom_nodes = prev_bottom_nodes
+        bottom_nodes = bottom3(endcaps)
+        if not bottom_nodes in prev_nodes.keys(): # if pose tracking is wrong
+            bottom_nodes = prev_bottom_nodes
         print('Bottom Nodes: ','Bottom Nodes: ',bottom_nodes)
         states = transform_gait(states,bottom_nodes)
         state = 1
@@ -955,7 +959,9 @@ def mpc_callback(msg):
                 done[i] = True
         states = all_gaits.get('roll')
         # bottom_nodes = next_nodes.get(prev_bottom_nodes)
-        bottom_nodes = prev_bottom_nodes
+        bottom_nodes = bottom3(endcaps)
+        if not bottom_nodes in prev_nodes.keys(): # if pose tracking is wrong
+            bottom_nodes = prev_bottom_nodes
         # prev_bottom_nodes = bottom_nodes
         prev_bottom_nodes = next_nodes.get(bottom_nodes)
         print('Bottom Nodes: ',bottom_nodes)
@@ -999,7 +1005,7 @@ if __name__ == '__main__':
     rospack = rospkg.RosPack()
     package_path = rospack.get_path('tensegrity')
 
-    with open(os.path.join(package_path,'calibration/motion_primitives.pkl'),'rb') as f:
+    with open(os.path.join(package_path,'calibration/legacy_motion_primitives.pkl'),'rb') as f:
         action_dict = pickle.load(f)
 
     calibration_file = os.path.join(package_path,'calibration/calibration.json')
@@ -1031,7 +1037,7 @@ if __name__ == '__main__':
     d_error = [0] * num_motors
     command = [0] * num_motors
     # beta flip
-    flip = [-1,1,1,-1,-1,-1]
+    flip = [-1,1,-1,-1,-1,-1]
     acceleration = [0]*3
     orientation = [0]*3
     endcaps = np.zeros((6,3))
@@ -1293,14 +1299,14 @@ if __name__ == '__main__':
         trajectory_sequence = [np.linspace(starting_point + leg_length*np.array([(n%2)*np.sin(beta),n*np.cos(beta)]),starting_point + leg_length*np.array([((n+1)%2)*np.sin(beta),(n+1)*np.cos(beta)]),points_per_segment) for n in range(Nzags)]
         trajectory_segment = 0
         trajectory = trajectory_sequence[trajectory_segment]
-    elif traj_name == "obstacles":
+    elif traj_name == "circular_obstacles":
         starting_point = [-0.15,1.1]
         ending_point = [2,0.2]
         robot_length = 0.30
         radius = 0.1
         # obstacle_point_1 = [0.68,0.1]
         # obstacle_point_2 = [1.48,1.0]
-        obstacles = [[0.5,0.2],[0.5,0.6],[1.5,1.0],[1.5,0.6]]
+        obstacles = [[0.3,0.2],[0.3,0.6],[1.5,1.0],[1.5,0.6]]
         t = np.linspace(0,2*np.pi,20)
         robot_start = np.linspace(np.array(starting_point) - np.array([0,robot_length/2]),np.array(starting_point) + np.array([0,robot_length/2]),8)
         robot_end = np.linspace(np.array(ending_point) - np.array([0,robot_length/2]),np.array(ending_point) + np.array([0,robot_length/2]),8)
@@ -1308,6 +1314,25 @@ if __name__ == '__main__':
         # obstacle_2 = np.array([[radius*np.cos(T) + obstacle_point_2[0],radius*np.sin(T) + obstacle_point_2[1]] for T in t])
         trajectory_sequence = [robot_start]
         trajectory_sequence.extend([np.array([[radius*np.cos(T) + obs[0],radius*np.sin(T) + obs[1]] for T in t]) for obs in obstacles])
+        trajectory_sequence.append(robot_end)
+        trajectory = np.vstack([segment for segment in trajectory_sequence])
+        trajectory_segment = 0
+        trajectory = trajectory_sequence[trajectory_segment]
+    elif traj_name == "obstacles":
+        starting_point = [-0.15,1.1]
+        ending_point = [2,0.2]
+        robot_length = 0.30
+        edge_length = 0.2
+        # obstacle_point_1 = [0.68,0.1]
+        # obstacle_point_2 = [1.48,1.0]
+        obstacles = [[0.3,0.2],[0.3,0.6],[1.5,1.0],[1.5,0.6]]
+        # t = np.linspace(0,2*np.pi,20)
+        robot_start = np.linspace(np.array(starting_point) - np.array([0,robot_length/2]),np.array(starting_point) + np.array([0,robot_length/2]),8)
+        robot_end = np.linspace(np.array(ending_point) - np.array([0,robot_length/2]),np.array(ending_point) + np.array([0,robot_length/2]),8)
+        # obstacle_1 = np.array([[radius*np.cos(T) + obstacle_point_1[0],radius*np.sin(T) + obstacle_point_1[1]] for T in t])
+        # obstacle_2 = np.array([[radius*np.cos(T) + obstacle_point_2[0],radius*np.sin(T) + obstacle_point_2[1]] for T in t])
+        trajectory_sequence = [robot_start]
+        trajectory_sequence.extend([make_square(obs,edge_length,20) for obs in obstacles])
         trajectory_sequence.append(robot_end)
         trajectory = np.vstack([segment for segment in trajectory_sequence])
         trajectory_segment = 0
