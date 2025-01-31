@@ -228,13 +228,13 @@ class TensegrityRobot:
         data, addr = self.sock_receive.recvfrom(255)  # Receive data (up to 255 bytes)
         # Decode the data (assuming it's sent as a string)
         received_data = data.decode('utf-8')
-        print(received_data)
+        # print(received_data)
         try :
             # Received data in the form "N_Arduino q0 q1 q2 q3 C0 C1 C2" where N_Arduino indicates the number of the Arduino of the received data
             sensor_values = received_data.split()
             # Convert the string values to actual float values and store them in an array
             sensor_array = [float(value) for value in sensor_values]
-            print(sensor_array)
+            # print(sensor_array)
             if(addr not in self.addresses) :
                 self.addresses[int(sensor_array[0])] = addr
             # print(sensor_array)
@@ -425,8 +425,10 @@ class TensegrityRobot:
                 self.read()
                 if(None not in self.addresses) :
                     self.sendRosMSG()    
+                    print('=================')
                     for i in range(self.num_sensors) :
-                            print(f"Capacitance {chr(i + 97)}: {self.cap[i]:.2f} \t Length: {self.length[i]:.2f} \n")
+                        print(f"Capacitance {chr(i + 97)}: {self.cap[i]:.2f} \t Length: {self.length[i]:.2f} \n")
+                    print('=================')
             except :
                 pass
             

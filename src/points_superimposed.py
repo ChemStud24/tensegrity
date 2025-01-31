@@ -59,6 +59,14 @@ def make_circle(center_point,radius,num_points=100,starting_angle=0,swept_angle=
 	trajectory = np.array([[radius*np.cos(T) + center_point[0],radius*np.sin(T) + center_point[1]] for T in t])
 	return trajectory
 
+def make_square(center_point,edge_length,num_points=100):
+	# circle
+	center_point = np.array(center_point)
+	vertices = [[center_point[0] - edge_length/2, center_point[1] - edge_length/2],[center_point[0] - edge_length/2, center_point[1] + edge_length/2],[center_point[0] + edge_length/2, center_point[1] + edge_length/2],[center_point[0] + edge_length/2, center_point[1] - edge_length/2]]
+	pairs = [(vertices[0],vertices[1]),(vertices[1],vertices[2]),(vertices[2],vertices[3]),(vertices[3],vertices[0])]
+	trajectory_sequence = [np.linspace(v1,v2,ceil(num_points/4)) for v1,v2 in pairs]
+	return np.vstack([segment for segment in trajectory_sequence])
+
 if __name__ == '__main__':
 	
 	# choose one of the following trajectories
@@ -268,7 +276,7 @@ if __name__ == '__main__':
 		# 		trajectory = np.vstack((trajectory,np.linspace(starting_point,starting_point + leg_length*np.array([np.sin(beta),np.cos(beta)]),points_per_segment)[1:,:],np.linspace(starting_point + leg_length*np.array([np.sin(beta),np.cos(beta)]),starting_point + 2*leg_length*np.array([0,np.cos(beta)]),points_per_segment)[1:,:]))
 		# 	starting_point = starting_point + 2*leg_length*np.array([0,np.cos(beta)])
 		# print(len(trajectory_sequence))
-	elif traj_name == "obstacles":
+	elif traj_name == "circle_obstacles":
 		starting_point = [-0.15,1.1]
 		ending_point = [2,0.2]
 		robot_length = 0.30
@@ -283,6 +291,23 @@ if __name__ == '__main__':
 		# obstacle_2 = np.array([[radius*np.cos(T) + obstacle_point_2[0],radius*np.sin(T) + obstacle_point_2[1]] for T in t])
 		trajectory_sequence = [robot_start]
 		trajectory_sequence.extend([np.array([[radius*np.cos(T) + obs[0],radius*np.sin(T) + obs[1]] for T in t]) for obs in obstacles])
+		trajectory_sequence.append(robot_end)
+		trajectory = np.vstack([segment for segment in trajectory_sequence])
+	elif traj_name == "obstacles":
+		starting_point = [-0.15,1.1]
+		ending_point = [2,0.2]
+		robot_length = 0.30
+		edge_length = 0.2
+		# obstacle_point_1 = [0.68,0.1]
+		# obstacle_point_2 = [1.48,1.0]
+		obstacles = [[0.3,0.2],[0.3,0.6],[1.5,1.0],[1.5,0.6]]
+		# t = np.linspace(0,2*np.pi,20)
+		robot_start = np.linspace(np.array(starting_point) - np.array([0,robot_length/2]),np.array(starting_point) + np.array([0,robot_length/2]),8)
+		robot_end = np.linspace(np.array(ending_point) - np.array([0,robot_length/2]),np.array(ending_point) + np.array([0,robot_length/2]),8)
+		# obstacle_1 = np.array([[radius*np.cos(T) + obstacle_point_1[0],radius*np.sin(T) + obstacle_point_1[1]] for T in t])
+		# obstacle_2 = np.array([[radius*np.cos(T) + obstacle_point_2[0],radius*np.sin(T) + obstacle_point_2[1]] for T in t])
+		trajectory_sequence = [robot_start]
+		trajectory_sequence.extend([make_square(obs,edge_length,20) for obs in obstacles])
 		trajectory_sequence.append(robot_end)
 		trajectory = np.vstack([segment for segment in trajectory_sequence])
 

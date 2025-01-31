@@ -38,11 +38,11 @@ class TensegrityRobot:
         self.d_error = [0] * self.num_motors
         self.command = [0] * self.num_motors
         self.speed = [0] * self.num_motors
-        self.flip = [1, 1, -1, 1, 1, 1] # flip direction of motors
+        self.flip = [1, 1, -1, 1, 1, -1] # flip direction of motors
         self.acceleration = [0] * 3
         self.RANGE = 90
         self.LEFT_RANGE = 90
-        self.max_speed = 0#80
+        self.max_speed = 80
         self.tol = 0.15
         self.low_tol = 0.15
         self.P = 6.0
