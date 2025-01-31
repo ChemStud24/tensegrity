@@ -116,7 +116,7 @@ class MotionPlanner:
 		self.expected_path, path = astar(self.current_state,self.goal, self.primitive_workspace, \
 			tolerance=self.goal_tol, rot_tol=self.goal_rot_tol, obstacles=self.obstacles,\
 			repeat_tol = self.repeat_tol, single_push=False, \
-        	stochastic=False,heur_type="dist", boundary=self.boundary, obstacle_dims=self.obstacle_dim,\
+        	stochastic=False,heur_type=self.heur_type, boundary=self.boundary, obstacle_dims=self.obstacle_dim,\
 			grid_step=self.grid_step)
 
 		print('Path: ',path)
@@ -201,7 +201,13 @@ if __name__ == '__main__':
 	obstacles = ((0.3,0.2), (0.3,0.6), (1.5, 1.0), (1.5,0.6))
 	boundary = (-1, 3, -0.2, 1.4)
 
+	start = (-0.15, 1.1, -np.pi/2)
+	goal = (2, 0.2, -np.pi/2)
+	obstacles = ((0.5,0), (0.5,0.4), (1.5, 1.0), (1.5,0.6))
+	boundary = (-1, 3, -0.2, 1.4)
+
+
 	rospy.init_node('motion_planner')
-	planner = MotionPlanner(start, goal, boundary, obstacles)
+	planner = MotionPlanner(start, goal, boundary, obstacles, heur_type="wave")
 	rate = rospy.Rate(30)
 	planner.run(rate)
