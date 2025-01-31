@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 # manipulating and writing data
 import os
@@ -11,6 +11,7 @@ import cv2
 
 # ROS Messages
 import rospy
+import rospkg
 import message_filters
 from sensor_msgs.msg import Image
 # from geometry_msgs.msg import QuaternionStamped
@@ -21,7 +22,8 @@ from tensegrity.msg import TensegrityStamped, NodesStamped
 class SyncDataWriter:
 
     def __init__(self, output_dir='output'):
-        output_dir = os.path.join('../../../data',output_dir)
+        data_path = os.path.join(rospkg.RosPack().get_path('tensegrity'),'../../data/')
+        output_dir = os.path.join(data_path,output_dir)
 
         self.bridge = CvBridge()
         self.depth_scale = 1000  # D435
@@ -39,10 +41,10 @@ class SyncDataWriter:
         # strain_sub = message_filters.Subscriber(self.strain_topic, SensorsStamped)
         # imu_sub = message_filters.Subscriber(self.imu_topic, ImuStamped)
         # mocap_sub = message_filters.Subscriber(self.mocap_topic, Markers)
-        reconstruction_sub = message_filters.Subscriber(self.reconstruction_topic,NodesStamped)
+        # reconstruction_sub = message_filters.Subscriber(self.reconstruction_topic,NodesStamped)
 
         # time synchronizer
-        self.time_synchornizer = message_filters.ApproximateTimeSynchronizer([color_im_sub,depth_im_sub,control_sub],queue_size=10, slop=0.1)
+        self.time_synchornizer = message_filters.ApproximateTimeSynchronizer([color_im_sub,depth_im_sub,control_sub],queue_size=20, slop=0.1)
         # ,self.time_synchornizer = message_filters.ApproximateTimeSynchronizer([color_im_sub,depth_im_sub,control_sub], queue_size=10, slop=0.1)l_sub], queue_size=10, slop=0.1)
         # self.time_synchornizer = message_filters.ApproximateTimeSynchronizer([control_sub,reconstruction_sub], queue_size=10, slop=0.1)
         self.time_synchornizer.registerCallback(self.callback)

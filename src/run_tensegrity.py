@@ -38,14 +38,14 @@ class TensegrityRobot:
         self.d_error = [0] * self.num_motors
         self.command = [0] * self.num_motors
         self.speed = [0] * self.num_motors
-        self.flip = [1, 1, -1, 1, 1, -1] # flip direction of motors
+        self.flip = [1, -1, 1, 1, 1, -1] # flip direction of motors
         self.acceleration = [0] * 3
-        self.RANGE = 90
-        self.LEFT_RANGE = 90
-        self.max_speed = 80
-        self.tol = 0.15
-        self.low_tol = 0.15
-        self.P = 6.0
+        self.RANGE = 100
+        self.LEFT_RANGE = 100
+        self.max_speed = 70
+        self.tol = 0.07
+        self.low_tol = 0.01
+        self.P = 10.0
         self.I = 0.01
         self.D = 0.5
         
@@ -104,12 +104,38 @@ class TensegrityRobot:
         states = np.array([[0.0, 1.0, 0.1, 0.0, 1.0, 1.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]])#steps gait
         states = np.array([[0.0, 1.0, 1.0, 0.0, 1.0, 0.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]) # one step and recover
         """
-        self.states = np.array([[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 0.8, 0.1],[1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.0, 0.8, 0.1, 0.0],[0.1, 1.0, 1.0, 0.1, 1.0, 1.0],[1.0, 0.0, 1.0, 0.1, 0.0, 0.8]]) # quasi-static rolling
+        # self.states = np.array([[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 0.8, 0.1],[1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.0, 0.8, 0.1, 0.0],[0.1, 1.0, 1.0, 0.1, 1.0, 1.0],[1.0, 0.0, 1.0, 0.1, 0.0, 0.8]]) # quasi-static rolling
         #self.states = np.array([[1, 1, 1, 0, 1, 1], [1, 0, 1, 0, 1, 1], [0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]]) # counterclockwise
         #self.states = np.array([[0, 0, 0, 1, 0, 1], [0, 0, 0, 0, 0, 0.7], [0, 0, 0.7, 0, 1, 1], [1, 1, 1, 1, 1, 1]]) # clockwise 
         #self.states = np.array([[1, 1, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0], [0, 1, 1, 0, 0.8, 0], [1, 1, 1, 1, 1, 1], [1, 0, 1, 0, 0, 0], [1, 0, 0, 0, 0, 0], [1, 1, 0, 0.8, 0, 0], [1, 1, 1, 1, 1, 1], [0, 1, 1, 0, 0, 0], [0, 0, 1, 0, 0, 0], [1, 0, 1, 0, 0, 0.8], [1, 1, 1, 1, 1, 1]]) #clockwise
         #self.states = np.array([[0, 1, 1, 1, 1, 1], [0, 1, 1, 1, 1, 0], [0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]]) # counterclockwise
         # self.states = np.array([[1,1,1,1,1,1],[0.2,1,1,1,1,1],[1,1,1,1,1,1],[1,0.2,1,1,1,1],[1,1,1,1,1,1],[1,1,0.2,1,1,1],[1,1,1,1,1,1],[1,1,1,0.2,1,1],[1,1,1,1,1,1],[1,1,1,1,0.2,1],[1,1,1,1,1,1],[1,1,1,1,1,0.2]])
+        # self.states = np.array([[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 1, 0.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],[1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.0, 1.0, 0.1, 0.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],[0.1, 1.0, 1.0, 0.1, 1.0, 1.0],[1.0, 0.0, 1.0, 0.1, 0.0, 1.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]) # quasi-static rolling
+
+        self.states = np.array([[1.0,1.0,1.0,1.0,1.0,1.0],
+                           [0.2,1.0,1.0,1.0,1.0,1.0],
+                           [1.0,1.0,1.0,1.0,1.0,1.0],
+                           [1.0,0.2,1.0,1.0,1.0,1.0],
+                           [1.0,1.0,1.0,1.0,1.0,1.0],
+                           [1.0,1.0,0.2,1.0,1.0,1.0],
+                           [1.0,1.0,1.0,1.0,1.0,1.0],
+                           [1.0,1.0,1.0,0.2,1.0,1.0],
+                           [1.0,1.0,1.0,1.0,1.0,1.0],
+                           [1.0,1.0,1.0,1.0,0.2,1.0],
+                           [1.0,1.0,1.0,1.0,1.0,1.0],
+                           [1.0,1.0,1.0,1.0,1.0,0.2]]) # testing one at a time
+
+        # self.states = np.array([[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 1.0, 0.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+        #                         [1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.0, 1.0, 0.1, 0.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+        #                         [0.1, 1.0, 1.0, 0.1, 1.0, 1.0],[1.0, 0.0, 1.0, 0.1, 0.0, 1.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]) # quasi-static rolling with rest states
+        self.states = np.array([[0, 0, 0, 1, 0, 1], [0, 0, 0, 0, 0, 1], [0, 0, 0.7, 0, 1.2, 1], [1, 1, 1, 1, 1, 1], [0, 0, 0, 1, 1, 0], [0, 0, 0, 1, 0, 0], [0.7, 0, 0, 1, 0, 1.2], [1, 1, 1, 1, 1, 1], [0, 0, 0, 0, 1, 1], [0, 0, 0, 0, 1, 0], [0, 0.7, 0, 1.2, 1, 0], [1, 1, 1, 1, 1, 1]]) # cw
+        # self.states = np.array([[1, 1, 1, 0, 1, 1], [1, 0, 1, 0, 1, 1], [0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]]) # ccw
+
+        # single step of cw
+        # self.states = np.array([[0, 0, 0, 1, 0, 1], [0, 0, 0, 0, 0, 1], [0, 0, 0.7, 0, 1.2, 1], [1, 1, 1, 1, 1, 1]]) # 1st step
+        # self.states = np.array([[0, 0, 0, 1, 1, 0], [0, 0, 0, 1, 0, 0], [0.7, 0, 0, 1, 0, 1.2], [1, 1, 1, 1, 1, 1]]) # 2nd step
+        # self.states = np.array([[0, 0, 0, 0, 1, 1], [0, 0, 0, 0, 1, 0], [0, 0.7, 0, 1.2, 1, 0], [1, 1, 1, 1, 1, 1]]) # 3rd step
+
         self.num_steps = len(self.states)
         self.state = 0
         self.offset = 3
@@ -356,15 +382,20 @@ class TensegrityRobot:
         try : 
             if key == keyboard.KeyCode.from_char('q'):
                 self.quitting = True
+                self.keep_going = False
+                print('I hear you Q')
                 raise S_Q_Pressed()
             elif key == keyboard.KeyCode.from_char('s'):
+                self.quitting = True
+                self.keep_going = False
                 raise S_Q_Pressed()
+                print('I hear you S')
             elif key == keyboard.KeyCode.from_char('r'):
                 self.states = np.array([[1.0]*self.num_motors]*self.num_steps)
                 self.done = np.array([False] * self.num_motors)
                 self.tol = 0.2
                 self.P = 5.0
-                self.max_speed = 70
+                self.max_speed = 90
 
             elif key == keyboard.KeyCode.from_char('n'):
                 self.states = np.array([[1.0]*self.num_motors]*self.num_steps)
@@ -374,78 +405,84 @@ class TensegrityRobot:
                 # max_speed = 80
                 self.RANGE = 90
                 self.LEFT_RANGE = self.RANGE   
-            elif key == keyboard.KeyCode.from_char('f'):
-                self.keep_going = False
-                msg = self.stop_msg.split()
-                if self.zero_pressed:
-                    msg[0+self.offset] = str(self.init_speed)
-                    for i in range(len(self.addresses)) :
-                        self.send_command(' '.join(msg), self.addresses[i],0)
-                elif self.one_pressed:
-                    msg[1+self.offset] = str(self.init_speed)
-                    for i in range(len(self.addresses)) :
-                        self.send_command(' '.join(msg), self.addresses[i],0)
-                elif self.two_pressed:
-                    msg[2+self.offset] = str(self.init_speed)
-                    for i in range(len(self.addresses)) :
-                        self.send_command(' '.join(msg), self.addresses[i],0)
-                elif self.three_pressed:
-                    msg[3+self.offset] = str(self.init_speed)
-                    for i in range(len(self.addresses)) :
-                        self.send_command(' '.join(msg), self.addresses[i],0)
-                elif self.four_pressed:
-                    msg[4+self.offset] = str(self.init_speed)
-                    for i in range(len(self.addresses)) :
-                        self.send_command(' '.join(msg), self.addresses[i],0)
-                elif self.five_pressed:
-                    msg[5+self.offset] = str(self.init_speed)
-                    for i in range(len(self.addresses)) :
-                        self.send_command(' '.join(msg), self.addresses[i],0)
-            elif key == keyboard.KeyCode.from_char('b'):
-                self.keep_going = False
-                msg = self.stop_msg.split()
-                if self.zero_pressed:
-                    msg[0+self.offset] = str(-self.init_speed)
-                    for i in range(len(self.addresses)) :
-                        self.send_command(' '.join(msg), self.addresses[i],0)
-                elif self.one_pressed:
-                    msg[1+self.offset] = str(-self.init_speed)
-                    for i in range(len(self.addresses)) :
-                        self.send_command(' '.join(msg), self.addresses[i],0)
-                elif self.two_pressed:
-                    msg[2+self.offset] = str(-self.init_speed)
-                    for i in range(len(self.addresses)) :
-                        self.send_command(' '.join(msg), self.addresses[i],0)
-                elif self.three_pressed:
-                    msg[3+self.offset] = str(-self.init_speed)
-                    for i in range(len(self.addresses)) :
-                        self.send_command(' '.join(msg), self.addresses[i],0)
-                elif self.four_pressed:
-                    msg[4+self.offset] = str(-self.init_speed)
-                    for i in range(len(self.addresses)) :
-                        self.send_command(' '.join(msg), self.addresses[i],0)
-                elif self.five_pressed:
-                    msg[5+self.offset] = str(-self.init_speed)
-                    for i in range(len(self.addresses)) :
-                        self.send_command(' '.join(msg), self.addresses[i],0)
-            elif key == keyboard.KeyCode.from_char('0'):
-                self.zero_pressed = True
-            elif key == keyboard.KeyCode.from_char('1'):
-                self.one_pressed = True
-            elif key == keyboard.KeyCode.from_char('2'):
-                self.two_pressed = True
-            elif key == keyboard.KeyCode.from_char('3'):
-                self.three_pressed = True
-            elif key == keyboard.KeyCode.from_char('4'):
-                self.four_pressed = True
-            elif key == keyboard.KeyCode.from_char('5'):
-                self.five_pressed = True
-            elif key == keyboard.KeyCode.from_char('c'):
-                self.keep_going = False
-                self.calibration = True
+            # elif key == keyboard.KeyCode.from_char('f'):
+            #     self.keep_going = False
+            #     msg = self.stop_msg.split()
+            #     if self.zero_pressed:
+            #         msg[0+self.offset] = str(self.init_speed)
+            #         for i in range(len(self.addresses)) :
+            #             self.send_command(' '.join(msg), self.addresses[i],0)
+            #     elif self.one_pressed:
+            #         msg[1+self.offset] = str(self.init_speed)
+            #         for i in range(len(self.addresses)) :
+            #             self.send_command(' '.join(msg), self.addresses[i],0)
+            #     elif self.two_pressed:
+            #         msg[2+self.offset] = str(self.init_speed)
+            #         for i in range(len(self.addresses)) :
+            #             self.send_command(' '.join(msg), self.addresses[i],0)
+            #     elif self.three_pressed:
+            #         msg[3+self.offset] = str(self.init_speed)
+            #         for i in range(len(self.addresses)) :
+            #             self.send_command(' '.join(msg), self.addresses[i],0)
+            #     elif self.four_pressed:
+            #         msg[4+self.offset] = str(self.init_speed)
+            #         for i in range(len(self.addresses)) :
+            #             self.send_command(' '.join(msg), self.addresses[i],0)
+            #     elif self.five_pressed:
+            #         msg[5+self.offset] = str(self.init_speed)
+            #         for i in range(len(self.addresses)) :
+            #             self.send_command(' '.join(msg), self.addresses[i],0)
+            # elif key == keyboard.KeyCode.from_char('b'):
+            #     self.keep_going = False
+            #     msg = self.stop_msg.split()
+            #     if self.zero_pressed:
+            #         msg[0+self.offset] = str(-self.init_speed)
+            #         for i in range(len(self.addresses)) :
+            #             self.send_command(' '.join(msg), self.addresses[i],0)
+            #     elif self.one_pressed:
+            #         msg[1+self.offset] = str(-self.init_speed)
+            #         for i in range(len(self.addresses)) :
+            #             self.send_command(' '.join(msg), self.addresses[i],0)
+            #     elif self.two_pressed:
+            #         msg[2+self.offset] = str(-self.init_speed)
+            #         for i in range(len(self.addresses)) :
+            #             self.send_command(' '.join(msg), self.addresses[i],0)
+            #     elif self.three_pressed:
+            #         msg[3+self.offset] = str(-self.init_speed)
+            #         for i in range(len(self.addresses)) :
+            #             self.send_command(' '.join(msg), self.addresses[i],0)
+            #     elif self.four_pressed:
+            #         msg[4+self.offset] = str(-self.init_speed)
+            #         for i in range(len(self.addresses)) :
+            #             self.send_command(' '.join(msg), self.addresses[i],0)
+            #     elif self.five_pressed:
+            #         msg[5+self.offset] = str(-self.init_speed)
+            #         for i in range(len(self.addresses)) :
+            #             self.send_command(' '.join(msg), self.addresses[i],0)
+            # elif key == keyboard.KeyCode.from_char('0'):
+            #     self.zero_pressed = True
+            # elif key == keyboard.KeyCode.from_char('1'):
+            #     self.one_pressed = True
+            # elif key == keyboard.KeyCode.from_char('2'):
+            #     self.two_pressed = True
+            # elif key == keyboard.KeyCode.from_char('3'):
+            #     self.three_pressed = True
+            # elif key == keyboard.KeyCode.from_char('4'):
+            #     self.four_pressed = True
+            # elif key == keyboard.KeyCode.from_char('5'):
+            #     self.five_pressed = True
+            # elif key == keyboard.KeyCode.from_char('c'):
+            #     self.keep_going = False
+            #     self.calibration = True
 
         except AttributeError:
-            pass
+            print('On-press error -- quitting')
+            self.quitting = True
+            self.keep_going = False
+            # set duty cycle as 0 to turn off the motors
+            for i in range(len(self.addresses)):
+                self.send_command(self.stop_msg, self.addresses[i], 0)
+
 
         except S_Q_Pressed :
             print("\nStopping motors")
