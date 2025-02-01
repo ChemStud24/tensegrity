@@ -365,6 +365,9 @@ def read(serial_port):
                     # prev_head_error = heading_error
                     if 'planning' in action_sequence[0]:
                         state = 1
+                        states = np.array([[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1]])
+                        RANGE024 = 100
+                        RANGE135 = 100
                     else:
                         # if it's a transition step
                         # update the ranges
@@ -1037,7 +1040,7 @@ if __name__ == '__main__':
     d_error = [0] * num_motors
     command = [0] * num_motors
     # beta flip
-    flip = [-1,1,-1,-1,-1,-1]
+    flip = [-1,1,-1,1,-1,-1]
     acceleration = [0]*3
     orientation = [0]*3
     endcaps = np.zeros((6,3))
@@ -1320,12 +1323,12 @@ if __name__ == '__main__':
         trajectory = trajectory_sequence[trajectory_segment]
     elif traj_name == "obstacles":
         starting_point = [-0.15,1.1]
-        ending_point = [2,0.2]
+        ending_point = [1.8,0.2]
         robot_length = 0.30
         edge_length = 0.2
         # obstacle_point_1 = [0.68,0.1]
         # obstacle_point_2 = [1.48,1.0]
-        obstacles = [[0.3,0.2],[0.3,0.6],[1.5,1.0],[1.5,0.6]]
+        obstacles = [[0.5,0.0],[0.5,0.4],[1.5,1.0],[1.5,0.6]]
         # t = np.linspace(0,2*np.pi,20)
         robot_start = np.linspace(np.array(starting_point) - np.array([0,robot_length/2]),np.array(starting_point) + np.array([0,robot_length/2]),8)
         robot_end = np.linspace(np.array(ending_point) - np.array([0,robot_length/2]),np.array(ending_point) + np.array([0,robot_length/2]),8)

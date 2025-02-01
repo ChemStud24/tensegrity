@@ -10,6 +10,7 @@ from math import ceil, sqrt
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 
+
 class Visualizer:
 	def __init__(self,trajectory,cam_intr,cam_extr):
 		# ROS node
@@ -66,6 +67,24 @@ def make_square(center_point,edge_length,num_points=100):
 	pairs = [(vertices[0],vertices[1]),(vertices[1],vertices[2]),(vertices[2],vertices[3]),(vertices[3],vertices[0])]
 	trajectory_sequence = [np.linspace(v1,v2,ceil(num_points/4)) for v1,v2 in pairs]
 	return np.vstack([segment for segment in trajectory_sequence])
+
+starting_point = [-0.15,1.1]
+ending_point = [1.6,0.2]
+robot_length = 0.30
+edge_length = 0.2
+# obstacle_point_1 = [0.68,0.1]
+# obstacle_point_2 = [1.48,1.0]
+obstacles = [[0.3,0.2],[0.3,0.6],[1.5,1.0],[1.5,0.6]]
+obstacles = [[0.5,0.0],[0.5,0.4],[1.5,1.0],[1.5,0.6]]
+# t = np.linspace(0,2*np.pi,20)
+robot_start = np.linspace(np.array(starting_point) - np.array([0,robot_length/2]),np.array(starting_point) + np.array([0,robot_length/2]),8)
+robot_end = np.linspace(np.array(ending_point) - np.array([0,robot_length/2]),np.array(ending_point) + np.array([0,robot_length/2]),8)
+# obstacle_1 = np.array([[radius*np.cos(T) + obstacle_point_1[0],radius*np.sin(T) + obstacle_point_1[1]] for T in t])
+# obstacle_2 = np.array([[radius*np.cos(T) + obstacle_point_2[0],radius*np.sin(T) + obstacle_point_2[1]] for T in t])
+trajectory_sequence = [robot_start]
+trajectory_sequence.extend([make_square(obs,edge_length,20) for obs in obstacles])
+trajectory_sequence.append(robot_end)
+obstacle_trajectory = np.vstack([segment for segment in trajectory_sequence])
 
 if __name__ == '__main__':
 	
@@ -295,12 +314,13 @@ if __name__ == '__main__':
 		trajectory = np.vstack([segment for segment in trajectory_sequence])
 	elif traj_name == "obstacles":
 		starting_point = [-0.15,1.1]
-		ending_point = [2,0.2]
+		ending_point = [1.6,0.2]
 		robot_length = 0.30
 		edge_length = 0.2
 		# obstacle_point_1 = [0.68,0.1]
 		# obstacle_point_2 = [1.48,1.0]
 		obstacles = [[0.3,0.2],[0.3,0.6],[1.5,1.0],[1.5,0.6]]
+		obstacles = [[0.5,0.0],[0.5,0.4],[1.5,1.0],[1.5,0.6]]
 		# t = np.linspace(0,2*np.pi,20)
 		robot_start = np.linspace(np.array(starting_point) - np.array([0,robot_length/2]),np.array(starting_point) + np.array([0,robot_length/2]),8)
 		robot_end = np.linspace(np.array(ending_point) - np.array([0,robot_length/2]),np.array(ending_point) + np.array([0,robot_length/2]),8)

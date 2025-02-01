@@ -8,7 +8,7 @@ def principal_axis(nodes):
 	axis = axis/(np.linalg.norm(axis))
 	return axis
 
-with open('../calibration/primitive_dict.pkl','rb') as f:
+with open('../calibration/new_platform_primitive_dict.pkl','rb') as f:
 	data = pickle.load(f)
 
 # turning_actions = ['cw','ccw']
@@ -69,4 +69,4 @@ for key in data.keys():
         print(np.linalg.norm(t))
     data.update({key:[R,t/10,max_height/10]})
 
-pickle.dump(data,open('../calibration/transformation_table.pkl','wb'))
+pickle.dump(data,open('../calibration/new_platform_transformation_table.pkl','wb'))

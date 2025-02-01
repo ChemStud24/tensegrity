@@ -16,9 +16,11 @@ from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import Image
 from tensegrity_perception.srv import InitTracker, InitTrackerRequest, InitTrackerResponse
 #from tensegrity.msg import Motor, Info, MotorsStamped, Sensor, SensorsStamped, Imu, ImuStamped
-from tensegrity.msg import Motor, Info, Sensor, Imu, TensegrityStamped, State, Action
-#from geometry_msgs.msg import QuaternionStamped
+from tensegrity.msg import Motor, Info, Sensor, Imu, TensegrityStamped, State, Action, Trajectory
+from geometry_msgs.msg import Point
 from symmetry_reduction_utils import *
+from points_superimposed import obstacle_trajectory
+from Tensegrity_model_inputs import *
 
 
 class FileError(Exception):
@@ -43,14 +45,14 @@ class TensegrityRobot:
         self.d_error = [0] * self.num_motors
         self.command = [0] * self.num_motors
         self.speed = [0] * self.num_motors
-        self.flip = [1, 1, -1, 1, 1, 1] # flip direction of motors
+        self.flip = [1, 1, 1, 1, -1, -1] # flip direction of motors
         self.acceleration = [0] * 3
         self.RANGE024 = 100
         self.RANGE135 = 100
-        self.max_speed = 80
+        self.max_speed = 70
         self.tol = 0.15
         self.low_tol = 0.15
-        self.P = 6.0
+        self.P = 10.0
         self.I = 0.01
         self.D = 0.5
 
@@ -107,12 +109,15 @@ class TensegrityRobot:
 
         # init tracker
         if '/tracking_service' in rosnode.get_node_names():
-            self.trajectory = [[0,0]]
+            self.trajectory = obstacle_trajectory
             self.init_tracker()
         
         # communicating with the planner
         self.action_sub = rospy.Subscriber('/action_msg',Action,self.mpc_callback)
         self.state_pub = rospy.Publisher('/state_msg',State,queue_size=10)
+        self.COMs = []
+        self.PAs = []
+        self.next_states = None
 
     def initialize(self):
 
@@ -123,7 +128,7 @@ class TensegrityRobot:
         self.control_pub = rospy.Publisher('control_msg', TensegrityStamped, queue_size=10) ## correct ??
 
         package_path = rospkg.RosPack().get_path('tensegrity')
-        calibration_file = os.path.join(package_path,'calibration/calibration.json')
+        calibration_file = os.path.join(package_path,'calibration/new_calibration.json')
         
         #self.m = np.array([0.04437, 0.06207, 0.02356, 0.04440, 0.04681, 0.05381, 0.02841, 0.03599, 0.03844])
         #self.b = np.array([15.763, 13.524, 15.708, 10.084, 15.628, 15.208, 16.356, 12.575, 13.506])
@@ -264,6 +269,20 @@ class TensegrityRobot:
         #        IMU.y = self.imu[imu_id][1]
         #        IMU.z = self.imu[imu_id][2]
         #    imu_msg.imus.append(IMU)
+
+        trajectory_msg = Trajectory()
+        for x,y in self.COMs:
+            point = Point()
+            point.x = x
+            point.y = y
+            trajectory_msg.COMs.append(point)
+        for x,y in self.PAs:
+            point = Point()
+            point.x = x
+            point.y = y
+            trajectory_msg.PAs.append(point)
+        control_msg.trajectory = trajectory_msg
+
         # publish
         self.control_pub.publish(control_msg)
         # strain_pub.publish(strain_msg)
@@ -273,13 +292,13 @@ class TensegrityRobot:
         data, addr = self.sock_receive.recvfrom(255)  # Receive data (up to 255 bytes)
         # Decode the data (assuming it's sent as a string)
         received_data = data.decode('utf-8')
-        print('The data I received: ',received_data)
+        # print('The data I received: ',received_data)
         # try :
         # Received data in the form "N_Arduino q0 q1 q2 q3 C0 C1 C2" where N_Arduino indicates the number of the Arduino of the received data
         sensor_values = received_data.split()
         # Convert the string values to actual float values and store them in an array
         sensor_array = [float(value) for value in sensor_values]
-        print('The formattted data: ',sensor_array)
+        # print('The formattted data: ',sensor_array)
         if(addr not in self.addresses):
             self.addresses[int(sensor_array[0])] = addr
         #print(sensor_array)
@@ -377,8 +396,20 @@ class TensegrityRobot:
                 self.done[i] = False
                 self.prev_error[i] = 0
                 self.cum_error[i] = 0
-            if 'planning' in self.action_sequence[0]:
+            if self.next_states is not None:
+                # print('starting next primitive')
+                print('Next:',self.next_states)
+                self.states = self.next_states
+                # print(self.states)
+                self.next_states = None
                 self.state = 1
+            elif 'planning' in self.action_sequence[0]:
+                print('planning')
+                self.state = 1
+                self.states = np.array([[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1]])
+                self.RANGE024 = 100
+                self.RANGE135 = 100
+
             else:
                 # if it's a transition step
                     # update the ranges
@@ -407,27 +438,33 @@ class TensegrityRobot:
 
                         self.action_sequence = ['planning__planning' for act in self.action_sequence]
 
-        print('State: ',self.state)
-        # print(state)
-        print("Position: ",self.pos)
-        print("Target: ",self.states[self.state])
-        # print(pos)
-        # print(states[state])
-        print("Done: ",self.done)
-        print("Length: ",self.length)
-        print("Capacitance: ",self.cap)
-        print(' '.join(command_msg))
+                        self.next_states = None
+                        self.state = 1
+                        self.states = np.array([[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1]])
+                        self.RANGE024 = 100
+                        self.RANGE135 = 100
+
+        # print('State: ',self.state)
+        # # print(state)
+        # print("Position: ",self.pos)
+        # print("Target: ",self.states[self.state])
+        # # print(pos)
+        # # print(states[state])
+        # print("Done: ",self.done)
+        # print("Length: ",self.length)
+        # print("Capacitance: ",self.cap)
+        # print(' '.join(command_msg))
         self.send_command(' '.join(command_msg), self.addresses[self.which_Arduino],0)
         #self.send_command(self.stop_msg, self.addresses[self.which_Arduino],0)
-        print('+++++')
+        # print('+++++')
 
     def mpc_callback(self,msg):
         print('Planning results are in!')
 
         # record motion planning results
         self.action_sequence = [act for act in msg.actions]
-        COMs = np.array([[com.x,com.y] for com in msg.COMs])
-        PAs = np.array([[pa.x,pa.y] for pa in msg.PAs])
+        self.COMs = np.array([[com.x,com.y] for com in msg.COMs])
+        self.PAs = np.array([[pa.x,pa.y] for pa in msg.PAs])
         endcaps = np.array([[end.x,end.y,end.z] for end in msg.endcaps])
 
         # # ensure we incorporate the results in the next loop iteration
@@ -449,23 +486,27 @@ class TensegrityRobot:
         print('Action Sequence: ',self.action_sequence)
                                 
         if action == 'cw':
-            self.states = self.all_gaits.get('cw')
+            self.next_states = self.all_gaits.get('cw')
             # bottom_nodes = prev_nodes.get(prev_bottom_nodes)
-            bottom_nodes = self.prev_bottom_nodes
+            bottom_nodes = self.bottom3(endcaps)
+            if not bottom_nodes in prev_nodes.keys():
+                bottom_nodes = self.prev_bottom_nodes
             # prev_bottom_nodes = bottom_nodes
             self.prev_bottom_nodes = prev_nodes.get(bottom_nodes)
             print('Bottom Nodes: ',bottom_nodes)
-            self.states = transform_gait(self.states,bottom_nodes)
+            self.next_states = transform_gait(self.next_states,bottom_nodes)
             self.state = 1
             self.prev_gait = 'cw'
 
             self.RANGE024 = 100
             self.RANGE135 = 100
         elif action == 'ccw':
-            self.states = self.all_gaits.get('ccw')
-            bottom_nodes = self.prev_bottom_nodes
+            self.next_states = self.all_gaits.get('ccw')
+            bottom_nodes = self.bottom3(endcaps)
+            if not bottom_nodes in prev_nodes.keys():
+                bottom_nodes = self.prev_bottom_nodes
             print('Bottom Nodes: ','Bottom Nodes: ',bottom_nodes)
-            self.states = transform_gait(states,bottom_nodes)
+            self.next_states = transform_gait(self.next_states,bottom_nodes)
             self.state = 1
             self.prev_gait = 'ccw'
 
@@ -477,28 +518,46 @@ class TensegrityRobot:
             if not self.prev_gait in ['cw','ccw']:
                 for i in range(self.num_motors):
                     self.done[i] = True
-            self.states = self.all_gaits.get('roll')
+            self.next_states = self.all_gaits.get('roll')
             # bottom_nodes = next_nodes.get(prev_bottom_nodes)
-            bottom_nodes = self.prev_bottom_nodes
+            bottom_nodes = self.bottom3(endcaps)
+            if not bottom_nodes in prev_nodes.keys():
+                bottom_nodes = self.prev_bottom_nodes
             # prev_bottom_nodes = bottom_nodes
             self.prev_bottom_nodes = next_nodes.get(bottom_nodes)
             print('Bottom Nodes: ',bottom_nodes)
-            self.states = transform_gait(self.states,bottom_nodes)
+            self.next_states = transform_gait(self.next_states,bottom_nodes)
             if self.reverse_the_gait:
-                self.states = reverse_gait(self.states,bottom_nodes)
+                self.next_states = reverse_gait(self.next_states,bottom_nodes)
             self.state = 1
             self.prev_gait = 'roll'
-            self.ranges = action.split('_')
+            ranges = action.split('_')
             self.RANGE024 = int(ranges[-1])
             self.RANGE135 = int(ranges[-2])
+            if self.RANGE135 >= 130 or self.RANGE024 >= 130:
+                self.tol = 0.35
+            else:
+                self.tol = 0.15
         print('Action: ',action)
 
-        # catch perception error
-        if self.states is None:
-            self.states = np.array([[1]*self.num_motors]*self.num_steps) # recover
+        # # catch perception error
+        # if self.next_states is None:
+        #     self.next_states = np.array([[1]*self.num_motors]*self.num_steps) # recover
+
+    def bottom3(self,nodes):
+        x_sr,y_sr,z_sr = self.nodes2sr(nodes)
+        z_values = np.array([item[1] for item in sorted(z_sr.items())])
+        bottom_nodes = tuple(sorted(np.argpartition(z_values, 3)[:3]))
+        return bottom_nodes
+
+    def nodes2sr(self,nodes):
+        x_sr = {str(key):nodes[key,0] for key in range(number_of_rods*2)}
+        y_sr = {str(key):nodes[key,1] for key in range(number_of_rods*2)}
+        z_sr = {str(key):nodes[key,2] for key in range(number_of_rods*2)}
+        return x_sr,y_sr,z_sr
 
     def on_press(self, key):
-        print('press')
+        # print('press')
         try : 
             # if key == keyboard.KeyCode.from_char('q'):
             #     # self.quitting = True
@@ -602,7 +661,7 @@ class TensegrityRobot:
                 self.send_command(self.stop_msg, self.addresses[i], 0)
                 
     def on_release(self,key):
-        print('release')
+        # print('release')
         if  key == keyboard.KeyCode.from_char('0'):
             self.zero_pressed = False
             for i in range(len(self.addresses)) :
@@ -652,8 +711,8 @@ class TensegrityRobot:
         # send trajectory or other points to be superimposed
         trajectory_x = Float64MultiArray()
         trajectory_y = Float64MultiArray()
-        # trajectory_x.data = self.trajectory[:,0].tolist()
-        # trajectory_y.data = self.trajectory[:,1].tolist()
+        trajectory_x.data = self.trajectory[:,0].tolist()
+        trajectory_y.data = self.trajectory[:,1].tolist()
 
         request = InitTrackerRequest()
         request.rgb_im = rgb_msg
@@ -678,7 +737,7 @@ class TensegrityRobot:
             
     def run(self):
         while not self.quitting :
-            try : 
+            # try : 
                 self.read()
                 # self.sendRosMSG()
                 if(self.keep_going and None not in self.addresses) :
@@ -691,8 +750,8 @@ class TensegrityRobot:
                     self.sendRosMSG()
                     for i in range(self.num_sensors) :
                         print(f"Capacitance {chr(i + 97)}: {self.cap[i]:.2f} \t Length: {self.length[i]:.2f} \n")
-            except :
-                pass
+            # except :
+            #     print("BIG ERROR")
             
         
 if __name__ == '__main__':

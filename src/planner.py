@@ -22,7 +22,8 @@ class MotionPlanner:
 
 		# load state-action transition dictionary
 		package_path = rospkg.RosPack().get_path('tensegrity')
-		filepath = os.path.join(package_path,'calibration/legacy_motion_primitives.pkl')
+		# filepath = os.path.join(package_path,'calibration/legacy_motion_primitives.pkl')
+		filepath = os.path.join(package_path,'calibration/new_platform_transformation_table.pkl')
 		with open(filepath,'rb') as f:
 			self.action_dict = pickle.load(f)
 		# print(self.action_dict)
@@ -61,6 +62,7 @@ class MotionPlanner:
 		self.count = 0
 		self.COMs = []
 		self.endcaps = []
+		self.PAs = []
 
 		# determine if the tracking service is available for feedback
 		# if '/tracking_service' in rosnode.get_node_names():
@@ -85,6 +87,7 @@ class MotionPlanner:
 
 				# add current COM
 				self.COMs = [COM] + [[x,y] for x,y,_ in self.expected_path]
+				self.PAs = [axis] + [[np.cos(theta),np.sin(theta)] for _,_,theta in self.expected_path]
 
 		# publish results
 		action_msg = Action()
@@ -101,6 +104,11 @@ class MotionPlanner:
 			point.y = y
 			point.z = z
 			action_msg.endcaps.append(point)
+		for x,y in self.PAs:
+			point = Point()
+			point.x = x
+			point.y = y
+			action_msg.PAs.append(point)
 		self.pub.publish(action_msg)
 		self.action_sequence.pop(0)
 		self.count += 1
@@ -197,17 +205,17 @@ if __name__ == '__main__':
 	# boundary = (-3, 1, -1.4, 0.2)
 
 	start = (-0.15, 1.1, -np.pi/2)
-	goal = (2, 0.2, -np.pi/2)
+	goal = (1.8, 0.2, -np.pi/2)
 	obstacles = ((0.3,0.2), (0.3,0.6), (1.5, 1.0), (1.5,0.6))
 	boundary = (-1, 3, -0.2, 1.4)
 
 	start = (-0.15, 1.1, -np.pi/2)
-	goal = (2, 0.2, -np.pi/2)
+	goal = (1.6, 0.2, -np.pi/2)
 	obstacles = ((0.5,0), (0.5,0.4), (1.5, 1.0), (1.5,0.6))
 	boundary = (-1, 3, -0.2, 1.4)
 
 
 	rospy.init_node('motion_planner')
-	planner = MotionPlanner(start, goal, boundary, obstacles, heur_type="wave")
+	planner = MotionPlanner(start, goal, boundary, obstacles, heur_type="dist")
 	rate = rospy.Rate(30)
 	planner.run(rate)
