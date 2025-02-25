@@ -39,7 +39,10 @@ class TensegrityRobot:
         self.command = [0] * self.num_motors
         self.speed = [0] * self.num_motors
         self.flip = [1, 1, 1, 1, -1, -1] # flip direction of motors
-        self.acceleration = [0] * 3
+        self.accelerometer = [[0]*3]*3
+        self.gyroscope = [[0]*3]*3
+        self.encoder_counts = [0]*self.num_motors
+        self.encoder_length = [0]*self.num_motors
         self.RANGE = 100
         self.LEFT_RANGE = 100
         self.max_speed = 70
@@ -48,6 +51,9 @@ class TensegrityRobot:
         self.P = 10.0
         self.I = 0.01
         self.D = 0.5
+        self.gear_ratio = 150
+        self.winch_diameter = 6.35
+        self.encoder_resolution = 12
         
         self.num_steps = None
         self.state = None
@@ -112,22 +118,22 @@ class TensegrityRobot:
         # self.states = np.array([[1,1,1,1,1,1],[0.2,1,1,1,1,1],[1,1,1,1,1,1],[1,0.2,1,1,1,1],[1,1,1,1,1,1],[1,1,0.2,1,1,1],[1,1,1,1,1,1],[1,1,1,0.2,1,1],[1,1,1,1,1,1],[1,1,1,1,0.2,1],[1,1,1,1,1,1],[1,1,1,1,1,0.2]])
         # self.states = np.array([[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 1, 0.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],[1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.0, 1.0, 0.1, 0.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],[0.1, 1.0, 1.0, 0.1, 1.0, 1.0],[1.0, 0.0, 1.0, 0.1, 0.0, 1.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]) # quasi-static rolling
 
-        self.states = np.array([[1.0,1.0,1.0,1.0,1.0,1.0],
-                           [0.2,1.0,1.0,1.0,1.0,1.0],
-                           [1.0,1.0,1.0,1.0,1.0,1.0],
-                           [1.0,0.2,1.0,1.0,1.0,1.0],
-                           [1.0,1.0,1.0,1.0,1.0,1.0],
-                           [1.0,1.0,0.2,1.0,1.0,1.0],
-                           [1.0,1.0,1.0,1.0,1.0,1.0],
-                           [1.0,1.0,1.0,0.2,1.0,1.0],
-                           [1.0,1.0,1.0,1.0,1.0,1.0],
-                           [1.0,1.0,1.0,1.0,0.2,1.0],
-                           [1.0,1.0,1.0,1.0,1.0,1.0],
-                           [1.0,1.0,1.0,1.0,1.0,0.2]]) # testing one at a time
+        # self.states = np.array([[1.0,1.0,1.0,1.0,1.0,1.0],
+        #                    [0.2,1.0,1.0,1.0,1.0,1.0],
+        #                    [1.0,1.0,1.0,1.0,1.0,1.0],
+        #                    [1.0,0.2,1.0,1.0,1.0,1.0],
+        #                    [1.0,1.0,1.0,1.0,1.0,1.0],
+        #                    [1.0,1.0,0.2,1.0,1.0,1.0],
+        #                    [1.0,1.0,1.0,1.0,1.0,1.0],
+        #                    [1.0,1.0,1.0,0.2,1.0,1.0],
+        #                    [1.0,1.0,1.0,1.0,1.0,1.0],
+        #                    [1.0,1.0,1.0,1.0,0.2,1.0],
+        #                    [1.0,1.0,1.0,1.0,1.0,1.0],
+        #                    [1.0,1.0,1.0,1.0,1.0,0.2]]) # testing one at a time
 
-        # self.states = np.array([[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 1.0, 0.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
-        #                         [1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.0, 1.0, 0.1, 0.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
-        #                         [0.1, 1.0, 1.0, 0.1, 1.0, 1.0],[1.0, 0.0, 1.0, 0.1, 0.0, 1.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]) # quasi-static rolling with rest states
+        self.states = np.array([[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 1.0, 0.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+                                [1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.0, 1.0, 0.1, 0.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+                                [0.1, 1.0, 1.0, 0.1, 1.0, 1.0],[1.0, 0.0, 1.0, 0.1, 0.0, 1.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]) # quasi-static rolling with rest states
         # self.states = np.array([[0, 0, 0, 1, 0, 1], [0, 0, 0, 0, 0, 1], [0, 0, 0.7, 0, 1.2, 1], [1, 1, 1, 1, 1, 1], [0, 0, 0, 1, 1, 0], [0, 0, 0, 1, 0, 0], [0.7, 0, 0, 1, 0, 1.2], [1, 1, 1, 1, 1, 1], [0, 0, 0, 0, 1, 1], [0, 0, 0, 0, 1, 0], [0, 0.7, 0, 1.2, 1, 0], [1, 1, 1, 1, 1, 1]]) # cw
         # self.states = np.array([[1, 1, 1, 0, 1, 1], [1, 0, 1, 0, 1, 1], [0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]]) # ccw
 
@@ -229,6 +235,8 @@ class TensegrityRobot:
            motor.speed = self.command[motor_id] * self.max_speed #abs(command[motor_id]) * max_speed
            # motor.direction = command[motor_id] > 0
            motor.done = self.done[motor_id]
+           motor.encoder_counts = int(self.encoder_counts[motor_id])
+           motor.encoder_length = self.encoder_length[motor_id]
            control_msg.motors.append(motor)
         # sensors
         for sensor_id in range(self.num_sensors):
@@ -250,6 +258,15 @@ class TensegrityRobot:
         #        IMU.y = self.imu[imu_id][1]
         #        IMU.z = self.imu[imu_id][2]
         #    imu_msg.imus.append(IMU)
+        for rod in range(3):
+            IMU = Imu()
+            IMU.ax = self.accelerometer[rod][0]
+            IMU.ay = self.accelerometer[rod][1]
+            IMU.az = self.accelerometer[rod][2]
+            IMU.gx = self.gyroscope[rod][0]
+            IMU.gy = self.gyroscope[rod][1]
+            IMU.gz = self.gyroscope[rod][2]
+            control_msg.imus.append(IMU)
         # publish
         self.control_pub.publish(control_msg)
         # strain_pub.publish(strain_msg)
@@ -278,23 +295,31 @@ class TensegrityRobot:
             The first IMU is on the blue bar and points from node 5 to node 4
             The second IMU is on the red bar and points from node 1 to node 0
             """
-            if(len(sensor_array) == 8) : #Number of data send space
+            if(len(sensor_array) == 13) : #Number of data send space
                 self.which_Arduino = int(sensor_array[0])
                 if(sensor_array[5] == 0.2 or sensor_array[6] == 0.2 or sensor_array[7] == 0.2 ) :
                     print('MPR121 or I2C of Arduino '+str(self.which_Arduino)+' wrongly initialized, please reboot Arduino')
 
                 if(int(sensor_array[0]) == 0) :
-                    self.cap[4] = sensor_array[5]
-                    self.cap[2] = sensor_array[6] 
-                    self.cap[8] = sensor_array[7]
+                    self.cap[4] = sensor_array[1]
+                    self.cap[2] = sensor_array[2]
+                    self.cap[8] = sensor_array[3]
+                    self.encoder_counts[4] = sensor_array[6]
+                    self.encoder_counts[2] = sensor_array[5]
                 if(int(sensor_array[0]) == 1) :
-                    self.cap[3] = sensor_array[5]
-                    self.cap[1] = sensor_array[6] 
-                    self.cap[7] = sensor_array[7]
+                    self.cap[3] = sensor_array[1]
+                    self.cap[1] = sensor_array[2] 
+                    self.cap[7] = sensor_array[3]
+                    self.encoder_counts[3] = sensor_array[6]
+                    self.encoder_counts[1] = sensor_array[5]
                 if(int(sensor_array[0]) == 2) :
-                    self.cap[5] = sensor_array[5]
-                    self.cap[0] = sensor_array[6] 
-                    self.cap[6] = sensor_array[7]
+                    self.cap[5] = sensor_array[1]
+                    self.cap[0] = sensor_array[2] 
+                    self.cap[6] = sensor_array[3]
+                    self.encoder_counts[5] = sensor_array[6]
+                    self.encoder_counts[0] = sensor_array[5]
+
+                self.encoder_length = [counts/self.encoder_resolution/self.gear_ratio*np.pi*self.winch_diameter for counts in self.encoder_counts]
                 
                 #add control code here
                 if not 0.2 in self.cap: #Default capacitance value of MPR121
@@ -306,15 +331,21 @@ class TensegrityRobot:
                             self.pos[i] = (self.length[i] - self.min_length) / self.LEFT_RANGE# calculate the current position of the motor
                         else:
                             self.pos[i] = (self.length[i] - self.min_length) / self.RANGE# calculate the current position of the motor   
-                #read imu data
-                if(sensor_array[0] == 0) :
-                    self.imu[1] = self.quat2vec(sensor_array[1:5])
+                # #read imu data
+                # if(sensor_array[0] == 0) :
+                #     self.imu[1] = self.quat2vec(sensor_array[1:5])
 
-                if(sensor_array[0] == 2) :
-                    self.imu[0] = self.quat2vec(sensor_array[1:5])
+                # if(sensor_array[0] == 2) :
+                #     self.imu[0] = self.quat2vec(sensor_array[1:5])
 
                 #if(sensor_array[0] == 3) : If 3 IMU's used
                 #   self.imu[3] = self.quat2vec(sensor_array[1:5])
+                self.accelerometer[self.which_Arduino][0] = sensor_array[7] # ax
+                self.accelerometer[self.which_Arduino][1] = sensor_array[8] # ay
+                self.accelerometer[self.which_Arduino][2] = sensor_array[9] # az
+                self.gyroscope[self.which_Arduino][0] = sensor_array[10]    # gx
+                self.gyroscope[self.which_Arduino][1] = sensor_array[11]    # gy
+                self.gyroscope[self.which_Arduino][2] = sensor_array[12]    # gz
 
             else:
                 if (None in self.addresses) :

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import sys
 import time
 import math
 from math import cos, sin
@@ -37,7 +38,10 @@ class TensegrityRobot:
         self.command = [0] * self.num_motors
         self.speed = [0] * self.num_motors
         self.flip = [1, 1, -1, 1, -1, -1] # flip direction of motors
-        self.acceleration = [0] * 3
+        self.accelerometer = [[0]*3]*3
+        self.gyroscope = [[0]*3]*3
+        self.encoder_counts = [0]*self.num_motors
+        self.encoder_length = [0]*self.num_motors
         self.RANGE = 100
         self.LEFT_RANGE = 100
         self.max_speed = 80
@@ -46,6 +50,9 @@ class TensegrityRobot:
         self.P = 6.0
         self.I = 0.01
         self.D = 0.5
+        self.gear_ratio = 150
+        self.winch_diameter = 6.35
+        self.encoder_resolution = 12
         
         self.num_steps = None
         self.state = None
@@ -198,6 +205,8 @@ class TensegrityRobot:
            motor.speed = self.command[motor_id] * self.max_speed #abs(command[motor_id]) * max_speed
            # motor.direction = command[motor_id] > 0
            motor.done = self.done[motor_id]
+           motor.encoder_counts = int(self.encoder_counts[motor_id])
+           motor.encoder_length = self.encoder_length[motor_id]
            control_msg.motors.append(motor)
         # sensors
         for sensor_id in range(self.num_sensors):
@@ -219,6 +228,15 @@ class TensegrityRobot:
         #        IMU.y = self.imu[imu_id][1]
         #        IMU.z = self.imu[imu_id][2]
         #    imu_msg.imus.append(IMU)
+        for rod in range(3):
+            IMU = Imu()
+            IMU.ax = self.accelerometer[rod][0]
+            IMU.ay = self.accelerometer[rod][1]
+            IMU.az = self.accelerometer[rod][2]
+            IMU.gx = self.gyroscope[rod][0]
+            IMU.gy = self.gyroscope[rod][1]
+            IMU.gz = self.gyroscope[rod][2]
+            control_msg.imus.append(IMU)
         # publish
         self.control_pub.publish(control_msg)
         # strain_pub.publish(strain_msg)
@@ -228,16 +246,16 @@ class TensegrityRobot:
         data, addr = self.sock_receive.recvfrom(255)  # Receive data (up to 255 bytes)
         # Decode the data (assuming it's sent as a string)
         received_data = data.decode('utf-8')
-        # print(received_data)
+        print('Received Data: ',received_data)
         try :
-            # Received data in the form "N_Arduino q0 q1 q2 q3 C0 C1 C2" where N_Arduino indicates the number of the Arduino of the received data
+            # Received data in the form "N_Arduino C0 C1 C2 C3 e0 e1 ax ay az gx gy gz" where N_Arduino indicates the number of the Arduino of the received data
             sensor_values = received_data.split()
             # Convert the string values to actual float values and store them in an array
             sensor_array = [float(value) for value in sensor_values]
             # print(sensor_array)
             if(addr not in self.addresses) :
                 self.addresses[int(sensor_array[0])] = addr
-            # print(sensor_array)
+            print('Sensor Array: ',sensor_array)
             """
             Following code of function read(self) configurated for a 3 bar tensegrity with following sensors
             Rod 0 (red) has sensors C, E, and I (2, 4, and 8) and motors 2 and 4
@@ -247,23 +265,31 @@ class TensegrityRobot:
             The first IMU is on the blue bar and points from node 5 to node 4
             The second IMU is on the red bar and points from node 1 to node 0
             """
-            if(len(sensor_array) == 8) : #Number of data send space
+            if(len(sensor_array) == 13) : #Number of data send space
                 self.which_Arduino = int(sensor_array[0])
                 if(sensor_array[5] == 0.2 or sensor_array[6] == 0.2 or sensor_array[7] == 0.2 ):
                     print('MPR121 or I2C of Arduino '+str(int(sensor_array[0]))+' wrongly initialized, please reboot Arduino')
 
                 if(int(sensor_array[0]) == 0) :
-                    self.cap[4] = sensor_array[5]
-                    self.cap[2] = sensor_array[6] 
-                    self.cap[8] = sensor_array[7]
+                    self.cap[4] = sensor_array[1]
+                    self.cap[2] = sensor_array[2]
+                    self.cap[8] = sensor_array[3]
+                    self.encoder_counts[4] = sensor_array[6]
+                    self.encoder_counts[2] = sensor_array[5]
                 if(int(sensor_array[0]) == 1) :
-                    self.cap[3] = sensor_array[5]
-                    self.cap[1] = sensor_array[6] 
-                    self.cap[7] = sensor_array[7]
+                    self.cap[3] = sensor_array[1]
+                    self.cap[1] = sensor_array[2] 
+                    self.cap[7] = sensor_array[3]
+                    self.encoder_counts[3] = sensor_array[6]
+                    self.encoder_counts[1] = sensor_array[5]
                 if(int(sensor_array[0]) == 2) :
-                    self.cap[5] = sensor_array[5]
-                    self.cap[0] = sensor_array[6] 
-                    self.cap[6] = sensor_array[7]
+                    self.cap[5] = sensor_array[1]
+                    self.cap[0] = sensor_array[2] 
+                    self.cap[6] = sensor_array[3]
+                    self.encoder_counts[5] = sensor_array[6]
+                    self.encoder_counts[0] = sensor_array[5]
+
+                self.encoder_length = [counts/self.encoder_resolution/self.gear_ratio*np.pi*self.winch_diameter for counts in self.encoder_counts]
                 
                 #add control code here
                 if not 0.2 in self.cap: #Default capacitance value of MPR121
@@ -276,14 +302,21 @@ class TensegrityRobot:
                         else:
                             self.pos[i] = (self.length[i] - self.min_length) / self.RANGE# calculate the current position of the motor   
                 #read imu data
-                if(sensor_array[0] == 0) :
-                    self.imu[1] = self.quat2vec(sensor_array[1:5])
+                # if(sensor_array[0] == 0) :
+                #     self.imu[1] = self.quat2vec(sensor_array[1:5])
 
-                if(sensor_array[0] == 2) :
-                    self.imu[0] = self.quat2vec(sensor_array[1:5])
+                # if(sensor_array[0] == 2) :
+                #     self.imu[0] = self.quat2vec(sensor_array[1:5])
 
                 #if(sensor_array[0] == 3) : If 3 IMU's used
                 #   self.imu[3] = self.quat2vec(sensor_array[1:5])
+                self.accelerometer[self.which_Arduino][0] = sensor_array[7] # ax
+                self.accelerometer[self.which_Arduino][1] = sensor_array[8] # ay
+                self.accelerometer[self.which_Arduino][2] = sensor_array[9] # az
+                self.gyroscope[self.which_Arduino][0] = sensor_array[10]    # gx
+                self.gyroscope[self.which_Arduino][1] = sensor_array[11]    # gy
+                self.gyroscope[self.which_Arduino][2] = sensor_array[12]    # gz
+
 
             else:
                 if (None in self.addresses) :
@@ -298,8 +331,10 @@ class TensegrityRobot:
                     for i in range(len(self.addresses)) :
                         self.send_command(self.stop_msg, self.addresses[i],0)
                 
-        except :
-            print('There has been an error')
+        except Exception as this_error:
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            print('There has been an error: ',this_error)
+            print('Line number: ',exc_traceback.tb_lineno)
             print('Received data:', received_data)
 
     def on_press(self, key):
@@ -429,8 +464,10 @@ class TensegrityRobot:
                     for i in range(self.num_sensors) :
                         print(f"Capacitance {chr(i + 97)}: {self.cap[i]:.2f} \t Length: {self.length[i]:.2f} \n")
                     print('=================')
-            except :
-                pass
+            except Exception as this_error:
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                print('There has been an error: ',this_error)
+                print('Line number: ',exc_traceback.tb_lineno)
             
         
 if __name__ == '__main__':
