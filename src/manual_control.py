@@ -84,9 +84,9 @@ class TensegrityRobot:
             The first IMU is on the blue bar and points from node 5 to node 4
             The second IMU is on the red bar and points from node 1 to node 0
             """
-            if(len(sensor_array) == 8) : #Number of data send space
+            if(len(sensor_array) == 13) : #Number of data send space
                 self.which_Arduino = int(sensor_array[0])
-                if(sensor_array[5] == 0.2 or sensor_array[6] == 0.2 or sensor_array[7] == 0.2 ) :
+                if(sensor_array[1] == 0.2 or sensor_array[2] == 0.2 or sensor_array[3] == 0.2 ) :
                     print('MPR121 or I2C of Arduino '+str(self.which_Arduino)+' wrongly initialized, please reboot Arduino')
 
             else:

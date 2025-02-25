@@ -329,7 +329,7 @@ class TensegrityRobot:
         """
         if(len(sensor_array) == 13) : #Number of data send space
             self.which_Arduino = int(sensor_array[0])
-            if(sensor_array[5] == 0.2 or sensor_array[6] == 0.2 or sensor_array[7] == 0.2 ) :
+            if(sensor_array[1] == 0.2 or sensor_array[2] == 0.2 or sensor_array[3] == 0.2 ) :
                 print('MPR121 or I2C of Arduino '+str(self.which_Arduino)+' wrongly initialized, please reboot Arduino')
 
             if(int(sensor_array[0]) == 0) :
