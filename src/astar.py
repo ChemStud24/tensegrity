@@ -16,8 +16,11 @@ def angle_norm(x):
 
 def heuristic(a, b, obstacles, heur_type, grid_step, k=0,grid = []):
     if heur_type == "wave":
-        return grid[snap_to_grid(a[:2],grid_step)]
-    #wave_heuristic(a, b, obstacles=obstacles, grid_step=grid_step)
+        approx = snap_to_grid(a[:2],grid_step)
+        if approx in grid:
+            return grid[approx]
+        else:
+            return np.inf
     else:
         return dist_heuristic(a, b, obstacles, k)
 
@@ -29,7 +32,7 @@ def heuristic(a, b, obstacles, heur_type, grid_step, k=0,grid = []):
 def astar(start, goal, gaits, obstacles=(),tolerance = 0.1, rot_tol = np.pi/4, repeat_tol = 0.07, single_push = False, stochastic = True,\
           heur_type = "dist", boundary = (-1,1,-1,1), obstacle_dims=(0.4,0.27), grid_step = 0.01):
     if heur_type == "wave":
-        h = fill_grid(goal[:2], boundary, grid_step)
+        h = fill_grid(goal[:2], boundary, grid_step, obstacles=obstacles, obstacle_size=obstacle_dims)
     else:
         h = {}
     # Initialize open and closed lists
@@ -41,23 +44,19 @@ def astar(start, goal, gaits, obstacles=(),tolerance = 0.1, rot_tol = np.pi/4, r
     closed_list = [] #only used to check if already visited using kd tree
 
     while open_list:
-        # print(open_list)
         # Get the node with the lowest f_score value
         node = heapq.heappop(open_list)
         current = node[1]
 
         if coll_det(current, obstacles, boundary=boundary, obstacle_dims=obstacle_dims) or (len(closed_list)>0 and is_point_within_distance(current[:2], closed_list, repeat_tol)):
-                # print("Too close", neighbor)
                 closed_list.append(current[:2])
                 continue
 
-        # print(str(current), str(g_score[current]), str(heuristic(current[:2], goal, obstacles, heur_type)), str(f_score[current]))
         if not single_push:
             closed_list.append(current[:2])
 
         # If the goal is reached, reconstruct and return the path
         if l2_dist(current[:2], goal[:2])<= tolerance and min(abs(angle_norm(current[2]) - goal[2]), np.pi - abs(angle_norm(current[2]) - goal[2])) <= rot_tol :
-            # print(current)
             path = []
             movements = []
             while current in came_from:
