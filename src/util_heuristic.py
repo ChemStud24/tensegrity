@@ -85,89 +85,6 @@ def coll_det(point, obstacles, robot_dims=(0.33, 0.15), obstacle_dims=(0.35,0.35
     
     return False
 
-# def make_robot_polygon(x, y, theta, robot_dims):
-#     """
-#     Create a Shapely Polygon for the robot.
-
-#     Parameters
-#     ----------
-#     x, y : float
-#         Center of the robot.
-#     theta : float
-#         Heading of the robot in radians.
-#     robot_dims : (float, float)
-#         (length, width) of the robot.
-#     """
-#     length, width = robot_dims
-    
-#     # Half dimensions
-#     half_l = length / 2.0
-#     half_w = width  / 2.0
-    
-#     # Define corners in local coordinates (centered at origin)
-#     # Bottom-left, bottom-right, top-right, top-left
-#     local_corners = [
-#         (-half_l, -half_w),
-#         ( half_l, -half_w),
-#         ( half_l,  half_w),
-#         (-half_l,  half_w)
-#     ]
-    
-#     # Rotate and translate corners to global coordinates
-#     global_corners = []
-#     for (cx, cy) in local_corners:
-#         # Rotate by theta
-#         rx =  cx * np.cos(theta) - cy * np.sin(theta)
-#         ry =  cx * np.sin(theta) + cy * np.cos(theta)
-#         # Translate by (x, y)
-#         gx, gy = (x + rx, y + ry)
-#         global_corners.append((gx, gy))
-    
-#     # Create and return a Shapely polygon
-#     return Polygon(global_corners)
-
-
-# def coll_det(point, obstacles, robot_dims=(0.33, 0.15), obstacle_dims=(0.4, 0.27), boundary = (-1.0, 1.0, -1.0, 4.0)):
-#     """
-#     Check if the oriented rectangular robot collides with any axis-aligned rectangular obstacles.
-
-#     Parameters
-#     ----------
-#     x, y : float
-#         Center of the robot.
-#     theta : float
-#         Heading of the robot in radians.
-#     robot_dims : (float, float)
-#         (length, width) of the robot.
-#     obstacles : list of (float, float)
-#         List of (x, y) centers of obstacles.
-#     obstacle_dims : (float, float)
-#         (length, width) of each obstacle.
-
-#     Returns
-#     -------
-#     bool
-#         True if there is any collision; False otherwise.
-#     """
-#     x,y,theta = point
-#     # Create the robot polygon
-#     robot_poly = make_robot_polygon(x, y, theta, robot_dims)
-    
-#     # For each obstacle
-#     for (ox, oy) in obstacles:
-#         # Create an axis-aligned box for the obstacle
-#         obs_length, obs_width = obstacle_dims
-#         obs_box = box(ox - obs_length/2, 
-#                       oy - obs_width/2,
-#                       ox + obs_length/2, 
-#                       oy + obs_width/2)
-        
-#         # Check collision
-#         if robot_poly.intersects(obs_box):
-#             return True  # Collision found
-    
-#     return False  # No collision found
-
 def l2_dist(a,b):
     return np.sqrt(sum((x - y) ** 2 for x, y in zip(a, b)))
 
@@ -267,19 +184,12 @@ def wave_heuristic(start, goal, grid_step=0.1, obstacles=[]):
     heapq.heappush(open_list, (f_score[start], start))
     closed_list = set() #only used to check if already visited using kd tree
 
-    # best = f_score[start]
 
     while open_list:
-        # print(open_list)
         # Get the node with the lowest f_score value
         node = heapq.heappop(open_list)
-        # print(node[0])
         current = node[1]
-
         closed_list.add(current)
-        # if f_score[current] < best:
-        #     print(f_score[current])
-        # print(closed_list)
 
         if simple_collision(current, obstacles):
                 continue
@@ -287,26 +197,7 @@ def wave_heuristic(start, goal, grid_step=0.1, obstacles=[]):
         
         # If the goal is reached, reconstruct and return the path
         if current==goal:
-            # print(g_score[current])
             return g_score[current]
-            # # print(current)
-            # path = []
-            # # movements = []
-            # cath_cost
-            # while current in came_from:
-            #     prev = came_from[current][0]
-            #     move = came_from[current][1]
-            #     path.append(current)
-            #     movements.append(move)
-            #     current = prev
-            # path.append(start)
-            # return path[::-1], movements[::-1], gaits
-
-            # while current in came_from:
-            #     path.append(current)
-            #     current = came_from[current][0]
-            # path.append(start)
-            # return path[::-1], gaits
 
         for k in range(len(gaits)):
             gait_num = gaits[k]
