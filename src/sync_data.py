@@ -85,6 +85,10 @@ class SyncDataWriter:
         for imu in control_msg.imus:
             # data['imu'][imu.id] = {'ax':imu.ax,'ay':imu.ay,'az':imu.az,'gx':imu.gx,'gy':imu.gy,'gz':imu.gz,'mx':imu.mx,'my':imu.my,'mz':imu.mz}
             data['imu'][imu.id] = {'acceleromter':{'x':imu.ax,'y':imu.ay,'z':imu.az},'gyroscope':{'x':imu.gx,'y':imu.gy,'z':imu.gz}}#{'x':imu.x,'y':imu.y,'z':imu.z}#,'q1':imu.q1,'q2':imu.q2,'q3':imu.q3,'q4':imu.q4}#,'yaw':imu_msg.yaw, 'pitch':imu_msg.pitch,'roll':imu_msg.roll}
+        data['trajectory'] = {i:{'x':point.x,'y':point.y} for i,point in enumerate(control_msg.trajectory.trajectory)}
+        data['COM'] = {i:{'x':point.x,'y':point.y} for i,point in enumerate(control_msg.trajectory.COMs)}
+        data['PA'] = {i:{'x':point.x,'y':point.y} for i,point in enumerate(control_msg.trajectory.PAs)}
+        data['action'] = {str(i):act for i,act in enumerate(control_msg.actions)}
         # data['mocap'] = {}
         # for marker in mocap_msg.markers:
         #     if marker.cond == -1:

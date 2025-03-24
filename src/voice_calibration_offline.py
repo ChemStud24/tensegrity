@@ -9,8 +9,8 @@ from pynput import keyboard
 from tensegrity.msg import TensegrityStamped
 import pyttsx3
 
-short_lengths = range(180,80,-20)
-# short_lengths = range(220,70,-30)
+# short_lengths = range(180,80,-20)
+short_lengths = range(220,70,-30)
 long_lengths = range(250,350,20)
 
 def speak(text,engine):

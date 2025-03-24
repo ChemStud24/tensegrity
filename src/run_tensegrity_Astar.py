@@ -45,7 +45,7 @@ class TensegrityRobot:
         self.d_error = [0] * self.num_motors
         self.command = [0] * self.num_motors
         self.speed = [0] * self.num_motors
-        self.flip = [1, 1, 1, 1, -1, -1] # flip direction of motors
+        self.flip = [1, -1, -1, -1, -1, -1] # flip direction of motors
         self.accelerometer = [[0]*3]*3
         self.gyroscope = [[0]*3]*3
         self.encoder_counts = [0]*self.num_motors
@@ -162,7 +162,8 @@ class TensegrityRobot:
         self.init_speed = 70
 
         # gaits
-        roll = np.array([[1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 1.0, 0.1]])
+        # roll = np.array([[1,1,1,1,1,1],[1,1,1,1,1,1],[1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 1.0, 0.1]])
+        roll = np.array([[1,1,1,1,1,1],[1,1,1,1,1,1],[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 1.0, 0.1]])
         cw = np.array([[1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1], [0, 0, 0, 1, 0, 1], [0, 0, 0, 0, 0, 0.7], [0, 0, 0.7, 0, 1, 1]])
         ccw = np.array([[1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1], [1, 1, 1, 0, 1, 1], [1, 0, 1, 0, 1, 1], [0, 0, 0, 0, 0, 0]])
         self.all_gaits = {'roll':roll,'ccw':ccw,'cw':cw}
@@ -576,10 +577,13 @@ class TensegrityRobot:
         #     self.next_states = np.array([[1]*self.num_motors]*self.num_steps) # recover
 
     def bottom3(self,nodes):
-        x_sr,y_sr,z_sr = self.nodes2sr(nodes)
-        z_values = np.array([item[1] for item in sorted(z_sr.items())])
-        bottom_nodes = tuple(sorted(np.argpartition(z_values, 3)[:3]))
-        return bottom_nodes
+        try:
+            x_sr,y_sr,z_sr = self.nodes2sr(nodes)
+            z_values = np.array([item[1] for item in sorted(z_sr.items())])
+            bottom_nodes = tuple(sorted(np.argpartition(z_values, 3)[:3]))
+            return bottom_nodes
+        except:
+            return None
 
     def nodes2sr(self,nodes):
         x_sr = {str(key):nodes[key,0] for key in range(number_of_rods*2)}

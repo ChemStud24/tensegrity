@@ -35,6 +35,7 @@ from plotting_utils import plot_MPC_prediction
 from symmetry_reduction_utils import *
 from Tensegrity_model_inputs import *
 from points_superimposed import make_circle, make_square
+from points_superimposed import obstacle_trajectory
 from math import ceil, sqrt
 
 def best_k_actions(state,action_dict,COM,principal_axis,trajectory,k=1):
@@ -711,7 +712,8 @@ def tensegrity_run(device_name):
                         full_trajectory = np.vstack((arr for arr in trajectory_sequence))
                     else:
                         full_trajectory = trajectory
-                    init_tracker(rgb_msg,depth_msg,length,full_trajectory)
+                    # init_tracker(rgb_msg,depth_msg,length,full_trajectory)
+                    init_tracker(rgb_msg,depth_msg,length,obstacle_trajectory)
                     is_tracker_initialized = True
                     max_speed = 99#0
             else:
@@ -1040,7 +1042,7 @@ if __name__ == '__main__':
     d_error = [0] * num_motors
     command = [0] * num_motors
     # beta flip
-    flip = [-1,1,-1,1,-1,-1]
+    flip = [-1,-1,-1,1,-1,-1]
     acceleration = [0]*3
     orientation = [0]*3
     endcaps = np.zeros((6,3))

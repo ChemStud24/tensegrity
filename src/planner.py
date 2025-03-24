@@ -204,16 +204,39 @@ if __name__ == '__main__':
 	# obstacles = ((-0.3,-0.2), (-0.3,-0.6), (-1.5, -1.0), (-1.5,-0.6))
 	# boundary = (-3, 1, -1.4, 0.2)
 
-	start = (-0.15, 1.1, -np.pi/2)
-	goal = (1.8, 0.2, -np.pi/2)
-	obstacles = ((0.3,0.2), (0.3,0.6), (1.5, 1.0), (1.5,0.6))
-	boundary = (-1, 3, -0.2, 1.4)
+	# start = (-0.15, 1.1, -np.pi/2)
+	# goal = (1.8, 0.2, -np.pi/2)
+	# obstacles = ((0.3,0.2), (0.3,0.6), (1.5, 1.0), (1.5,0.6))
+	# boundary = (-1, 3, -0.2, 1.4)
 
-	start = (-0.15, 1.1, -np.pi/2)
-	goal = (1.6, 0.2, -np.pi/2)
-	obstacles = ((0.5,0), (0.5,0.4), (1.5, 1.0), (1.5,0.6))
-	boundary = (-1, 3, -0.2, 1.4)
+	# start = (-0.15, 1.1, -np.pi/2)
+	# goal = (1.6, 0.2, -np.pi/2)
+	# obstacles = ((0.5,0), (0.5,0.4), (1.5, 1.0), (1.5,0.6))
+	# boundary = (-1, 3, -0.2, 1.4)
 
+	# meteroid
+	# start = (-0.1,0.8,-np.pi/2)
+	# goal = (2,0.8,-np.pi/2)
+	# obstacles = ((0.4,0.2),(0.9,0.1),(0.6,1.2),(1.4,0.6))
+	# boundary = (-1, 3, -0.2, 1.4)
+
+	# funnel
+	# start = (-0.1,0.6,-np.pi/2)
+	# goal = (2,0.6,-np.pi/2)
+	# obstacles = ((0.9,0),(1.4,0.3),(0.9,1.2),(1.4,0.9))
+	# boundary = (-1, 3, -0.2, 1.4)
+
+	# dead end
+	# start = (-0.1,0.8,-np.pi/2)
+	# goal = (1.8,0.5,-np.pi/2)
+	# obstacles = ((0.9,0.5),(1.2,0.5),(0.9,1.1),(1.2,1.1),(1.3,0.8))
+	# boundary = (-1, 3, -0.2, 1.4)
+
+	# outside
+	start = (0.5,1.2,-np.pi/2)
+	goal = (1.7,0.4,np.pi)
+	obstacles = ((1,0.5),(1,0.3),(1,0.1),(1,-0.1),(1,-0.3))
+	boundary = (-1, 3, -0.2, 1.4)
 
 	rospy.init_node('motion_planner')
 	planner = MotionPlanner(start, goal, boundary, obstacles, heur_type="dist")
