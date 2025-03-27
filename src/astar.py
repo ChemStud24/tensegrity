@@ -22,7 +22,7 @@ def heuristic(a, b, obstacles, heur_type, grid_step, k=0,grid = []):
         else:
             return np.inf
     else:
-        return dist_heuristic(a, b, obstacles, k)
+        return dist_heuristic(a[:2], b[:2], obstacles, k)
 
 
 
