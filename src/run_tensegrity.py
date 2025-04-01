@@ -90,6 +90,7 @@ class TensegrityRobot:
     def initialize(self):
 
         self.my_listener = keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
+        self.my_listener.daemon = True
         self.my_listener.start()
         
         rospy.init_node('tensegrity')
