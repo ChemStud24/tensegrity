@@ -20,7 +20,8 @@ for df in datafiles:
 	data = json.load(open(os.path.join(data_dir,df),'r'))
 	targets = [data.get('motors').get(str(i)).get('target') for i in range(6)]
 	endcaps = np.array([[data.get('endcaps').get(key).get(k) for k in sorted(data.get('endcaps').get(key).keys())] for key in sorted(data.get('endcaps').keys())])
-	print('End Caps: ',endcaps)
+	endcaps = endcaps.flatten()
+	# print('End Caps: ',endcaps)
 	action = CTRL.get_action(endcaps)
 	print('===============')
 	print(df)
