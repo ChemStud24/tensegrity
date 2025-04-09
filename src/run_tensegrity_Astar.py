@@ -15,11 +15,8 @@ import socket
 from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import Image
 from tensegrity_perception.srv import InitTracker, InitTrackerRequest, InitTrackerResponse
-#from tensegrity.msg import Motor, Info, MotorsStamped, Sensor, SensorsStamped, Imu, ImuStamped
-from tensegrity.msg import Motor, Info, Sensor, Imu, TensegrityStamped, State, Action, Trajectory
+from tensegrity.msg import Motor, Info, Sensor, Imu, TensegrityStamped, State, Action
 from geometry_msgs.msg import Point
-from symmetry_reduction_utils import *
-from points_superimposed import obstacle_trajectory
 from Tensegrity_model_inputs import *
 
 
@@ -91,14 +88,6 @@ class TensegrityRobot:
         self.addresses = [None] * self.num_arduino
         self.offset = None # Nb of leading end ending 0 preventing errors 
 
-        #keyboard variables
-        # self.zero_pressed = False
-        # self.one_pressed = False
-        # self.two_pressed = False
-        # self.three_pressed = False
-        # self.four_pressed = False
-        # self.five_pressed = False
-
         print("Initializing")
         self.initialize()
         print("Running UDP connection with Arduino's: ")
@@ -135,9 +124,6 @@ class TensegrityRobot:
 
         package_path = rospkg.RosPack().get_path('tensegrity')
         calibration_file = os.path.join(package_path,'calibration/new_calibration.json')
-        
-        #self.m = np.array([0.04437, 0.06207, 0.02356, 0.04440, 0.04681, 0.05381, 0.02841, 0.03599, 0.03844])
-        #self.b = np.array([15.763, 13.524, 15.708, 10.084, 15.628, 15.208, 16.356, 12.575, 13.506])
         
         self.m, self.b = self.read_calibration_file(calibration_file)
         
@@ -226,13 +212,9 @@ class TensegrityRobot:
     def sendRosMSG(self):
         # send ROS messages
         control_msg = TensegrityStamped()
-        # strain_msg = SensorsStamped()
-        # imu_msg = ImuStamped()
         # get timestamp
         timestamp = rospy.Time.now()
         control_msg.header.stamp = timestamp
-        # strain_msg.header.stamp = timestamp
-        # imu_msg.header.stamp = timestamp
         # gait info
         info = Info()
         info.min_length = self.min_length
@@ -241,7 +223,7 @@ class TensegrityRobot:
         # info.LEFT_RANGE = self.LEFT_RANGE
         info.max_speed = self.max_speed
         info.tol = self.tol
-        # info.low_tol = self.low_tol
+        info.low_tol = self.low_tol
         info.P = self.P
         info.I = self.I
         info.D = self.D
