@@ -126,8 +126,9 @@ def read(serial_port):
                     #     command[i] = 0
 
                     # update STATES based on RL policy
-                    _,_,endcaps = get_pose()
-                    states = np.array([policy.get_action(encaps,pos)])
+                    if is_tracker_initialized:
+                        _,_,endcaps = get_pose()
+                        states = np.array([policy.get_action(endcaps,pos)])
 
                     # else:
                     #     done[i] = False
@@ -394,17 +395,17 @@ def init_tracker(rgb_msg, depth_msg, cable_lengths,trajectory):
     # cable_length_msg.data = cable_lengths.tolist()
     cable_length_msg.data = cable_lengths
 
-    trajectory_x = Float64MultiArray()
-    trajectory_y = Float64MultiArray()
-    trajectory_x.data = trajectory[:,0].tolist()
-    trajectory_y.data = trajectory[:,1].tolist()
+    # trajectory_x = Float64MultiArray()
+    # trajectory_y = Float64MultiArray()
+    # trajectory_x.data = trajectory[:,0].tolist()
+    # trajectory_y.data = trajectory[:,1].tolist()
 
     request = InitTrackerRequest()
     request.rgb_im = rgb_msg
     request.depth_im = depth_msg
     request.cable_lengths = cable_length_msg
-    request.trajectory_x = trajectory_x
-    request.trajectory_y = trajectory_y
+    # request.trajectory_x = trajectory_x
+    # request.trajectory_y = trajectory_y
 
     service_name = "init_tracker"
     rospy.loginfo(f"Waiting for {service_name} service...")
@@ -471,9 +472,9 @@ def onpress(key):
     global max_speed
     global RANGE
     global LEFT_RANGE
-    if key == keyboard.KeyCode.from_char('q'):
-        keep_going = False
-    elif key == keyboard.KeyCode.from_char('s'):
+    # if key == keyboard.KeyCode.from_char('q'):
+    #     keep_going = False
+    if key == keyboard.KeyCode.from_char('s'):
         keep_going = False
     elif key == keyboard.KeyCode.from_char('r'):
         states = np.array([[1.0]*num_motors]*num_steps)
@@ -549,7 +550,7 @@ if __name__ == '__main__':
     m,b = read_calibration_file(calibration_file)
 
 
-    max_speed = 99# set duty cycle as 99 for the max speed, resolution can be improved by changing the bits in C++ code 
+    max_speed = 0# set duty cycle as 99 for the max speed, resolution can be improved by changing the bits in C++ code 
     num_sensors = 9# set number of strain sensors
     num_motors = 6# set number of motors
     num_imus = 2#set number of inertial measurement units
