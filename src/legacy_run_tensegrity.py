@@ -483,7 +483,7 @@ if __name__ == '__main__':
     # beta flip
     # flip = [-1,-1,-1,1,-1,-1]
     # flip = [-1,-1,1,-1,-1,1]
-    flip = [-1,-1,-1,1,-1,-1]
+    flip = [-1,1,-1,1,1,-1]
     acceleration = [0]*3
     orientation = [0]*3
     RANGE = 100#160#90#160 #mm #90

@@ -366,7 +366,7 @@ def tensegrity_run(device_name):
                     # init_tracker(rgb_msg,depth_msg,length,full_trajectory)
                     init_tracker(rgb_msg,depth_msg,length,[])
                     is_tracker_initialized = True
-                    max_speed = 0#99#0
+                    max_speed = 99#0
             else:
                 # COM,principal_axis,endcaps = get_pose()
                 # print("COM: ",COM)
@@ -529,7 +529,7 @@ if __name__ == '__main__':
     rospack = rospkg.RosPack()
     calibration_file = os.path.join(rospack.get_path('tensegrity'),'calibration/calibration.json')
 
-    fps = 7
+    fps = 12 # maybe lower because sometimes there are bigger gaps
     policy = ctrl_policy_vel(fps)
 
     # alpha calibration
@@ -572,18 +572,18 @@ if __name__ == '__main__':
     # beta flip
     # flip = [-1,-1,-1,1,-1,-1]
     # flip = [-1,-1,1,-1,-1,1]
-    flip = [-1,-1,-1,1,-1,-1]
+    flip = [-1,1,-1,1,1,-1]
     acceleration = [0]*3
     orientation = [0]*3
-    RANGE = 100#160#90#160 #mm #90
-    LEFT_RANGE = 100
+    RANGE = 130#160#90#160 #mm #90
+    LEFT_RANGE = 130
     tol = 0.16#0.13
     tol = 0.1
-    tol = 0.12
+    tol = 0.03
     low_tol = 0.1
     low_tol = 0.1
     # tol = 0.1
-    low_tol = 0.12
+    low_tol = 0.03
     # tol = 0.07
     #define PID
     # P = 10.0

@@ -161,7 +161,7 @@ if __name__ == '__main__':
 		trajectory = np.linspace(ending_point,starting_point,num_points)
 	elif traj_name == "frame":
 		# world frame
-		trajectory = [[0,0],[0.1,0],[0.2,0],[0.3,0],[0,0.1],[0,0.2],[0,0.3]]
+		trajectory = [[0,0],[0.1,0],[0.2,0],[0.3,0],[0,0.4],[0,0.1],[0,0.2],[0,0.3]]
 	elif traj_name == "circle":
 		# circle
 		# num_points = 50
