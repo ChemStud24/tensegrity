@@ -125,11 +125,13 @@ def read(serial_port):
                     #     done[i] = True
                     #     command[i] = 0
 
-                    # update STATES based on RL policy
-                    if is_tracker_initialized:
-                        _,_,endcaps = get_pose()
-                        states = np.array([policy.get_action(endcaps,pos)])
+                    
+                # update STATES based on RL policy
+                if is_tracker_initialized:
+                    _,_,endcaps = get_pose()
+                    states = np.array([policy.get_action(endcaps,pos)])
 
+                for i in range(num_motors):
                     # else:
                     #     done[i] = False
                     # update directions
