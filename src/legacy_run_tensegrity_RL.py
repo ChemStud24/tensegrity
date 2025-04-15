@@ -529,7 +529,7 @@ if __name__ == '__main__':
     rospack = rospkg.RosPack()
     calibration_file = os.path.join(rospack.get_path('tensegrity'),'calibration/calibration.json')
 
-    fps = 12 # maybe lower because sometimes there are bigger gaps
+    fps = 7 # maybe lower because sometimes there are bigger gaps
     policy = ctrl_policy_vel(fps)
 
     # alpha calibration
