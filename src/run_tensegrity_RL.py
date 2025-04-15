@@ -15,6 +15,7 @@ import socket
 from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import Image
 from tensegrity_perception.srv import InitTracker, InitTrackerRequest, InitTrackerResponse
+from tensegrity_perception.srv import GetPose, GetPoseRequest, GetPoseResponse
 from tensegrity.msg import Motor, Info, Sensor, Imu, TensegrityStamped, State, Action
 from geometry_msgs.msg import Point
 from Tensegrity_model_inputs import *
@@ -43,14 +44,14 @@ class TensegrityRobot:
         self.d_error = [0] * self.num_motors
         self.command = [0] * self.num_motors
         self.speed = [0] * self.num_motors
-        self.flip = [1, -1, -1, -1, -1, -1] # flip direction of motors
+        self.flip = [-1, -1, 1, 1, -1, -1] # flip direction of motors
         self.accelerometer = [[0]*3]*3
         self.gyroscope = [[0]*3]*3
         self.encoder_counts = [0]*self.num_motors
         self.encoder_length = [0]*self.num_motors
-        self.RANGE024 = 100
-        self.RANGE135 = 100
-        self.max_speed = 70
+        self.RANGE024 = 130
+        self.RANGE135 = 130
+        self.max_speed = 40
         self.tol = 0.15
         self.low_tol = 0.15
         self.P = 10.0
@@ -67,7 +68,7 @@ class TensegrityRobot:
         self.action_sequence = [' _ ', ' _ ']
 
         # RL
-        fps = 7 # maybe lower because sometimes there are bigger gaps
+        fps = 10 # maybe lower because sometimes there are bigger gaps
         self.policy = ctrl_policy_vel(fps)
         
         self.num_steps = None
@@ -113,11 +114,11 @@ class TensegrityRobot:
             self.init_tracker()
         
         # communicating with the planner
-        self.action_sub = rospy.Subscriber('/action_msg',Action,self.mpc_callback)
-        self.state_pub = rospy.Publisher('/state_msg',State,queue_size=10)
-        self.COMs = []
-        self.PAs = []
-        self.next_states = None
+        # self.action_sub = rospy.Subscriber('/action_msg',Action,self.mpc_callback)
+        # self.state_pub = rospy.Publisher('/state_msg',State,queue_size=10)
+        # self.COMs = []
+        # self.PAs = []
+        # self.next_states = None
 
     def initialize(self):
 
@@ -371,8 +372,14 @@ class TensegrityRobot:
         #     print('Received data:', received_data)
 
     def compute_command(self) :
+        # update STATES based on RL policy
+        _,_,endcaps = self.get_pose()
+        self.states = np.array([self.policy.get_action(endcaps,self.pos)])
+        self.state = 0
+
+
         command_msg = self.stop_msg.split()
-        # for i in range(self.num_motors):
+        for i in range(self.num_motors):
         #     # two tolerances for shorter and longer commands
         #     if self.states[self.state, i] < 0.5:
         #         tolerance = self.low_tol
@@ -386,19 +393,14 @@ class TensegrityRobot:
             #     self.command[i] = 0
             # if not self.done[i]:
 
-        # update STATES based on RL policy
-        if self.is_tracker_initialized:
-            _,_,endcaps = self.get_pose()
-            self.states = np.array([self.policy.get_action(endcaps,self.pos)])
-
-        self.error[i] = self.pos[i] - self.states[self.state, i]
-        # self.d_error[i] = self.error[i] - self.prev_error[i]
-        # self.cum_error[i] = self.cum_error[i] + self.error[i]
-        # self.prev_error[i] = self.error[i]
-        #update speed
-        self.command[i] = max([min([self.P*self.error[i], 1]), -1])
-        self.speed[i] = self.command[i] * self.max_speed * self.flip[i]
-        command_msg[i+self.offset] = str(self.speed[i])
+            self.error[i] = self.pos[i] - self.states[self.state, i]
+            # self.d_error[i] = self.error[i] - self.prev_error[i]
+            # self.cum_error[i] = self.cum_error[i] + self.error[i]
+            # self.prev_error[i] = self.error[i]
+            #update speed
+            self.command[i] = max([min([self.P*self.error[i], 1]), -1])
+            self.speed[i] = self.command[i] * self.max_speed * self.flip[i]
+            command_msg[i+self.offset] = str(self.speed[i])
 
                 
         # if all(self.done):
@@ -456,105 +458,105 @@ class TensegrityRobot:
         #                 self.RANGE024 = 100
         #                 self.RANGE135 = 100
 
-        # print('State: ',self.state)
-        # # print(state)
-        # print("Position: ",self.pos)
-        # print("Target: ",self.states[self.state])
-        # # print(pos)
-        # # print(states[state])
+        print('State: ',self.state)
+        # print(state)
+        print("Position: ",self.pos)
+        print("Target: ",self.states[self.state])
+        # print(pos)
+        # print(states[state])
         # print("Done: ",self.done)
-        # print("Length: ",self.length)
-        # print("Capacitance: ",self.cap)
-        # print(' '.join(command_msg))
+        print("Length: ",self.length)
+        print("Capacitance: ",self.cap)
+        print(' '.join(command_msg))
         self.send_command(' '.join(command_msg), self.addresses[self.which_Arduino],0)
         #self.send_command(self.stop_msg, self.addresses[self.which_Arduino],0)
         # print('+++++')
 
-    def mpc_callback(self,msg):
-        print('Planning results are in!')
+    # def mpc_callback(self,msg):
+    #     print('Planning results are in!')
 
-        # record motion planning results
-        self.action_sequence = [act for act in msg.actions]
-        self.COMs = np.array([[com.x,com.y] for com in msg.COMs])
-        self.PAs = np.array([[pa.x,pa.y] for pa in msg.PAs])
-        endcaps = np.array([[end.x,end.y,end.z] for end in msg.endcaps])
+    #     # record motion planning results
+    #     self.action_sequence = [act for act in msg.actions]
+    #     self.COMs = np.array([[com.x,com.y] for com in msg.COMs])
+    #     self.PAs = np.array([[pa.x,pa.y] for pa in msg.PAs])
+    #     endcaps = np.array([[end.x,end.y,end.z] for end in msg.endcaps])
 
-        # # ensure we incorporate the results in the next loop iteration
-        # global done
-        # global state
-        # for i in range(len(done)):
-        #     done[i] = True
-        # state = 0
+    #     # # ensure we incorporate the results in the next loop iteration
+    #     # global done
+    #     # global state
+    #     # for i in range(len(done)):
+    #     #     done[i] = True
+    #     # state = 0
 
-        # restart the step
-        for i in range(self.num_motors):
-            self.done[i] = False
-            self.prev_error[i] = 0
-            self.cum_error[i] = 0
+    #     # restart the step
+    #     for i in range(self.num_motors):
+    #         self.done[i] = False
+    #         self.prev_error[i] = 0
+    #         self.cum_error[i] = 0
 
-        # addjust the ranges and gait based on MPC results
-        action = self.action_sequence[0]
+    #     # addjust the ranges and gait based on MPC results
+    #     action = self.action_sequence[0]
 
-        print('Action Sequence: ',self.action_sequence)
+    #     print('Action Sequence: ',self.action_sequence)
                                 
-        if action == 'cw':
-            self.next_states = self.all_gaits.get('cw')
-            # bottom_nodes = prev_nodes.get(prev_bottom_nodes)
-            bottom_nodes = self.bottom3(endcaps)
-            if not bottom_nodes in prev_nodes.keys():
-                bottom_nodes = self.prev_bottom_nodes
-            # prev_bottom_nodes = bottom_nodes
-            self.prev_bottom_nodes = prev_nodes.get(bottom_nodes)
-            print('Bottom Nodes: ',bottom_nodes)
-            self.next_states = transform_gait(self.next_states,bottom_nodes)
-            self.state = 1
-            self.prev_gait = 'cw'
+    #     if action == 'cw':
+    #         self.next_states = self.all_gaits.get('cw')
+    #         # bottom_nodes = prev_nodes.get(prev_bottom_nodes)
+    #         bottom_nodes = self.bottom3(endcaps)
+    #         if not bottom_nodes in prev_nodes.keys():
+    #             bottom_nodes = self.prev_bottom_nodes
+    #         # prev_bottom_nodes = bottom_nodes
+    #         self.prev_bottom_nodes = prev_nodes.get(bottom_nodes)
+    #         print('Bottom Nodes: ',bottom_nodes)
+    #         self.next_states = transform_gait(self.next_states,bottom_nodes)
+    #         self.state = 1
+    #         self.prev_gait = 'cw'
 
-            self.RANGE024 = 100
-            self.RANGE135 = 100
-        elif action == 'ccw':
-            self.next_states = self.all_gaits.get('ccw')
-            bottom_nodes = self.bottom3(endcaps)
-            if not bottom_nodes in prev_nodes.keys():
-                bottom_nodes = self.prev_bottom_nodes
-            print('Bottom Nodes: ','Bottom Nodes: ',bottom_nodes)
-            self.next_states = transform_gait(self.next_states,bottom_nodes)
-            self.state = 1
-            self.prev_gait = 'ccw'
+    #         self.RANGE024 = 100
+    #         self.RANGE135 = 100
+    #     elif action == 'ccw':
+    #         self.next_states = self.all_gaits.get('ccw')
+    #         bottom_nodes = self.bottom3(endcaps)
+    #         if not bottom_nodes in prev_nodes.keys():
+    #             bottom_nodes = self.prev_bottom_nodes
+    #         print('Bottom Nodes: ','Bottom Nodes: ',bottom_nodes)
+    #         self.next_states = transform_gait(self.next_states,bottom_nodes)
+    #         self.state = 1
+    #         self.prev_gait = 'ccw'
 
-            self.RANGE024 = 100
-            self.RANGE135 = 100
-        else:
-            # if we have successive rolling steps,
-            # change the ranges but skip the transition
-            if not self.prev_gait in ['cw','ccw']:
-                for i in range(self.num_motors):
-                    self.done[i] = True
-            self.next_states = self.all_gaits.get('roll')
-            # bottom_nodes = next_nodes.get(prev_bottom_nodes)
-            bottom_nodes = self.bottom3(endcaps)
-            if not bottom_nodes in prev_nodes.keys():
-                bottom_nodes = self.prev_bottom_nodes
-            # prev_bottom_nodes = bottom_nodes
-            self.prev_bottom_nodes = next_nodes.get(bottom_nodes)
-            print('Bottom Nodes: ',bottom_nodes)
-            self.next_states = transform_gait(self.next_states,bottom_nodes)
-            if self.reverse_the_gait:
-                self.next_states = reverse_gait(self.next_states,bottom_nodes)
-            self.state = 1
-            self.prev_gait = 'roll'
-            ranges = action.split('_')
-            self.RANGE024 = int(ranges[-1])
-            self.RANGE135 = int(ranges[-2])
-            if self.RANGE135 >= 130 or self.RANGE024 >= 130:
-                self.tol = 0.35
-            else:
-                self.tol = 0.15
-        print('Action: ',action)
+    #         self.RANGE024 = 100
+    #         self.RANGE135 = 100
+    #     else:
+    #         # if we have successive rolling steps,
+    #         # change the ranges but skip the transition
+    #         if not self.prev_gait in ['cw','ccw']:
+    #             for i in range(self.num_motors):
+    #                 self.done[i] = True
+    #         self.next_states = self.all_gaits.get('roll')
+    #         # bottom_nodes = next_nodes.get(prev_bottom_nodes)
+    #         bottom_nodes = self.bottom3(endcaps)
+    #         if not bottom_nodes in prev_nodes.keys():
+    #             bottom_nodes = self.prev_bottom_nodes
+    #         # prev_bottom_nodes = bottom_nodes
+    #         self.prev_bottom_nodes = next_nodes.get(bottom_nodes)
+    #         print('Bottom Nodes: ',bottom_nodes)
+    #         self.next_states = transform_gait(self.next_states,bottom_nodes)
+    #         if self.reverse_the_gait:
+    #             self.next_states = reverse_gait(self.next_states,bottom_nodes)
+    #         self.state = 1
+    #         self.prev_gait = 'roll'
+    #         ranges = action.split('_')
+    #         self.RANGE024 = int(ranges[-1])
+    #         self.RANGE135 = int(ranges[-2])
+    #         if self.RANGE135 >= 130 or self.RANGE024 >= 130:
+    #             self.tol = 0.35
+    #         else:
+    #             self.tol = 0.15
+    #     print('Action: ',action)
 
-        # # catch perception error
-        # if self.next_states is None:
-        #     self.next_states = np.array([[1]*self.num_motors]*self.num_steps) # recover
+    #     # # catch perception error
+    #     # if self.next_states is None:
+    #     #     self.next_states = np.array([[1]*self.num_motors]*self.num_steps) # recover
 
     def bottom3(self,nodes):
         try:
@@ -791,15 +793,15 @@ class TensegrityRobot:
                 self.read()
                 # self.sendRosMSG()
                 if(self.keep_going and None not in self.addresses) :
-                    self.sendRosMSG()
                     self.compute_command()
+                    self.sendRosMSG()
                 # else:
                     # set duty cycle as 0 to turn off the motors
                     # for i in qend_command(self.stop_msg, self.addresses[i], 0)
-                if(self.calibration) :
-                    self.sendRosMSG()
-                    for i in range(self.num_sensors) :
-                        print(f"Capacitance {chr(i + 97)}: {self.cap[i]:.2f} \t Length: {self.length[i]:.2f} \n")
+                # if(self.calibration) :
+                #     self.sendRosMSG()
+                #     for i in range(self.num_sensors) :
+                #         print(f"Capacitance {chr(i + 97)}: {self.cap[i]:.2f} \t Length: {self.length[i]:.2f} \n")
             # except :
             #     print("BIG ERROR")
             
