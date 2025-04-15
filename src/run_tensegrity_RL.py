@@ -18,6 +18,7 @@ from tensegrity_perception.srv import InitTracker, InitTrackerRequest, InitTrack
 from tensegrity.msg import Motor, Info, Sensor, Imu, TensegrityStamped, State, Action
 from geometry_msgs.msg import Point
 from Tensegrity_model_inputs import *
+from policy_vel import ctrl_policy_vel
 
 
 class FileError(Exception):
@@ -64,6 +65,10 @@ class TensegrityRobot:
         self.prev_gait = 'roll'
         self.reverse_the_gait = False
         self.action_sequence = [' _ ', ' _ ']
+
+        # RL
+        fps = 7 # maybe lower because sometimes there are bigger gaps
+        self.policy = ctrl_policy_vel(fps)
         
         self.num_steps = None
         self.state = None
@@ -104,7 +109,7 @@ class TensegrityRobot:
 
         # init tracker
         if '/tracking_service' in rosnode.get_node_names():
-            self.trajectory = obstacle_trajectory
+            # self.trajectory = obstacle_trajectory
             self.init_tracker()
         
         # communicating with the planner
@@ -256,18 +261,18 @@ class TensegrityRobot:
             IMU.gy = self.gyroscope[rod][1]
             IMU.gz = self.gyroscope[rod][2]
             control_msg.imus.append(IMU)
-        trajectory_msg = Trajectory()
-        for x,y in self.COMs:
-            point = Point()
-            point.x = x
-            point.y = y
-            trajectory_msg.COMs.append(point)
-        for x,y in self.PAs:
-            point = Point()
-            point.x = x
-            point.y = y
-            trajectory_msg.PAs.append(point)
-        control_msg.trajectory = trajectory_msg
+        # trajectory_msg = Trajectory()
+        # for x,y in self.COMs:
+        #     point = Point()
+        #     point.x = x
+        #     point.y = y
+        #     trajectory_msg.COMs.append(point)
+        # for x,y in self.PAs:
+        #     point = Point()
+        #     point.x = x
+        #     point.y = y
+        #     trajectory_msg.PAs.append(point)
+        # control_msg.trajectory = trajectory_msg
 
         # publish
         self.control_pub.publish(control_msg)
@@ -367,81 +372,89 @@ class TensegrityRobot:
 
     def compute_command(self) :
         command_msg = self.stop_msg.split()
-        for i in range(self.num_motors):
-            # two tolerances for shorter and longer commands
-            if self.states[self.state, i] < 0.5:
-                tolerance = self.low_tol
-            else:
-                tolerance = self.tol
+        # for i in range(self.num_motors):
+        #     # two tolerances for shorter and longer commands
+        #     if self.states[self.state, i] < 0.5:
+        #         tolerance = self.low_tol
+        #     else:
+        #         tolerance = self.tol
 
+            # NO REST FOR THE WEARY
             #check if motor reached the target
-            if self.pos[i] + tolerance > self.states[self.state, i] and self.pos[i] - tolerance < self.states[self.state, i]:
-                self.done[i] = True
-                self.command[i] = 0
-            if not self.done[i]:
-                self.error[i] = self.pos[i] - self.states[self.state, i]
-                self.d_error[i] = self.error[i] - self.prev_error[i]
-                self.cum_error[i] = self.cum_error[i] + self.error[i]
-                self.prev_error[i] = self.error[i]
-                #update speed
-                self.command[i] = max([min([self.P*self.error[i] + self.I*self.cum_error[i] + self.D*self.d_error[i], 1]), -1])
-                self.speed[i] = self.command[i] * self.max_speed * self.flip[i]
-                command_msg[i+self.offset] = str(self.speed[i])
+            # if self.pos[i] + tolerance > self.states[self.state, i] and self.pos[i] - tolerance < self.states[self.state, i]:
+            #     self.done[i] = True
+            #     self.command[i] = 0
+            # if not self.done[i]:
+
+        # update STATES based on RL policy
+        if self.is_tracker_initialized:
+            _,_,endcaps = self.get_pose()
+            self.states = np.array([self.policy.get_action(endcaps,self.pos)])
+
+        self.error[i] = self.pos[i] - self.states[self.state, i]
+        # self.d_error[i] = self.error[i] - self.prev_error[i]
+        # self.cum_error[i] = self.cum_error[i] + self.error[i]
+        # self.prev_error[i] = self.error[i]
+        #update speed
+        self.command[i] = max([min([self.P*self.error[i], 1]), -1])
+        self.speed[i] = self.command[i] * self.max_speed * self.flip[i]
+        command_msg[i+self.offset] = str(self.speed[i])
+
                 
-        if all(self.done):
-            self.state += 1
-            self.state %= len(self.states)#self.num_steps
-            for i in range(self.num_motors):
-                self.done[i] = False
-                self.prev_error[i] = 0
-                self.cum_error[i] = 0
-            if self.next_states is not None:
-                # print('starting next primitive')
-                print('Next:',self.next_states)
-                self.states = self.next_states
-                # print(self.states)
-                self.next_states = None
-                self.state = 1
-            elif 'planning' in self.action_sequence[0]:
-                print('planning')
-                self.state = 1
-                self.states = np.array([[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1]])
-                self.RANGE024 = 100
-                self.RANGE135 = 100
+        # if all(self.done):
+        #     self.state += 1
+        #     self.state %= len(self.states)#self.num_steps
+        #     for i in range(self.num_motors):
+        #         self.done[i] = False
+        #         self.prev_error[i] = 0
+        #         self.cum_error[i] = 0
+        #     if self.next_states is not None:
+        #         # print('starting next primitive')
+        #         print('Next:',self.next_states)
+        #         self.states = self.next_states
+        #         # print(self.states)
+        #         self.next_states = None
+        #         self.state = 1
+        #     elif 'planning' in self.action_sequence[0]:
+        #         print('planning')
+        #         self.state = 1
+        #         self.states = np.array([[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1]])
+        #         self.RANGE024 = 100
+        #         self.RANGE135 = 100
 
-            else:
-                # if it's a transition step
-                    # update the ranges
-                    if self.state % len(self.states) == 1:
-                    # if state % 2 == 1:
-                        # COM,principal_axis,endcaps = get_pose()
+        #     else:
+        #         # if it's a transition step
+        #             # update the ranges
+        #             if self.state % len(self.states) == 1:
+        #             # if state % 2 == 1:
+        #                 # COM,principal_axis,endcaps = get_pose()
 
-                        # print('COM: ',COM)
+        #                 # print('COM: ',COM)
                         
                         
-                        # print('Axis: ',principal_axis)
-                        # print('Endcaps: ',endcaps)
-                        # action = best_action(str(RANGE024) + "_" + str(RANGE135),action_dict,COM,principal_axis,trajectory)
+        #                 # print('Axis: ',principal_axis)
+        #                 # print('Endcaps: ',endcaps)
+        #                 # action = best_action(str(RANGE024) + "_" + str(RANGE135),action_dict,COM,principal_axis,trajectory)
 
-                        # if prev_gait == 'roll':
-                        #     prev_action = str(RANGE135) + "_" + str(RANGE024)
-                        # else:
-                        #     prev_action = prev_gait
+        #                 # if prev_gait == 'roll':
+        #                 #     prev_action = str(RANGE135) + "_" + str(RANGE024)
+        #                 # else:
+        #                 #     prev_action = prev_gait
 
-                        prev_action = str(self.RANGE135) + "_" + str(self.RANGE024)
+        #                 prev_action = str(self.RANGE135) + "_" + str(self.RANGE024)
 
-                        state_msg = State()
-                        state_msg.prev_action = prev_action
-                        state_msg.reverse_the_gait = self.reverse_the_gait
-                        self.state_pub.publish(state_msg)
+        #                 state_msg = State()
+        #                 state_msg.prev_action = prev_action
+        #                 state_msg.reverse_the_gait = self.reverse_the_gait
+        #                 self.state_pub.publish(state_msg)
 
-                        self.action_sequence = ['planning__planning' for act in self.action_sequence]
+        #                 self.action_sequence = ['planning__planning' for act in self.action_sequence]
 
-                        self.next_states = None
-                        self.state = 1
-                        self.states = np.array([[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1]])
-                        self.RANGE024 = 100
-                        self.RANGE135 = 100
+        #                 self.next_states = None
+        #                 self.state = 1
+        #                 self.states = np.array([[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1]])
+        #                 self.RANGE024 = 100
+        #                 self.RANGE135 = 100
 
         # print('State: ',self.state)
         # # print(state)
@@ -711,17 +724,17 @@ class TensegrityRobot:
         depth_msg = rospy.wait_for_message('/depth_images',Image,None)
 
         # send trajectory or other points to be superimposed
-        trajectory_x = Float64MultiArray()
-        trajectory_y = Float64MultiArray()
-        trajectory_x.data = self.trajectory[:,0].tolist()
-        trajectory_y.data = self.trajectory[:,1].tolist()
+        # trajectory_x = Float64MultiArray()
+        # trajectory_y = Float64MultiArray()
+        # trajectory_x.data = self.trajectory[:,0].tolist()
+        # trajectory_y.data = self.trajectory[:,1].tolist()
 
         request = InitTrackerRequest()
         request.rgb_im = rgb_msg
         request.depth_im = depth_msg
         request.cable_lengths = cable_length_msg
-        request.trajectory_x = trajectory_x
-        request.trajectory_y = trajectory_y
+        # request.trajectory_x = trajectory_x
+        # request.trajectory_y = trajectory_y
 
         service_name = "init_tracker"
         rospy.loginfo(f"Waiting for {service_name} service...")
@@ -736,6 +749,41 @@ class TensegrityRobot:
         except rospy.ServiceException as e:
             rospy.loginfo(f"Service call failed: {e}")
         return False
+
+    def get_pose(self):
+        service_name = "get_pose"
+        
+        vectors = np.array([[0.0,0.0,0.0]])
+        centers = []
+        endcaps = []
+        try:
+            request = GetPoseRequest()
+            get_pose_srv = rospy.ServiceProxy(service_name, GetPose)
+            rospy.loginfo("Request sent. Waiting for response...")
+            response: GetPoseResponse = get_pose_srv(request)
+            rospy.loginfo(f"Got response. Request success: {response.success}")
+            if response.success:
+                for pose in response.poses:
+                    
+                    rotation_matrix = R.from_quat([pose.orientation.x, pose.orientation.y, pose.orientation.z,pose.orientation.w]).as_matrix()
+                    
+                    unit_vector = rotation_matrix[:,2]
+                    center = [pose.position.x,pose.position.y,pose.position.z]
+                    endcaps.append(np.array(center) + L/2*unit_vector)
+                    endcaps.append(np.array(center) - L/2*unit_vector)
+                    
+                    centers.append(center)
+                    vectors += unit_vector
+            COM = np.mean(np.array(centers),axis=0)
+            principal_axis = vectors/np.linalg.norm(vectors)
+            endcaps = np.array(endcaps)/100 # convert to meters
+            # reformat COM and PA
+            COM = np.reshape(COM[0:2],(2,1))
+            principal_axis = principal_axis[:,0:2]
+            principal_axis = np.reshape(principal_axis,(2,1))
+        except rospy.ServiceException as e:
+            rospy.loginfo(f"Service call failed: {e}")
+        return COM, principal_axis, endcaps
             
     def run(self):
         while not self.quitting :
