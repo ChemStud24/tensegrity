@@ -51,10 +51,10 @@ class TensegrityRobot:
         self.encoder_length = [0]*self.num_motors
         self.RANGE024 = 130
         self.RANGE135 = 130
-        self.max_speed = 40
+        self.max_speed = 60
         self.tol = 0.15
         self.low_tol = 0.15
-        self.P = 10.0
+        self.P = 5.0 # 10
         self.I = 0.01
         self.D = 0.5
         self.gear_ratio = 150
