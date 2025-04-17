@@ -4,17 +4,13 @@ import sys
 import time
 import math
 from math import cos, sin
+# import tkinter as tk
 import json
 import xlrd
 import numpy as np
 from pynput import keyboard
 from scipy.spatial.transform import Rotation as R
-import rospy
-import rospkg
 import socket
-#from tensegrity.msg import Motor, Info, MotorsStamped, Sensor, SensorsStamped, Imu, ImuStamped
-from tensegrity.msg import Motor, Info, Sensor, Imu, TensegrityStamped
-#from geometry_msgs.msg import QuaternionStamped
 
 
 class FileError(Exception):
@@ -75,6 +71,14 @@ class TensegrityRobot:
         self.addresses = [None] * self.num_arduino
         self.offset = None # Nb of leading end ending 0 preventing errors 
 
+        # # GUI setup
+        # self.root = tk.Tk()
+        # self.cap_labels = []
+        # for i in range(self.num_sensors):
+        #     label = tk.Label(self.root, text=f"Capacitance {chr(i + 97)}: 0.00")
+        #     label.pack()
+        #     self.cap_labels.append(label)
+
         #keyboard variables
         self.zero_pressed = False
         self.one_pressed = False
@@ -89,11 +93,8 @@ class TensegrityRobot:
         self.my_listener = keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
         self.my_listener.start()
         
-        rospy.init_node('tensegrity')
-        self.control_pub = rospy.Publisher('control_msg', TensegrityStamped, queue_size=10) ## correct ??
-
-        package_path = rospkg.RosPack().get_path('tensegrity')
-        calibration_file = os.path.join(package_path,'calibration/new_calibration.json')
+        package_path = "../"
+        calibration_file = os.path.join(package_path,'calibration/manual_calibration.xls')
         
         #self.m = np.array([0.04437, 0.06207, 0.02356, 0.04440, 0.04681, 0.05381, 0.02841, 0.03599, 0.03844])
         #self.b = np.array([15.763, 13.524, 15.708, 10.084, 15.628, 15.208, 16.356, 12.575, 13.506])
@@ -141,112 +142,18 @@ class TensegrityRobot:
         except FileError as ce:
             print("Error occurred:", ce)
 
-    def quat2vec(self, q):
-        q0 = float(q[0])
-        q1 = float(q[1])
-        q2 = float(q[2])
-        q3 = float(q[3])
-        roll = -math.atan2(2*(q0*q1+q2*q3), 1-2*(q1*q1+q2*q2))#convert quarternion to Euler angle for roll angle
-        #convert quarternion to Euler angle for pitch angle
-        sinp = 2*(q0*q2-q3*q1)
-        #deal with gimlock
-        if abs(sinp) >= 1:
-            pitch = math.copysign(np.pi/2, sinp)
-        else:
-            pitch = math.asin(sinp)
-        
-        #yaw = -math.atan2(2*(q0*q3+q1*q2), 1-2*(q2*q2+q3*q3))-np.pi/2
-        #convert quarternion to Euler angle for pitch angle
-        yaw = -math.atan2(2*(q0*q3+q1*q2), 1-2*(q2*q2+q3*q3))+np.pi/2
-
-        k=np.array([cos(yaw)*cos(pitch), sin(pitch),sin(yaw)*cos(pitch)])
-        r = R.from_rotvec(-np.pi/2 * np.array([0, 1, 0]))
-        k = r.apply(k)
-        y=np.array([0,1,0])
-        s=np.cross(k,y)
-        v=np.cross(s,k)
-        vrot=v*cos(roll)+np.cross(k,v)*sin(roll)
-        return np.cross(k,vrot)
-
     def send_command(self, input_string, addr, delay_time):
         self.sock_send.sendto(input_string.encode('utf-8'), addr)
         if delay_time < 0:
             delay_time = 0
         time.sleep(delay_time/1000)
         
-    def sendRosMSG(self):
-        # send ROS messages
-        control_msg = TensegrityStamped()
-        # strain_msg = SensorsStamped()
-        # imu_msg = ImuStamped()
-        # get timestamp
-        timestamp = rospy.Time.now()
-        control_msg.header.stamp = timestamp
-        # strain_msg.header.stamp = timestamp
-        # imu_msg.header.stamp = timestamp
-        # gait info
-        info = Info()
-        info.min_length = self.min_length
-        info.RANGE = self.RANGE
-        # info.LEFT_RANGE = self.LEFT_RANGE
-        info.max_speed = self.max_speed
-        info.tol = self.tol
-        # info.low_tol = self.low_tol
-        info.P = self.P
-        info.I = self.I
-        info.D = self.D
-        control_msg.info = info
-        # motors
-        for motor_id in range(self.num_motors):
-           motor = Motor()
-           motor.id = motor_id
-           motor.position = self.pos[motor_id]
-           motor.target = self.states[self.state,motor_id]
-           motor.speed = self.command[motor_id] * self.max_speed #abs(command[motor_id]) * max_speed
-           # motor.direction = command[motor_id] > 0
-           motor.done = self.done[motor_id]
-           motor.encoder_counts = int(self.encoder_counts[motor_id])
-           motor.encoder_length = self.encoder_length[motor_id]
-           control_msg.motors.append(motor)
-        # sensors
-        for sensor_id in range(self.num_sensors):
-           sensor = Sensor()
-           sensor.id = sensor_id
-           sensor.length = self.length[sensor_id]
-           sensor.capacitance = self.cap[sensor_id]
-           control_msg.sensors.append(sensor)
-        # imu
-        # for imu_id in range(self.num_imus):
-        #    IMU = Imu()
-        #    IMU.id = imu_id
-        #    if any(self.imu[imu_id]) == None:
-        #        IMU.x = None
-        #        IMU.y = None
-        #        IMU.z = None
-        #    else:
-        #        IMU.x = self.imu[imu_id][0]
-        #        IMU.y = self.imu[imu_id][1]
-        #        IMU.z = self.imu[imu_id][2]
-        #    imu_msg.imus.append(IMU)
-        for rod in range(3):
-            IMU = Imu()
-            IMU.ax = self.accelerometer[rod][0]
-            IMU.ay = self.accelerometer[rod][1]
-            IMU.az = self.accelerometer[rod][2]
-            IMU.gx = self.gyroscope[rod][0]
-            IMU.gy = self.gyroscope[rod][1]
-            IMU.gz = self.gyroscope[rod][2]
-            control_msg.imus.append(IMU)
-        # publish
-        self.control_pub.publish(control_msg)
-        # strain_pub.publish(strain_msg)
-        # imu_pub.publish(imu_msg)
-        
     def read(self):
         data, addr = self.sock_receive.recvfrom(255)  # Receive data (up to 255 bytes)
         # Decode the data (assuming it's sent as a string)
         received_data = data.decode('utf-8')
-        print('Received Data: ',received_data)
+        if None in self.addresses:
+            print('Received Data: ',received_data)
         try :
             # Received data in the form "N_Arduino C0 C1 C2 C3 e0 e1 ax ay az gx gy gz" where N_Arduino indicates the number of the Arduino of the received data
             sensor_values = received_data.split()
@@ -255,7 +162,8 @@ class TensegrityRobot:
             # print(sensor_array)
             if(addr not in self.addresses) :
                 self.addresses[int(sensor_array[0])] = addr
-            print('Sensor Array: ',sensor_array)
+            if None in self.addresses:
+                print('Sensor Array: ',sensor_array)
             """
             Following code of function read(self) configurated for a 3 bar tensegrity with following sensors
             Rod 0 (red) has sensors C, E, and I (2, 4, and 8) and motors 2 and 4
@@ -440,6 +348,12 @@ class TensegrityRobot:
         elif key == keyboard.KeyCode.from_char('b'):
             for i in range(len(self.addresses)) :
                     self.send_command(self.stop_msg, self.addresses[i],0)
+
+    # def update_gui(self):
+    #     for i in range(self.num_sensors):
+    #         self.cap_labels[i].config(text=f"Capacitance {chr(i + 97)}: {self.cap[i]:.2f}")
+    #     self.root.update_idletasks()
+    #     # self.root.after(100, self.update_gui) # Schedule the update_gui method to be called again after 100 ms
             
     def run(self):
         print("Initializing")
@@ -452,18 +366,24 @@ class TensegrityRobot:
 
         # Bind the socket to the address and port
         self.sock_receive.bind((self.UDP_IP, self.UDP_PORT))
+
+        # self.root.after(100, self.update_gui) # Schedule the first call to update_gui
+        # self.root.mainloop()
         
         # finishing setup.
         print("Opened connection press q to quit")
         while not self.quitting :
             try : 
                 self.read()
-                if(None not in self.addresses) :
-                    self.sendRosMSG()    
-                    print('=================')
-                    for i in range(self.num_sensors) :
-                        print(f"Capacitance {chr(i + 97)}: {self.cap[i]:.2f} \t Length: {self.length[i]:.2f} \n")
-                    print('=================')
+                if(None not in self.addresses) :  
+                    # os.system('cls')
+                    # print('=================')
+                    # for i in range(self.num_sensors) :
+                    #     print(f"Capacitance {chr(i + 97)}: {self.cap[i]:.2f} \t Length: {self.length[i]:.2f} \n")
+                    # print('=================')
+                    # printout = [f"{chr(i + 97)}: {self.cap[i]:.2f} pF {self.length[i]:.2f} mm" for i in range(self.num_sensors)]
+                    printout = [f"{chr(i + 97)}: {self.cap[i]:.2f} pF" for i in range(self.num_sensors)]
+                    print('\t'.join(printout),end='\r')
             except Exception as this_error:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 print('There has been an error: ',this_error)

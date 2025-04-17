@@ -88,11 +88,8 @@ class TensegrityRobot:
         self.my_listener.daemon = True
         self.my_listener.start()
         
-        rospy.init_node('tensegrity')
-        self.control_pub = rospy.Publisher('control_msg', TensegrityStamped, queue_size=10) ## correct ??
-
-        package_path = rospkg.RosPack().get_path('tensegrity')
-        calibration_file = os.path.join(package_path,'calibration/new_calibration.json')
+        package_path = "../"
+        calibration_file = os.path.join(package_path,'calibration/manual_calibration.xls')
         
         #self.m = np.array([0.04437, 0.06207, 0.02356, 0.04440, 0.04681, 0.05381, 0.02841, 0.03599, 0.03844])
         #self.b = np.array([15.763, 13.524, 15.708, 10.084, 15.628, 15.208, 16.356, 12.575, 13.506])
@@ -184,33 +181,6 @@ class TensegrityRobot:
             return m, b
         except FileError as ce:
             print("Error occurred:", ce)
-
-    def quat2vec(self, q):
-        q0 = float(q[0])
-        q1 = float(q[1])
-        q2 = float(q[2])
-        q3 = float(q[3])
-        roll = -math.atan2(2*(q0*q1+q2*q3), 1-2*(q1*q1+q2*q2))#convert quarternion to Euler angle for roll angle
-        #convert quarternion to Euler angle for pitch angle
-        sinp = 2*(q0*q2-q3*q1)
-        #deal with gimlock
-        if abs(sinp) >= 1:
-            pitch = math.copysign(np.pi/2, sinp)
-        else:
-            pitch = math.asin(sinp)
-        
-        #yaw = -math.atan2(2*(q0*q3+q1*q2), 1-2*(q2*q2+q3*q3))-np.pi/2
-        #convert quarternion to Euler angle for pitch angle
-        yaw = -math.atan2(2*(q0*q3+q1*q2), 1-2*(q2*q2+q3*q3))+np.pi/2
-
-        k=np.array([cos(yaw)*cos(pitch), sin(pitch),sin(yaw)*cos(pitch)])
-        r = R.from_rotvec(-np.pi/2 * np.array([0, 1, 0]))
-        k = r.apply(k)
-        y=np.array([0,1,0])
-        s=np.cross(k,y)
-        v=np.cross(s,k)
-        vrot=v*cos(roll)+np.cross(k,v)*sin(roll)
-        return np.cross(k,vrot)
 
     def send_command(self, input_string, addr, delay_time):
         self.sock_send.sendto(input_string.encode('utf-8'), addr)
@@ -520,13 +490,6 @@ class TensegrityRobot:
                 self.read()
                 if(self.keep_going and None not in self.addresses) :
                     self.compute_command()
-                # else:
-                    # set duty cycle as 0 to turn off the motors
-                    # for i in qend_command(self.stop_msg, self.addresses[i], 0)
-                if(self.calibration) :
-                    self.sendRosMSG()
-                    for i in range(self.num_sensors) :
-                        print(f"Capacitance {chr(i + 97)}: {self.cap[i]:.2f} \t Length: {self.length[i]:.2f} \n")
             except :
                 pass
             
