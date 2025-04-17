@@ -5,11 +5,14 @@
 // #include "ICM_20948.h" // Click here to get the library: http://librarymanager/All#SparkFun_ICM_20948_IMU
 #include "Adafruit_MPR121.h" // For MPR 121
 #include <SparkFun_TB6612.h> // For DC motor Driver
+#include <Encoder.h>
+#include <Arduino_LSM6DS3.h>
 
 int status = WL_IDLE_STATUS;
 char ssid[] = "tensegrity"; // your network SSID (name)
 char pass[] = "augustin";        // your network password (use for WPA, or use as key for WEP)
 int keyIndex = 0;                // your network key Index number (needed only for WEP)
+char PC_IP[] = "192.168.0.100"; // change to PC IP address
 
 unsigned int localPort = 2390; // local port to listen on
 
@@ -17,10 +20,14 @@ unsigned int localPort = 2390; // local port to listen on
 //Configuration Arduino//
 /////////////////////////
 
+#define N_Arduino 2 // To change in function of which Arduino is used
+
+int motor_numbers[3][2] = {{2,4},{1,3},{0,5}};
 #define Nb_motors 6 // To change in function of the number of motor used
-#define N_motor1 1 // To change in function of motor used
-#define N_motor2 3 // To change in function of motor used
-#define N_Arduino 1 // To change in function of which Arduino is used 
+// #define N_motor1 1 // To change in function of motor used
+// #define N_motor2 3 // To change in function of motor used 
+int N_motor1 = motor_numbers[N_Arduino][0];
+int N_motor2 = motor_numbers[N_Arduino][1];
 
 char packetBuffer[255];  // buffer to hold incoming packet
 #define OFFSET 3  //Offset start of message
@@ -30,10 +37,10 @@ WiFiUDP Udp;
 
 #define WIRE_PORT Wire // Your desired Wire port. 
 
-#define AD0_VAL 0 // 1 if ICM20948 address is 0x69, 0 if address is 0x68
+// #define AD0_VAL 0 // 1 if ICM20948 address is 0x69, 0 if address is 0x68
 
-ICM_20948_I2C myICM; // Otherwise create an ICM_20948_I2C object
-double q[4];
+// ICM_20948_I2C myICM; // Otherwise create an ICM_20948_I2C object
+// double q[4];
 
 const int NUM_SENSORS = 4; // How many sensors will you use?
 float capacitance[NUM_SENSORS];
@@ -42,6 +49,16 @@ float temp[NUM_SENSORS];
 bool configMode = false;
 int chargeCurrent = 42; // uA In order to compute capacitance from MPR121 
 float chargeTime = 1; // us   In order to compute capacitance from MPR121 
+
+// encoders
+Encoder enc_1(9,10);
+Encoder enc_2(11,13);
+long enc_counts_1 = 0;
+long enc_counts_2 = 0;
+
+// Arduino Nano on-board IMU
+float ax, ay, az; // accelerometer
+float gx, gy, gz; // gyroscope
 
 /* You can find those 2 values through the following functions in order to config the MPR121  : 
 
@@ -101,7 +118,7 @@ Motor motor2 = Motor(BIN1, BIN2, PWMB, offsetB, STBY);
 void setup() {
   
   // Check for the presence of the WiFi shield:
-  Serial.begin(115200);
+  // Serial.begin(115200);
   if (WiFi.status() == WL_NO_SHIELD){
     // Don't continue:
     // Serial.println("No Shield");
@@ -121,7 +138,7 @@ void setup() {
     status = WiFi.begin(ssid, pass);
     // status = WiFi.begin(ssid);
     // Wait 1 second for connection:
-    Serial.println("Connecting...");
+    // Serial.println("Connecting...");
     delay(1000);
   }
 
@@ -167,6 +184,16 @@ void setup() {
   //     Udp.endPacket();
   //   }
   // }
+
+  if (!IMU.begin()) {
+    // Serial.println("Failed to initialize IMU!");
+    sensorDataString ="Failed to initialize IMU!";
+    // Udp.beginPacket("10.42.0.1", 2390); // Replace with the Python code IP and port
+    Udp.beginPacket(PC_IP, 2390); // Replace with the Python code IP and port
+    Udp.write(sensorDataString.c_str());
+    Udp.endPacket();
+    while (1);
+  }
 
   // bool initialized = false;
   // while(!initialized){
@@ -222,13 +249,14 @@ void setup() {
   // If tied to SDA its 0x5C and if SCL then 0x5D
   if (!cap.begin(0x5A)) {
     while (1)
-      Serial.println("MPR121 NOT FOUND");
+      // Serial.println("MPR121 NOT FOUND");
       sensorDataString ="MPR121 NOT FOUND";
-      Udp.beginPacket("10.42.0.1", 2390); // Replace with the Python code IP and port
+      // Udp.beginPacket("10.42.0.1", 2390); // Replace with the Python code IP and port
+      Udp.beginPacket(PC_IP, 2390); // Replace with the Python code IP and port
       Udp.write(sensorDataString.c_str());
       Udp.endPacket();
   }
-  Serial.println("Configuring MPR121...");
+  // Serial.println("Configuring MPR121...");
   // 2. configure the settings
   if (configMode) {
     // run the autoconfiguration
@@ -287,20 +315,56 @@ void loop() {
     capacitance[sensor] = temp[sensor];
   }
 
+  /////////////////////////
+  //Retrieve Encoder Data//
+  /////////////////////////
 
-  String q0String = String(q[0], 5); // Convert q[0] to a string with 5 decimal places
-  String q1String = String(q[1], 5); // Convert q[1] to a string with 5 decimal places
-  String q2String = String(q[2], 5); // Convert q[2] to a string with 5 decimal places
-  String q3String = String(q[3], 5); // Convert q[3] to a string with 5 decimal places
+  enc_counts_1 = enc_1.read();
+  enc_counts_2 = enc_2.read();
+
+  /////////////////////
+  //Retrieve IMU Data//
+  /////////////////////
+
+  if (IMU.accelerationAvailable()) {
+    IMU.readAcceleration(ax, ay, az);
+  }
+
+  if (IMU.gyroscopeAvailable()) {
+    IMU.readGyroscope(gx, gy, gz);
+  }
+
+  // String q0String = String(q[0], 5); // Convert q[0] to a string with 5 decimal places
+  // String q1String = String(q[1], 5); // Convert q[1] to a string with 5 decimal places
+  // String q2String = String(q[2], 5); // Convert q[2] to a string with 5 decimal places
+  // String q3String = String(q[3], 5); // Convert q[3] to a string with 5 decimal places
+
+  ////////////////////
+  //Compile All Data//
+  ////////////////////
+
+  // sensorDataString = String(N_Arduino) + " " 
+  //                   + q0String.substring(0, 7) + " " 
+  //                   + q1String.substring(0, 7) + " "
+  //                   + q2String.substring(0, 7) + " "
+  //                   + q3String.substring(0, 7) + " "
+  //                   + String(capacitance[0]) + " " 
+  //                   + String(capacitance[1]) + " " 
+  //                   + String(capacitance[2]);
 
   sensorDataString = String(N_Arduino) + " " 
-                    + q0String.substring(0, 7) + " " 
-                    + q1String.substring(0, 7) + " "
-                    + q2String.substring(0, 7) + " "
-                    + q3String.substring(0, 7) + " "
-                    + String(capacitance[0]) + " " 
-                    + String(capacitance[1]) + " " 
-                    + String(capacitance[2]);
+                  + String(capacitance[0]) + " " 
+                  + String(capacitance[1]) + " " 
+                  + String(capacitance[2]) + " "
+                  + String(capacitance[3]) + " "
+                  + String(enc_counts_1) + " "
+                  + String(enc_counts_2) + " "
+                  + String(ax) + " "
+                  + String(ay) + " "
+                  + String(az) + " "
+                  + String(gx) + " "
+                  + String(gy) + " "
+                  + String(gz);
 
   //////////////////////
   //Retrieve motor PWM//
@@ -329,7 +393,8 @@ void loop() {
     motor2.drive((int) (255.0*motorPWM[N_motor2]/99.0));
   }
   // Send the sensor data through UDP
-  Udp.beginPacket("10.42.0.1", 2390); // Replace with the Python code IP and port
+  // Udp.beginPacket("10.42.0.1", 2390); // Replace with the Python code IP and port
+  Udp.beginPacket(PC_IP, 2390); // Replace with the Python code IP and port
   Udp.write(sensorDataString.c_str());
   Udp.endPacket();
 
