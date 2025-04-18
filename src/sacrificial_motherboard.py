@@ -8,6 +8,7 @@ import rospy
 import rospkg
 import socket
 import datetime
+from tensegrity.msg import TensegrityStamped
 
 class TensegrityRobot:
     def __init__(self):
@@ -15,9 +16,11 @@ class TensegrityRobot:
         # self.accelerometer = [[0]*3]*3
         # self.gyroscope = [[0]*3]*3
         self.data_labels = ['ax','ay','az','gx','gy','gz']
-        self.package_path = rospkg.RosPack().get_path('tensegrity')
-        self.output_dir = package_path + '../../data/' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        package_path = rospkg.RosPack().get_path('tensegrity')
+        self.output_dir = package_path + '/../../data/' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         os.mkdir(self.output_dir)
+        self.data_dir = os.path.join(self.output_dir,'data')
+        os.mkdir(self.data_dir)
         self.count = 0
         
         # UDP variables
@@ -36,9 +39,12 @@ class TensegrityRobot:
 
         # Received data in the form "ax ay az gx gy gz"
         sensor_values = received_data.split()
-        data = {key:value for key,value in zip(self.data_labels,sensor_values)}
-        data['time'] = rospy.get_time()
-        json.dump(data,open(os.path.join(self.output_dir, str(self.count).zfill(4) + ".json"),'w'))
+        data = {key:float(value) for key,value in zip(self.data_labels,sensor_values)}
+        # msg = TensegrityStamped()
+        # msg.header.stamp = rospy.Time.now()
+        data['header'] = {'secs':rospy.get_time()}
+        # data['header'] = {'seq':msg.header.seq,'secs':msg.header.stamp.to_sec()}
+        json.dump(data,open(os.path.join(self.data_dir, str(self.count).zfill(4) + ".json"),'w'))
         self.count += 1
 
         # # Convert the string values to actual float values and store them in an array
@@ -68,8 +74,12 @@ class TensegrityRobot:
         self.sock_receive.bind((self.UDP_IP, self.UDP_PORT))
         
         while True:
-            self.read()
+            try:
+                self.read()
+            except:
+                break
         
 if __name__ == '__main__':
     tensegrity_robot = TensegrityRobot()
+    rospy.init_node('motherboard',disable_signals=True)
     tensegrity_robot.run()
