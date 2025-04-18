@@ -76,6 +76,8 @@ class ctrl_policy:
     
     def reset_target_point(self, init_cap_pos):
         # init_cap_pos: numpy.array, [6, 3], positions of 6 end caps from s0 to s5
+        if self.oript is not None:
+            return
         left_CoM = (init_cap_pos[0] + init_cap_pos[2] + init_cap_pos[4]) / 3
         right_CoM = (init_cap_pos[1] + init_cap_pos[3] + init_cap_pos[5]) / 3
         self.oript = (left_CoM[:2] + right_CoM[:2]) / 2
