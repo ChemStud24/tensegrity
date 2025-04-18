@@ -15,7 +15,7 @@ else:
 data_dir = os.path.join(dataset,trial,'data')
 datafiles = sorted(os.listdir(data_dir))
 
-# CTRL = ctrl_policy(7) # set frame rate
+CTRL_pos = ctrl_policy(7) # set frame rate
 CTRL_vel = ctrl_policy_vel(7) # set frame rate
 
 for df in datafiles:
@@ -25,7 +25,10 @@ for df in datafiles:
 	# print('End Caps: ',endcaps)
 	action_state = [data.get('motors').get(str(i)).get('position') for i in range(6)]
 	action_state = np.array(action_state)
-	action = CTRL_vel.get_action(endcaps, action_state)
+	# action = CTRL_vel.get_action(endcaps, action_state)
+	if CTRL_pos.target_pt is None:
+		CTRL_pos.reset_target_point(endcaps)
+	action = CTRL_pos.get_action(endcaps, action_state)
 	print('===============')
 	print(df)
 	print('Real Action: ',targets)

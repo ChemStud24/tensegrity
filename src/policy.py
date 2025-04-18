@@ -47,43 +47,77 @@ class PolicyNetwork(nn.Module):
         return super(PolicyNetwork, self).to(device)
 
 class ctrl_policy:
-    def __init__(self, fps, path_to_model="actors/actor_4000000.pth"):
+    def __init__(self, fps, path_to_model="actors/actor_5425000_18nipfa5.pth"):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.obs_dim = 45
+        self.obs_dim = 38 # 6*3 end cap positions + 6*3 end cap velocities + 1*2 target point relative position
         self.act_dim = 6
         self.actor = PolicyNetwork(self.obs_dim, self.act_dim).to(self.device)
-        self.actor.load_state_dict(torch.load(path_to_model, map_location=torch.device(device=self.device), weights_only=True))
+        state_dict = torch.load(path_to_model, map_location=torch.device(device=self.device), weights_only=True)
+        state_dict = {k.replace("module.", ""): v for k, v in state_dict.items()}
+        self.actor.load_state_dict(state_dict)
+
         self.dt = 1.0 / fps
+        self.idle_action = np.ones(6)
+        self.action_limitation = [0, 1] # actor command limitation
+        self.len_limitation = [0.1, 0.2] # active tendon length limitation with unit: m
+        self.vel_max = 0.1 # max velocity for actors with unit: m/s
+
+        self.iniyaw_bias = -np.pi/15
+        self.target_distance = 1.0
+        self.oript = None
+        self.iniyaw = None
+        self.target_pt = None
+
         self.cap_pos_batch_size = 10
         self.cap_pos_batch = deque(maxlen=self.cap_pos_batch_size)
-        self.action_batch = deque(maxlen=2)
+        self.last_action_state = None
         self.t_window = np.linspace(-self.dt*(self.cap_pos_batch_size-1), 0, self.cap_pos_batch_size)
         pass
+    
+    def reset_target_point(self, init_cap_pos):
+        # init_cap_pos: numpy.array, [6, 3], positions of 6 end caps from s0 to s5
+        left_CoM = (init_cap_pos[0] + init_cap_pos[2] + init_cap_pos[4]) / 3
+        right_CoM = (init_cap_pos[1] + init_cap_pos[3] + init_cap_pos[5]) / 3
+        self.oript = (left_CoM[:2] + right_CoM[:2]) / 2
+        self.iniyaw = np.arctan2(right_CoM[0] - left_CoM[0], left_CoM[1] - right_CoM[1]) + self.iniyaw_bias
+        self.iniyaw = np.arctan2(np.sin(self.iniyaw), np.cos(self.iniyaw))
+        self.target_pt = np.array([self.oript[0] + self.target_distance * np.cos(self.iniyaw), self.oript[1] + self.target_distance * np.sin(self.iniyaw)])
 
-    def get_action(self, cap_pos):
+    def get_action(self, cap_pos, actor_state):
+        # cap_pos: numpy.array, [6, 3], positions of 6 end caps from s0 to s5
+        # actor_state: numpy.array, [6,], actor position provided by motors, [0, 1] ^ 6
+
         self._update_cap_pos_batch(cap_pos)
+        self.last_action_state = actor_state
+
         if len(self.cap_pos_batch) < self.cap_pos_batch_size:
-            action = np.ones(6)
-            self.action_batch.append(action)
+            action = self.idle_action
             return action
         cap_rel_pos = self.cap_pos_batch[-1]
         cap_vel = self._get_cap_vel()
-        tendon_len = self._get_tendon_len(cap_rel_pos)
-        obs = np.concatenate([cap_rel_pos, cap_vel, tendon_len])
-        action = self._predict(obs, self.action_batch[0])
-        self.action_batch.append(action)
+
+        CoM = np.mean(cap_pos, axis=0)
+        target_vec = self.target_pt - CoM[:2]
+
+        observation = np.concatenate([cap_rel_pos, cap_vel, target_vec])
+
+        action = self._predict(observation, self.last_action_state)
         return action
 
     def _predict(self, obs, last_action):
-        action_scaled, _ = self.actor.predict(torch.from_numpy(obs).float())
-        action_unscaled = action_scaled.detach().cpu().numpy() # [-1, 1] -> [min, max]
-        filtered_action = self._action_filter(action_unscaled, last_action)
-        return filtered_action
+        action_scaled, _ = self.actor.predict(torch.from_numpy(obs).float()) # action = vel_cmd / vel_max
+        action_scaled = action_scaled.cpu().detach().numpy()
+        # next_action = self._action_transformer(action_scaled, last_action)
+        next_action = action_scaled * (self.action_limitation[1] - self.action_limitation[0]) / 2 + (self.action_limitation[1] + self.action_limitation[0]) / 2
+        next_action = np.clip(next_action, self.action_limitation[0], self.action_limitation[1])
+        return next_action
     
-    def _action_filter(self, action, last_action):
-        k_FILTER = 1
-        filtered_action = last_action + k_FILTER*(action - last_action)*self.dt
-        return filtered_action
+    def _action_transformer(self, action, last_action):
+        # clip action with max velocity
+        max_del_len = self.vel_max * self.dt
+        del_action = np.clip(action - last_action, -max_del_len, max_del_len)
+        next_action = last_action + del_action
+        return next_action
     
     def _update_cap_pos_batch(self, cap_pos):
         CoM = np.mean(cap_pos, axis=0)
@@ -100,16 +134,3 @@ class ctrl_policy:
             vel = pos.deriv()
             vel_list.append(vel(0))
         return np.array(vel_list)
-    
-    def _get_tendon_len(self, cap_pos):
-        # corresponding relationship between cap_pos and tendon_len
-        tendon_len=np.ones(9)
-        return tendon_len
-
-''' for test
-cp = ctrl_policy(50)
-cap_pos = np.random.randn(18)
-while True:
-    action = cp.get_action(cap_pos)
-    print(action)
-'''

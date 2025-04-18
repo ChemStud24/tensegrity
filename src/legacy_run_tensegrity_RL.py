@@ -33,6 +33,7 @@ from Tensegrity_model_inputs import *
 
 # RL stuff
 from policy_vel import ctrl_policy_vel
+from policy import ctrl_policy
 
 def flush(serial_port):
     serial_port.reset_input_buffer()
@@ -129,6 +130,8 @@ def read(serial_port):
                 # update STATES based on RL policy
                 if is_tracker_initialized:
                     _,_,endcaps = get_pose()
+                    if policy.target_pt is None:
+                        policy.reset_target_point(endcaps)
                     states = np.array([policy.get_action(endcaps,pos)])
 
                 for i in range(num_motors):
@@ -532,7 +535,8 @@ if __name__ == '__main__':
     calibration_file = os.path.join(rospack.get_path('tensegrity'),'calibration/calibration.json')
 
     fps = 7 # maybe lower because sometimes there are bigger gaps
-    policy = ctrl_policy_vel(fps)
+    # policy = ctrl_policy_vel(fps)
+    policy = ctrl_policy(fps)
 
     # alpha calibration
     # m = np.array([0.01471,0.03030,0.02173,0.04449,0.05502,0.04038,0.03791,0.04207,0.04089])
