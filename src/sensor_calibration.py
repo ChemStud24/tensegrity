@@ -90,10 +90,15 @@ class TensegrityRobot:
         self.my_listener.start()
         
         rospy.init_node('tensegrity')
-        self.control_pub = rospy.Publisher('control_msg', TensegrityStamped, queue_size=10) ## correct ??
+        # self.control_pub = rospy.Publisher('control_msg', TensegrityStamped, queue_size=10) ## correct ??
 
         package_path = rospkg.RosPack().get_path('tensegrity')
         calibration_file = os.path.join(package_path,'calibration/new_calibration.json')
+        self.output_dir = package_path + '/../../data/' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        os.mkdir(self.output_dir)
+        self.data_dir = os.path.join(self.output_dir,'data')
+        os.mkdir(self.data_dir)
+        self.count = 0
         
         #self.m = np.array([0.04437, 0.06207, 0.02356, 0.04440, 0.04681, 0.05381, 0.02841, 0.03599, 0.03844])
         #self.b = np.array([15.763, 13.524, 15.708, 10.084, 15.628, 15.208, 16.356, 12.575, 13.506])
@@ -174,79 +179,20 @@ class TensegrityRobot:
             delay_time = 0
         time.sleep(delay_time/1000)
         
-    def sendRosMSG(self):
-        # send ROS messages
-        control_msg = TensegrityStamped()
-        # strain_msg = SensorsStamped()
-        # imu_msg = ImuStamped()
-        # get timestamp
-        timestamp = rospy.Time.now()
-        control_msg.header.stamp = timestamp
-        # strain_msg.header.stamp = timestamp
-        # imu_msg.header.stamp = timestamp
-        # gait info
-        info = Info()
-        info.min_length = self.min_length
-        info.RANGE = self.RANGE
-        # info.LEFT_RANGE = self.LEFT_RANGE
-        info.max_speed = self.max_speed
-        info.tol = self.tol
-        # info.low_tol = self.low_tol
-        info.P = self.P
-        info.I = self.I
-        info.D = self.D
-        control_msg.info = info
-        # motors
-        for motor_id in range(self.num_motors):
-           motor = Motor()
-           motor.id = motor_id
-           motor.position = self.pos[motor_id]
-           motor.target = self.states[self.state,motor_id]
-           motor.speed = self.command[motor_id] * self.max_speed #abs(command[motor_id]) * max_speed
-           # motor.direction = command[motor_id] > 0
-           motor.done = self.done[motor_id]
-           motor.encoder_counts = int(self.encoder_counts[motor_id])
-           motor.encoder_length = self.encoder_length[motor_id]
-           control_msg.motors.append(motor)
-        # sensors
-        for sensor_id in range(self.num_sensors):
-           sensor = Sensor()
-           sensor.id = sensor_id
-           sensor.length = self.length[sensor_id]
-           sensor.capacitance = self.cap[sensor_id]
-           control_msg.sensors.append(sensor)
-        # imu
-        # for imu_id in range(self.num_imus):
-        #    IMU = Imu()
-        #    IMU.id = imu_id
-        #    if any(self.imu[imu_id]) == None:
-        #        IMU.x = None
-        #        IMU.y = None
-        #        IMU.z = None
-        #    else:
-        #        IMU.x = self.imu[imu_id][0]
-        #        IMU.y = self.imu[imu_id][1]
-        #        IMU.z = self.imu[imu_id][2]
-        #    imu_msg.imus.append(IMU)
-        for rod in range(3):
-            IMU = Imu()
-            IMU.ax = self.accelerometer[rod][0]
-            IMU.ay = self.accelerometer[rod][1]
-            IMU.az = self.accelerometer[rod][2]
-            IMU.gx = self.gyroscope[rod][0]
-            IMU.gy = self.gyroscope[rod][1]
-            IMU.gz = self.gyroscope[rod][2]
-            control_msg.imus.append(IMU)
-        # publish
-        self.control_pub.publish(control_msg)
-        # strain_pub.publish(strain_msg)
-        # imu_pub.publish(imu_msg)
+    def log_data(self):
+        # log data instead of sending ROS messages
+        data = {}
+        data['header'] = {'secs':rospy.get_time()}
+        data['sensors'] = {s:{'length':l,'capacitance':c} for s,l,c in zip(range(self.num_sensors),self.length,self.cap)}
+        data['imu'] = {bar:{'acceleromter':{key:value for key,value in zip(['x','y','z'],self.accelerometer[bar])},'gyroscope':{key:value for key,value in zip(['x','y','z'],self.gyroscope[bar])}}}
+        json.dump(data,open(os.path.join(self.data_dir, str(self.count).zfill(4) + ".json"),'w'))
+        self.count += 1
         
     def read(self):
         data, addr = self.sock_receive.recvfrom(255)  # Receive data (up to 255 bytes)
         # Decode the data (assuming it's sent as a string)
         received_data = data.decode('utf-8')
-        print('Received Data: ',received_data)
+        # print('Received Data: ',received_data)
         try :
             # Received data in the form "N_Arduino C0 C1 C2 C3 e0 e1 ax ay az gx gy gz" where N_Arduino indicates the number of the Arduino of the received data
             sensor_values = received_data.split()
@@ -255,7 +201,7 @@ class TensegrityRobot:
             # print(sensor_array)
             if(addr not in self.addresses) :
                 self.addresses[int(sensor_array[0])] = addr
-            print('Sensor Array: ',sensor_array)
+            # print('Sensor Array: ',sensor_array)
             """
             Following code of function read(self) configurated for a 3 bar tensegrity with following sensors
             Rod 0 (red) has sensors C, E, and I (2, 4, and 8) and motors 2 and 4
@@ -459,11 +405,11 @@ class TensegrityRobot:
             try : 
                 self.read()
                 if(None not in self.addresses) :
-                    self.sendRosMSG()    
-                    print('=================')
-                    for i in range(self.num_sensors) :
-                        print(f"Capacitance {chr(i + 97)}: {self.cap[i]:.2f} \t Length: {self.length[i]:.2f} \n")
-                    print('=================')
+                    self.log_data()   
+                    # print('=================')
+                    # for i in range(self.num_sensors) :
+                    #     print(f"Capacitance {chr(i + 97)}: {self.cap[i]:.2f} \t Length: {self.length[i]:.2f} \n")
+                    # print('=================')
             except Exception as this_error:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 print('There has been an error: ',this_error)
