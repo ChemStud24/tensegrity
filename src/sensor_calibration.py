@@ -180,6 +180,7 @@ class TensegrityRobot:
         time.sleep(delay_time/1000)
         
     def log_data(self):
+        print("Logging data " + str(self.count))
         # log data instead of sending ROS messages
         data = {}
         data['header'] = {'secs':rospy.get_time()}
