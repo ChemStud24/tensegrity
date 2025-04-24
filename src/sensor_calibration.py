@@ -185,7 +185,7 @@ class TensegrityRobot:
         data = {}
         data['header'] = {'secs':rospy.get_time()}
         data['sensors'] = {s:{'length':l,'capacitance':c} for s,l,c in zip(range(self.num_sensors),self.length,self.cap)}
-        data['imu'] = {bar:{'acceleromter':{key:value for key,value in zip(['x','y','z'],self.accelerometer[bar])},'gyroscope':{key:value for key,value in zip(['x','y','z'],self.gyroscope[bar])}}}
+        data['imu'] = {bar:{'acceleromter':{key:value for key,value in zip(['x','y','z'],self.accelerometer[bar])},'gyroscope':{key:value for key,value in zip(['x','y','z'],self.gyroscope[bar])}} for bar in range(3)}
         json.dump(data,open(os.path.join(self.data_dir, str(self.count).zfill(4) + ".json"),'w'))
         self.count += 1
         
