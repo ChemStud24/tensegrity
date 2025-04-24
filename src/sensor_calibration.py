@@ -15,6 +15,8 @@ import socket
 #from tensegrity.msg import Motor, Info, MotorsStamped, Sensor, SensorsStamped, Imu, ImuStamped
 from tensegrity.msg import Motor, Info, Sensor, Imu, TensegrityStamped
 #from geometry_msgs.msg import QuaternionStamped
+import datetime 
+
 
 
 class FileError(Exception):
