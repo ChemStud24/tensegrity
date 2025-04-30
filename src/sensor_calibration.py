@@ -180,7 +180,7 @@ class TensegrityRobot:
         if delay_time < 0:
             delay_time = 0
         time.sleep(delay_time/1000)
-        
+       
     def log_data(self):
         print("Logging data " + str(self.count))
         # log data instead of sending ROS messages
