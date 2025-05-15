@@ -20,6 +20,7 @@ from tensegrity.msg import Motor, Info, Sensor, Imu, TensegrityStamped, State, A
 from geometry_msgs.msg import Point
 from Tensegrity_model_inputs import *
 from policy_vel import ctrl_policy_vel
+from policy import ctrl_policy
 
 
 class FileError(Exception):
@@ -69,7 +70,8 @@ class TensegrityRobot:
 
         # RL
         fps = 10 # maybe lower because sometimes there are bigger gaps
-        self.policy = ctrl_policy_vel(fps)
+        # self.policy = ctrl_policy_vel(fps)
+        self.policy = ctrl_policy(fps)
         
         self.num_steps = None
         self.state = None
@@ -112,6 +114,11 @@ class TensegrityRobot:
         if '/tracking_service' in rosnode.get_node_names():
             # self.trajectory = obstacle_trajectory
             self.init_tracker()
+
+        # init target point
+        if policy.target_pt is None:
+            _,_,endcaps = self.get_pose()
+            policy.reset_target_point(endcaps)
         
         # communicating with the planner
         # self.action_sub = rospy.Subscriber('/action_msg',Action,self.mpc_callback)
