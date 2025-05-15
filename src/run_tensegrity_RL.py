@@ -68,10 +68,14 @@ class TensegrityRobot:
         self.reverse_the_gait = False
         self.action_sequence = [' _ ', ' _ ']
 
+        # locate the ROS package
+        self.package_path = rospkg.RosPack().get_path('tensegrity')
+
         # RL
         fps = 10 # maybe lower because sometimes there are bigger gaps
         # self.policy = ctrl_policy_vel(fps)
-        self.policy = ctrl_policy(fps)
+        actor = "actors/actor_9900000_wpik4af.pth"
+        self.policy = ctrl_policy(fps,path_to_model=os.path.join(self.package_path,'src',actor))
         
         self.num_steps = None
         self.state = None
@@ -116,9 +120,9 @@ class TensegrityRobot:
             self.init_tracker()
 
         # init target point
-        if policy.target_pt is None:
+        if self.policy.target_pt is None:
             _,_,endcaps = self.get_pose()
-            policy.reset_target_point(endcaps)
+            self.policy.reset_target_point(endcaps)
         
         # communicating with the planner
         # self.action_sub = rospy.Subscriber('/action_msg',Action,self.mpc_callback)
@@ -135,8 +139,7 @@ class TensegrityRobot:
         rospy.init_node('tensegrity')
         self.control_pub = rospy.Publisher('control_msg', TensegrityStamped, queue_size=10) ## correct ??
 
-        package_path = rospkg.RosPack().get_path('tensegrity')
-        calibration_file = os.path.join(package_path,'calibration/new_calibration.json')
+        calibration_file = os.path.join(self.package_path,'calibration/new_calibration.json')
         
         self.m, self.b = self.read_calibration_file(calibration_file)
         
