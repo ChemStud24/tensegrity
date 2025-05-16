@@ -67,7 +67,7 @@ class ctrl_policy:
         self.oript = None
         self.iniyaw = None
         self.target_pt = None
-        self._use_lp_filter = True
+        self._use_lp_filter = False
         self._determined_action = True
 
         self.cap_pos_batch_size = 10
@@ -118,10 +118,13 @@ class ctrl_policy:
         else:
             action_scaled, _ = self.actor.predict(torch.from_numpy(obs).float()) # action = vel_cmd / vel_max
         action_scaled = action_scaled.cpu().detach().numpy()
+
+        action = action_scaled * (self.action_limitation[1] - self.action_limitation[0]) / 2 + (self.action_limitation[1] + self.action_limitation[0]) / 2
+        action = np.clip(action, self.action_limitation[0], self.action_limitation[1])
         if self._use_lp_filter:
-            next_action = self._action_lp_filter(action_scaled, last_action)
+            next_action = self._action_lp_filter(action, last_action)
         else:
-            next_action = self._action_direct(action_scaled)
+            next_action = action
         return next_action
     
     def _action_lp_filter(self, action, last_action):
@@ -129,12 +132,6 @@ class ctrl_policy:
         del_action = k_FILTER*(action - last_action)*self.dt
         next_action = last_action + del_action
         return next_action
-    
-    def _action_direct(self, action):
-        # clip action with active tendon length limitation
-        action = action * (self.action_limitation[1] - self.action_limitation[0]) / 2 + (self.action_limitation[1] + self.action_limitation[0]) / 2
-        action = np.clip(action, self.action_limitation[0], self.action_limitation[1])
-        return action
     
     def _update_cap_pos_batch(self, cap_pos):
         CoM = np.mean(cap_pos, axis=0)
