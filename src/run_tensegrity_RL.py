@@ -72,7 +72,7 @@ class TensegrityRobot:
         self.package_path = rospkg.RosPack().get_path('tensegrity')
 
         # RL
-        fps = 10 # maybe lower because sometimes there are bigger gaps
+        fps = 8 # maybe lower because sometimes there are bigger gaps
         # self.policy = ctrl_policy_vel(fps)
         actor = "actors/actor_9900000_wpik4af.pth"
         self.policy = ctrl_policy(fps,path_to_model=os.path.join(self.package_path,'src',actor))
