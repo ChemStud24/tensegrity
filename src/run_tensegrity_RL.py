@@ -124,6 +124,12 @@ class TensegrityRobot:
             _,_,endcaps = self.get_pose()
             self.policy.reset_target_point(endcaps)
         
+        # ctrl data recorder
+        self.saved_data_dir = os.path.join('saved_data')
+        os.makedirs(self.saved_data_dir, exist_ok=True)
+        self.ctrl_cmd = []
+        self.ctrl_pos = []
+        
         # communicating with the planner
         # self.action_sub = rospy.Subscriber('/action_msg',Action,self.mpc_callback)
         # self.state_pub = rospy.Publisher('/state_msg',State,queue_size=10)
@@ -386,6 +392,11 @@ class TensegrityRobot:
         _,_,endcaps = self.get_pose()
         self.states = np.array([self.policy.get_action(endcaps,self.pos)])
         self.state = 0
+
+        self.ctrl_pos.append(self.pos)
+        self.ctrl_cmd.append(self.states[self.state])
+        np.save(os.path.join(self.saved_data_dir,'ctrl_cmd.npy'),np.array(self.ctrl_cmd))
+        np.save(os.path.join(self.saved_data_dir,'ctrl_pos.npy'),np.array(self.ctrl_pos))
 
 
         command_msg = self.stop_msg.split()
