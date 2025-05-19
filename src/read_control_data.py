@@ -16,12 +16,13 @@ datafiles = sorted(os.listdir(data_dir))
 
 real_actions = []
 real_commands = []
+timestamps = []
 
 plot_replay_command = False
 
 if plot_replay_command:
     from policy import ctrl_policy
-    policy_pos = ctrl_policy(10) # set frame rate
+    policy_pos = ctrl_policy(8) # set frame rate
     rl_commands = []
 
 for df in datafiles:
@@ -32,6 +33,7 @@ for df in datafiles:
 	action_state = np.array(action_state)
 	real_actions.append(action_state)
 	real_commands.append(targets)
+	timestamps.append(data.get('header').get('secs'))
 	if plot_replay_command:
 		if policy_pos.target_pt is None:
 			policy_pos.reset_target_point(endcaps)
@@ -40,34 +42,38 @@ for df in datafiles:
 		
 real_actions = np.array(real_actions)
 real_commands = np.array(real_commands)
+timestamps = np.array(timestamps)
+timestamps = timestamps - timestamps[0]
 
 if plot_replay_command == False:
     plt.figure(figsize=(12, 8))
     plt.subplot(6, 1, 1)
-    plt.plot(real_actions[:, 0], marker='.', linestyle='-')
-    plt.plot(real_commands[:, 0], linestyle='-')
+    plt.plot(timestamps,real_actions[:, 0], marker='.', linestyle='-',label='Tendon Length')
+    plt.plot(timestamps,real_commands[:, 0], linestyle='-',label='Commanded Length')
+    plt.legend()
     plt.grid()
     plt.subplot(6, 1, 2)
-    plt.plot(real_actions[:, 1], marker='.', linestyle='-')
-    plt.plot(real_commands[:, 1], linestyle='-')
+    plt.plot(timestamps,real_actions[:, 1], marker='.', linestyle='-')
+    plt.plot(timestamps,real_commands[:, 1], linestyle='-')
     plt.grid()
     plt.subplot(6, 1, 3)
-    plt.plot(real_actions[:, 2], marker='.', linestyle='-')
-    plt.plot(real_commands[:, 2], linestyle='-')
+    plt.plot(timestamps,real_actions[:, 2], marker='.', linestyle='-')
+    plt.plot(timestamps,real_commands[:, 2], linestyle='-')
     plt.grid()
     plt.subplot(6, 1, 4)
-    plt.plot(real_actions[:, 3], marker='.', linestyle='-')
-    plt.plot(real_commands[:, 3], linestyle='-')
+    plt.plot(timestamps,real_actions[:, 3], marker='.', linestyle='-')
+    plt.plot(timestamps,real_commands[:, 3], linestyle='-')
     plt.grid()
     plt.subplot(6, 1, 5)
-    plt.plot(real_actions[:, 4], marker='.', linestyle='-')
-    plt.plot(real_commands[:, 4], linestyle='-')
+    plt.plot(timestamps,real_actions[:, 4], marker='.', linestyle='-')
+    plt.plot(timestamps,real_commands[:, 4], linestyle='-')
     plt.grid()
     plt.subplot(6, 1, 6)
-    plt.plot(real_actions[:, 5], marker='.', linestyle='-')
-    plt.plot(real_commands[:, 5], linestyle='-')
+    plt.plot(timestamps,real_actions[:, 5], marker='.', linestyle='-')
+    plt.plot(timestamps,real_commands[:, 5], linestyle='-')
     plt.grid()
     plt.tight_layout()
+    plt.xlabel('Time (s)')
     plt.show()
 else:
     rl_commands = np.array(rl_commands)
