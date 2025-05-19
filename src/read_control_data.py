@@ -4,7 +4,7 @@ import json
 import numpy as np
 import matplotlib.pyplot as plt
 
-dataset = "C:/Users/willj/Documents/tensegrity-dataset/RL_test_data"
+dataset = "/home/willjohnson/tensegrity_ws/data"
 
 if len(sys.argv) > 1:
 	trial = sys.argv[1]
@@ -50,28 +50,34 @@ if plot_replay_command == False:
     plt.subplot(6, 1, 1)
     plt.plot(timestamps,real_actions[:, 0], marker='.', linestyle='-',label='Tendon Length')
     plt.plot(timestamps,real_commands[:, 0], linestyle='-',label='Commanded Length')
+    plt.ylim([-0.1,1.1])
     plt.legend()
     plt.grid()
     plt.subplot(6, 1, 2)
     plt.plot(timestamps,real_actions[:, 1], marker='.', linestyle='-')
     plt.plot(timestamps,real_commands[:, 1], linestyle='-')
     plt.grid()
+    plt.ylim([-0.1,1.1])
     plt.subplot(6, 1, 3)
     plt.plot(timestamps,real_actions[:, 2], marker='.', linestyle='-')
     plt.plot(timestamps,real_commands[:, 2], linestyle='-')
     plt.grid()
+    plt.ylim([-0.1,1.1])
     plt.subplot(6, 1, 4)
     plt.plot(timestamps,real_actions[:, 3], marker='.', linestyle='-')
     plt.plot(timestamps,real_commands[:, 3], linestyle='-')
     plt.grid()
+    plt.ylim([-0.1,1.1])
     plt.subplot(6, 1, 5)
     plt.plot(timestamps,real_actions[:, 4], marker='.', linestyle='-')
     plt.plot(timestamps,real_commands[:, 4], linestyle='-')
     plt.grid()
+    plt.ylim([-0.1,1.1])
     plt.subplot(6, 1, 6)
     plt.plot(timestamps,real_actions[:, 5], marker='.', linestyle='-')
     plt.plot(timestamps,real_commands[:, 5], linestyle='-')
     plt.grid()
+    plt.ylim([-0.1,1.1])
     plt.tight_layout()
     plt.xlabel('Time (s)')
     plt.show()

@@ -67,7 +67,7 @@ class ctrl_policy:
         self.oript = None
         self.iniyaw = None
         self.target_pt = None
-        self._use_lp_filter = False
+        self._use_lp_filter = True
         self._determined_action = True
 
         self.cap_pos_batch_size = 10
