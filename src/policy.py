@@ -61,6 +61,7 @@ class ctrl_policy:
         self.action_limitation = [0, 1] # actor command limitation
         self.len_limitation = [0.1, 0.2] # active tendon length limitation with unit: m
         self.vel_max = 0.1 # max velocity for actors with unit: m/s
+        self.last_action = np.ones(6) * (self.action_limitation[0] + self.action_limitation[1]) / 2
 
         self.iniyaw_bias = -np.pi/15
         self.target_distance = 1.0
@@ -108,10 +109,10 @@ class ctrl_policy:
 
         observation = np.concatenate([cap_rel_pos, cap_vel, target_vec])
 
-        action = self._predict(observation, self.last_action_state)
+        action = self._predict(observation)
         return action
 
-    def _predict(self, obs, last_action):
+    def _predict(self, obs):
         if self._determined_action:
             action_scaled, _ = self.actor.forward(torch.from_numpy(obs).float())
             action_scaled = torch.tanh(action_scaled)
@@ -122,15 +123,16 @@ class ctrl_policy:
         action = action_scaled * (self.action_limitation[1] - self.action_limitation[0]) / 2 + (self.action_limitation[1] + self.action_limitation[0]) / 2
         action = np.clip(action, self.action_limitation[0], self.action_limitation[1])
         if self._use_lp_filter:
-            next_action = self._action_lp_filter(action, last_action)
+            next_action = self._action_lp_filter(action)
         else:
             next_action = action
         return next_action
     
-    def _action_lp_filter(self, action, last_action):
+    def _action_lp_filter(self, action):
         k_FILTER = 1.0
-        del_action = k_FILTER*(action - last_action)*self.dt
-        next_action = last_action + del_action
+        del_action = k_FILTER*(action - self.last_action)*self.dt
+        next_action = self.last_action + del_action
+        self.last_action = next_action
         return next_action
     
     def _update_cap_pos_batch(self, cap_pos):
