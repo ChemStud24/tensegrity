@@ -45,7 +45,7 @@ class TensegrityRobot:
         self.d_error = [0] * self.num_motors
         self.command = [0] * self.num_motors
         self.speed = [0] * self.num_motors
-        self.flip = [1, -1, 1, -1, -1, -1] # flip direction of motors
+        self.flip = [1, -1, 1, 1, -1, -1] # flip direction of motors
         self.accelerometer = [[0]*3]*3
         self.gyroscope = [[0]*3]*3
         self.encoder_counts = [0]*self.num_motors
@@ -393,8 +393,8 @@ class TensegrityRobot:
         self.states = np.array([self.policy.get_action(endcaps,self.pos)])
         self.state = 0
 
-        self.ctrl_pos.append(self.pos)
-        self.ctrl_cmd.append(self.states[self.state])
+        self.ctrl_pos.append([p for p in self.pos])
+        self.ctrl_cmd.append([s for s in self.states[self.state]])
         np.save(os.path.join(self.saved_data_dir,'ctrl_cmd.npy'),np.array(self.ctrl_cmd))
         np.save(os.path.join(self.saved_data_dir,'ctrl_pos.npy'),np.array(self.ctrl_pos))
 
