@@ -136,7 +136,7 @@ class TensegrityRobot:
                                 [1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.0, 1.0, 0.1, 0.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
                                 [0.1, 1.0, 1.0, 0.1, 1.0, 1.0],[1.0, 0.0, 1.0, 0.1, 0.0, 1.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]) # quasi-static rolling with rest states
         # self.states = np.array([[0, 0, 0, 1, 0, 1], [0, 0, 0, 0, 0, 1], [0, 0, 0.7, 0, 1.2, 1], [1, 1, 1, 1, 1, 1], [0, 0, 0, 1, 1, 0], [0, 0, 0, 1, 0, 0], [0.7, 0, 0, 1, 0, 1.2], [1, 1, 1, 1, 1, 1], [0, 0, 0, 0, 1, 1], [0, 0, 0, 0, 1, 0], [0, 0.7, 0, 1.2, 1, 0], [1, 1, 1, 1, 1, 1]]) # cw
-        # self.states = np.array([[1, 1, 1, 0, 1, 1], [1, 0, 1, 0, 1, 1], [0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]]) # ccw
+        self.states = np.array([[1, 1, 1, 0, 1, 1], [1, 0, 1, 0, 1, 1], [0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]]) # ccw
 
         # single step of cw
         # self.states = np.array([[0, 0, 0, 1, 0, 1], [0, 0, 0, 0, 0, 1], [0, 0, 0.7, 0, 1.2, 1], [1, 1, 1, 1, 1, 1]]) # 1st step
@@ -279,6 +279,7 @@ class TensegrityRobot:
         #    imu_msg.imus.append(IMU)
         for rod in range(3):
             IMU = Imu()
+            IMU.id = rod
             IMU.ax = self.accelerometer[rod][0]
             IMU.ay = self.accelerometer[rod][1]
             IMU.az = self.accelerometer[rod][2]
@@ -434,12 +435,22 @@ class TensegrityRobot:
             self.quitting = True
             self.keep_going = False
             print('I hear you Q')
-            raise S_Q_Pressed()
+            # raise S_Q_Pressed()
+            print("\nStopping motors")
+            self.keep_going = False
+            # set duty cycle as 0 to turn off the motors
+            for i in range(len(self.addresses)):
+                self.send_command(self.stop_msg, self.addresses[i], 0)
         elif key == keyboard.KeyCode.from_char('s'):
             self.quitting = True
             self.keep_going = False
-            raise S_Q_Pressed()
+            # raise S_Q_Pressed()
             print('I hear you S')
+            print("\nStopping motors")
+            self.keep_going = False
+            # set duty cycle as 0 to turn off the motors
+            for i in range(len(self.addresses)):
+                self.send_command(self.stop_msg, self.addresses[i], 0)
         elif key == keyboard.KeyCode.from_char('r'):
             self.states = np.array([[1.0]*self.num_motors]*self.num_steps)
             self.done = np.array([False] * self.num_motors)
@@ -534,12 +545,12 @@ class TensegrityRobot:
         #         self.send_command(self.stop_msg, self.addresses[i], 0)
 
 
-        except S_Q_Pressed :
-            print("\nStopping motors")
-            self.keep_going = False
-            # set duty cycle as 0 to turn off the motors
-            for i in range(len(self.addresses)):
-                self.send_command(self.stop_msg, self.addresses[i], 0)
+        # except S_Q_Pressed :
+        #     print("\nStopping motors")
+        #     self.keep_going = False
+        #     # set duty cycle as 0 to turn off the motors
+        #     for i in range(len(self.addresses)):
+        #         self.send_command(self.stop_msg, self.addresses[i], 0)
                 
     def on_release(self,key):
         print('release')
@@ -602,8 +613,15 @@ class TensegrityRobot:
                     self.sendRosMSG()
                     for i in range(self.num_sensors) :
                         print(f"Capacitance {chr(i + 97)}: {self.cap[i]:.2f} \t Length: {self.length[i]:.2f} \n")
-            except :
-                pass
+            except Exception as e:
+                print("\nStopping motors")
+                self.keep_going = False
+                # set duty cycle as 0 to turn off the motors
+                for i in range(len(self.addresses)):
+                    self.send_command(self.stop_msg, self.addresses[i], 0)
+
+                print(f"Error type: {type(e).__name__}")
+                print(f"Error message: {e}")
             
         
 if __name__ == '__main__':

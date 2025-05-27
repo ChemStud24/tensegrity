@@ -38,8 +38,8 @@ class TensegrityRobot:
         self.command = [0] * self.num_motors
         self.speed = [0] * self.num_motors
         self.flip = [1, 1, -1, 1, -1, -1] # flip direction of motors
-        self.accelerometer = [[0]*3]*3
-        self.gyroscope = [[0]*3]*3
+        self.accelerometer = [[0]*3 for _ in range(3)]
+        self.gyroscope = [[0]*3 for _ in range(3)]
         self.encoder_counts = [0]*self.num_motors
         self.encoder_length = [0]*self.num_motors
         self.RANGE = 100
@@ -230,6 +230,7 @@ class TensegrityRobot:
         #    imu_msg.imus.append(IMU)
         for rod in range(3):
             IMU = Imu()
+            IMU.id = rod
             IMU.ax = self.accelerometer[rod][0]
             IMU.ay = self.accelerometer[rod][1]
             IMU.az = self.accelerometer[rod][2]
