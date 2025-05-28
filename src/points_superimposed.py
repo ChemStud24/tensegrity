@@ -431,6 +431,24 @@ if __name__ == '__main__':
 		trajectory_sequence.extend([make_square(obs,edge_length,20) for obs in obstacles])
 		trajectory_sequence.append(robot_end)
 		trajectory = np.vstack([segment for segment in trajectory_sequence])
+	elif traj_name == "test-obstacles":
+		starting_point = [0.15,1.3]
+		ending_point = [1.9,0.4]
+		robot_length = 0.30
+		edge_length = 0.2
+		# obstacle_point_1 = [0.68,0.1]
+		# obstacle_point_2 = [1.48,1.0]
+		# obstacles = [[0.3,0.2],[0.3,0.6],[1.5,1.0],[1.5,0.6]]
+		obstacles = [[0.8,0.2],[0.8,0.6],[1.8,1.2],[1.8,0.8]]
+		# t = np.linspace(0,2*np.pi,20)
+		robot_start = np.linspace(np.array(starting_point) - np.array([0,robot_length/2]),np.array(starting_point) + np.array([0,robot_length/2]),8)
+		robot_end = np.linspace(np.array(ending_point) - np.array([0,robot_length/2]),np.array(ending_point) + np.array([0,robot_length/2]),8)
+		# obstacle_1 = np.array([[radius*np.cos(T) + obstacle_point_1[0],radius*np.sin(T) + obstacle_point_1[1]] for T in t])
+		# obstacle_2 = np.array([[radius*np.cos(T) + obstacle_point_2[0],radius*np.sin(T) + obstacle_point_2[1]] for T in t])
+		trajectory_sequence = [robot_start]
+		trajectory_sequence.extend([make_square(obs,edge_length,20) for obs in obstacles])
+		trajectory_sequence.append(robot_end)
+		trajectory = np.vstack([segment for segment in trajectory_sequence])
 	else:
 		error("You must choose a predefined trajectory.")
 
