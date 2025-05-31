@@ -127,13 +127,51 @@ def make_square(center_point,edge_length,num_points=100):
 # obstacle_trajectory = np.vstack([segment for segment in trajectory_sequence])
 
 # outside
-starting_point = [0.4,1.2]
-ending_point = [1.7,0.4]
+# starting_point = [0.4,1.2]
+# ending_point = [1.7,0.4]
+# robot_length = 0.30
+# edge_length = 0.2
+# obstacles = [[0.8,0.6],[0.8,0.4],[0.8,0.2],[0.8,0],[0.8,-0.2]]
+# robot_start = np.linspace(np.array(starting_point) - np.array([0,robot_length/2]),np.array(starting_point) + np.array([0,robot_length/2]),8)
+# robot_end = np.linspace(np.array(ending_point) - np.array([robot_length/2,0]),np.array(ending_point) + np.array([robot_length/2,0]),8)
+# trajectory_sequence = [robot_start]
+# trajectory_sequence.extend([make_square(obs,edge_length,20) for obs in obstacles])
+# trajectory_sequence.append(robot_end)
+# obstacle_trajectory = np.vstack([segment for segment in trajectory_sequence])
+
+# outside
+# starting_point = [0.15,1.0]
+# ending_point = [1.7,0.2]
+# robot_length = 0.30
+# edge_length = 0.2
+# # obstacle_point_1 = [0.68,0.1]
+# # obstacle_point_2 = [1.48,1.0]
+# # obstacles = [[0.3,0.2],[0.3,0.6],[1.5,1.0],[1.5,0.6]]
+# obstacles = [[0.5,0.3],[0.5,0.5],[1.5,1.05],[1.5,0.95]]
+# # t = np.linspace(0,2*np.pi,20)
+# robot_start = np.linspace(np.array(starting_point) - np.array([0,robot_length/2]),np.array(starting_point) + np.array([0,robot_length/2]),8)
+# robot_end = np.linspace(np.array(ending_point) - np.array([0,robot_length/2]),np.array(ending_point) + np.array([0,robot_length/2]),8)
+# # obstacle_1 = np.array([[radius*np.cos(T) + obstacle_point_1[0],radius*np.sin(T) + obstacle_point_1[1]] for T in t])
+# # obstacle_2 = np.array([[radius*np.cos(T) + obstacle_point_2[0],radius*np.sin(T) + obstacle_point_2[1]] for T in t])
+# trajectory_sequence = [robot_start]
+# trajectory_sequence.extend([make_square(obs,edge_length,20) for obs in obstacles])
+# trajectory_sequence.append(robot_end)
+# obstacle_trajectory = np.vstack([segment for segment in trajectory_sequence])
+
+# outside2
+starting_point = [0.15,1.1]
+ending_point = [1.7,0.2]
 robot_length = 0.30
 edge_length = 0.2
-obstacles = [[0.8,0.6],[0.8,0.4],[0.8,0.2],[0.8,0],[0.8,-0.2]]
+# obstacle_point_1 = [0.68,0.1]
+# obstacle_point_2 = [1.48,1.0]
+# obstacles = [[0.3,0.2],[0.3,0.6],[1.5,1.0],[1.5,0.6]]
+obstacles = [[0.5,0.3],[0.5,0.5],[1.1,0.5],[1.1,0.4]]
+# t = np.linspace(0,2*np.pi,20)
 robot_start = np.linspace(np.array(starting_point) - np.array([0,robot_length/2]),np.array(starting_point) + np.array([0,robot_length/2]),8)
 robot_end = np.linspace(np.array(ending_point) - np.array([robot_length/2,0]),np.array(ending_point) + np.array([robot_length/2,0]),8)
+# obstacle_1 = np.array([[radius*np.cos(T) + obstacle_point_1[0],radius*np.sin(T) + obstacle_point_1[1]] for T in t])
+# obstacle_2 = np.array([[radius*np.cos(T) + obstacle_point_2[0],radius*np.sin(T) + obstacle_point_2[1]] for T in t])
 trajectory_sequence = [robot_start]
 trajectory_sequence.extend([make_square(obs,edge_length,20) for obs in obstacles])
 trajectory_sequence.append(robot_end)
@@ -419,7 +457,7 @@ if __name__ == '__main__':
 		trajectory_sequence.extend([make_square(obs,edge_length,20) for obs in obstacles])
 		trajectory_sequence.append(robot_end)
 		trajectory = np.vstack([segment for segment in trajectory_sequence])
-	elif traj_name == "outside":
+	elif traj_name == "outside-rebuttal":
 		starting_point = [0.5,1.2]
 		ending_point = [1.7,0.4]
 		robot_length = 0.30
@@ -427,6 +465,42 @@ if __name__ == '__main__':
 		obstacles = [[1,0.5],[1,0.3],[1,0.1],[1,-0.1],[1,-0.3]]
 		robot_start = np.linspace(np.array(starting_point) - np.array([0,robot_length/2]),np.array(starting_point) + np.array([0,robot_length/2]),8)
 		robot_end = np.linspace(np.array(ending_point) - np.array([robot_length/2,0]),np.array(ending_point) + np.array([robot_length/2,0]),8)
+		trajectory_sequence = [robot_start]
+		trajectory_sequence.extend([make_square(obs,edge_length,20) for obs in obstacles])
+		trajectory_sequence.append(robot_end)
+		trajectory = np.vstack([segment for segment in trajectory_sequence])
+	elif traj_name == "outside":
+		starting_point = [0.15,1.0]
+		ending_point = [1.7,0.2]
+		robot_length = 0.30
+		edge_length = 0.2
+		# obstacle_point_1 = [0.68,0.1]
+		# obstacle_point_2 = [1.48,1.0]
+		# obstacles = [[0.3,0.2],[0.3,0.6],[1.5,1.0],[1.5,0.6]]
+		obstacles = [[0.5,0.3],[0.5,0.5],[1.5,1.05],[1.5,0.95]]
+		# t = np.linspace(0,2*np.pi,20)
+		robot_start = np.linspace(np.array(starting_point) - np.array([0,robot_length/2]),np.array(starting_point) + np.array([0,robot_length/2]),8)
+		robot_end = np.linspace(np.array(ending_point) - np.array([0,robot_length/2]),np.array(ending_point) + np.array([0,robot_length/2]),8)
+		# obstacle_1 = np.array([[radius*np.cos(T) + obstacle_point_1[0],radius*np.sin(T) + obstacle_point_1[1]] for T in t])
+		# obstacle_2 = np.array([[radius*np.cos(T) + obstacle_point_2[0],radius*np.sin(T) + obstacle_point_2[1]] for T in t])
+		trajectory_sequence = [robot_start]
+		trajectory_sequence.extend([make_square(obs,edge_length,20) for obs in obstacles])
+		trajectory_sequence.append(robot_end)
+		trajectory = np.vstack([segment for segment in trajectory_sequence])
+	elif traj_name == "outside2":
+		starting_point = [0.15,1.1]
+		ending_point = [1.7,0.2]
+		robot_length = 0.30
+		edge_length = 0.2
+		# obstacle_point_1 = [0.68,0.1]
+		# obstacle_point_2 = [1.48,1.0]
+		# obstacles = [[0.3,0.2],[0.3,0.6],[1.5,1.0],[1.5,0.6]]
+		obstacles = [[0.5,0.3],[0.5,0.5],[1.1,0.5],[1.1,0.4]]
+		# t = np.linspace(0,2*np.pi,20)
+		robot_start = np.linspace(np.array(starting_point) - np.array([0,robot_length/2]),np.array(starting_point) + np.array([0,robot_length/2]),8)
+		robot_end = np.linspace(np.array(ending_point) - np.array([robot_length/2,0]),np.array(ending_point) + np.array([robot_length/2,0]),8)
+		# obstacle_1 = np.array([[radius*np.cos(T) + obstacle_point_1[0],radius*np.sin(T) + obstacle_point_1[1]] for T in t])
+		# obstacle_2 = np.array([[radius*np.cos(T) + obstacle_point_2[0],radius*np.sin(T) + obstacle_point_2[1]] for T in t])
 		trajectory_sequence = [robot_start]
 		trajectory_sequence.extend([make_square(obs,edge_length,20) for obs in obstacles])
 		trajectory_sequence.append(robot_end)

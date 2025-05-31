@@ -15,8 +15,10 @@ import socket
 from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import Image
 from tensegrity_perception.srv import InitTracker, InitTrackerRequest, InitTrackerResponse
-from tensegrity.msg import Motor, Info, Sensor, Imu, TensegrityStamped, State, Action
+from tensegrity.msg import Motor, Info, Sensor, Imu, TensegrityStamped, State, Action, Trajectory
 from geometry_msgs.msg import Point
+from symmetry_reduction_utils import *
+from points_superimposed import obstacle_trajectory
 from Tensegrity_model_inputs import *
 
 
@@ -42,7 +44,7 @@ class TensegrityRobot:
         self.d_error = [0] * self.num_motors
         self.command = [0] * self.num_motors
         self.speed = [0] * self.num_motors
-        self.flip = [1, -1, -1, -1, -1, -1] # flip direction of motors
+        self.flip = [1, -1, 1, 1, -1, -1] # flip direction of motors
         self.accelerometer = [[0]*3]*3
         self.gyroscope = [[0]*3]*3
         self.encoder_counts = [0]*self.num_motors
