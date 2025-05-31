@@ -45,8 +45,8 @@ class TensegrityRobot:
         self.command = [0] * self.num_motors
         self.speed = [0] * self.num_motors
         self.flip = [1, -1, 1, 1, -1, -1] # flip direction of motors
-        self.accelerometer = [[0]*3]*3
-        self.gyroscope = [[0]*3]*3
+        self.accelerometer = [[0]*3 for _ in range(3)]
+        self.gyroscope = [[0]*3 for _ in range(3)]
         self.encoder_counts = [0]*self.num_motors
         self.encoder_length = [0]*self.num_motors
         self.RANGE024 = 100
