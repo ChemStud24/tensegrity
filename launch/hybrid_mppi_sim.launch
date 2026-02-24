@@ -1,0 +1,60 @@
+<launch>
+    <!--
+    Launch file for running the complete Hybrid MPPI simulation system.
+
+    This launches:
+    1. MuJoCo UDP Simulator (tensegrity_udp_simulator.py)
+    2. Mock Tracking Service (mock_tracking_service.py)
+    3. Hybrid MPPI Controller (run_tensegrity_hybrid_mppi_simulator.py)
+    4. MPPI Planner (mppi_planner.py)
+
+    Usage:
+        roslaunch tensegrity hybrid_mppi_sim.launch
+
+    Or with options:
+        roslaunch tensegrity hybrid_mppi_sim.launch visualize:=false sensor_noise:=true
+    -->
+
+    <!-- Arguments with defaults -->
+    <arg name="xml_model" default="$(find tensegrity)/src/mujoco_simulator/xml_models/3bar_new_platform_all_cables.xml"/>
+    <arg name="visualize" default="true"/>
+    <arg name="physics_rate" default="1000.0"/>
+    <arg name="sensor_rate" default="20.0"/>
+    <arg name="sensor_noise" default="false"/>
+    <arg name="camera_rate" default="30.0"/>
+    <arg name="position_noise_std" default="0.0"/>
+    <arg name="orientation_noise_std" default="0.0"/>
+
+    <!-- Load perception config parameters -->
+    <param name="data_cfg_file" type="str" value="$(find tensegrity_perception)/configs/data_cfg.json" if="$(eval optenv('TENSEGRITY_PERCEPTION_AVAILABLE', 'true') == 'true')"/>
+
+    <!-- 1. MuJoCo UDP Simulator -->
+    <node pkg="tensegrity" type="tensegrity_udp_simulator.py" name="mujoco_simulator" output="screen">
+        <param name="xml_path" value="$(arg xml_model)"/>
+        <param name="visualize" value="$(arg visualize)"/>
+        <param name="physics_rate" value="$(arg physics_rate)"/>
+        <param name="sensor_rate" value="$(arg sensor_rate)"/>
+        <param name="sensor_noise" value="$(arg sensor_noise)"/>
+        <param name="camera_rate" value="$(arg camera_rate)"/>
+    </node>
+
+    <!-- 2. Mock Tracking Service -->
+    <node pkg="tensegrity_perception" type="mock_tracking_service.py" name="mock_tracking_service" output="screen">
+        <param name="simulator_host" value="127.0.0.1"/>
+        <param name="simulator_pose_port" value="2391"/>
+        <param name="position_noise_std" value="$(arg position_noise_std)"/>
+        <param name="orientation_noise_std" value="$(arg orientation_noise_std)"/>
+        <param name="publish_delay" value="0.0"/>
+    </node>
+
+    <!-- 3. Hybrid MPPI Controller (robot interface) -->
+    <node pkg="tensegrity" type="run_tensegrity_hybrid_mppi_simulator.py" name="hybrid_mppi_controller" output="screen" launch-prefix="bash -c 'sleep 2; exec $0 $@'">
+        <!-- Delay startup to let simulator initialize first -->
+    </node>
+
+    <!-- 4. MPPI Planner -->
+    <node pkg="tensegrity" type="mppi_planner.py" name="mppi_planner" output="screen" launch-prefix="bash -c 'sleep 3; exec $0 $@'">
+        <!-- Delay startup to let controller initialize first -->
+    </node>
+
+</launch>

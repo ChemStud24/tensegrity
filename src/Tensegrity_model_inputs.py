@@ -16,7 +16,7 @@ number_of_rods = 3
 # massRod = 140 #g
 # massSkin = 700/20 #g
 # massEndCap = 25 #g
-L = 330#360 #Initial bar length, in mm
+L = 295#360 #Initial bar length, in mm
 # initialSensorLength = 15
 
 # node_position = [] #an array initialized with just 0s where the node position can be inserted

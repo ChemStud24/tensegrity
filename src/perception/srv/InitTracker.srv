@@ -1,0 +1,7 @@
+sensor_msgs/Image rgb_im
+sensor_msgs/Image depth_im
+std_msgs/Float64MultiArray cable_lengths
+std_msgs/Float64MultiArray trajectory_x
+std_msgs/Float64MultiArray trajectory_y
+---
+bool success

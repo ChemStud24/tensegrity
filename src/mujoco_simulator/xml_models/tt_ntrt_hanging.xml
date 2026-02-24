@@ -1,0 +1,483 @@
+<!--
+  ~ Copyright (c) 2020.  -  present.  Kun Wang. All Rights Reserved.
+  -->
+
+<mujoco model="TT (v1.31)">
+    <include file="./common/skybox.xml"/>
+    <include file="./common/visual.xml"/>
+    <include file="./common/materials.xml"/>
+    <compiler angle="degree" coordinate="global" inertiafromgeom="true" autolimits="true">
+        <!--             <lengthrange mode='muscle' timestep="0.001"/>-->
+    </compiler>
+
+    <option timestep="0.001"
+            gravity="0 0 -9.81"
+            cone="elliptic"
+            solver="Newton"
+            integrator="Euler"
+            iterations="100">
+        <flag sensornoise="disable"
+              warmstart="enable"
+              frictionloss="disable"/>
+    </option>
+
+    <visual>
+        <global offwidth="1024" offheight="768"/>
+    </visual>
+
+    <default class='tt'>
+        <geom conaffinity="1" condim="6" contype="1" material="self" size="0.5"
+              solref="0.1 1.0"
+              density="1000" friction="1.000 1.00 1.000"/>
+        <site type="sphere" size="0.005"/>
+        <tendon width="0.1" rgba="1 0 0 1" damping="1000" stiffness="10000"/>
+        <!--        <position ctrllimited="true" ctrlrange="-10 10" kp="10000" />-->
+        <!--        <general gaintype="fixed" dyntype="filter" ctrlrange="-50 50" biastype="affine" gainprm="10000" biasprm="000 -10000 -100"/>-->
+        <general ctrlrange="-100 100" dyntype="filter" gainprm="1000 0 0" biastype="none" dynprm="1 0 0"
+                 biasprm="0 0 0"/>
+    </default>
+
+    <asset>
+        <texture builtin="flat" height="1278" mark="cross" markrgb="1 1 1" name="texgeom"
+                 random="0.01" rgb1="0.8 0.6 0.4" rgb2="0.8 0.6 0.4" type="cube" width="127"/>
+        <texture builtin="checker" height="100" name="texplane" rgb1="0 0 0" rgb2="0.8 0.8 0.8"
+                 type="2d" width="100"/>
+        <material name="MatPlane" reflectance="0.5" shininess="1" specular="1" texrepeat="30 30"
+                  texture="texplane"/>
+        <material name="geom" texture="texgeom" texuniform="true"/>
+
+    </asset>
+
+    <worldbody>
+
+        <!--        <light name='mylight' cutoff="100" diffuse="1 1 1" dir="-0 0 -1.3" directional="true" exponent="1"-->
+        <!--               pos="0 0 1.3" specular=".1 .1 .1"/>-->
+        <light name='light' pos="0 0 6"/>
+        <!--        <geom conaffinity="1" condim="1" material="MatPlane" name="floor" pos="0 0 -10"-->
+        <!--              rgba="0.8 0.9 0.8 1" size="400 400 0.1" type="plane"/>-->
+        <geom name="floor" size="40 40 1" pos="0 0 0" type="plane" material="grid"/>
+
+        <camera name="camera" pos="-13.863 -45.755 21.945" xyaxes="0.949 -0.316 0.000 0.064 0.193 0.979"/>
+
+
+        <!-- ======= RODS ======= -->
+        <body name="r01">
+            <geom name="r01"
+                  fromto=" 4.50711455 -9.14270959  19.69110459  3.95804993 4.64950745 10.04440166"
+                  type="cylinder"
+                  size="0.5"
+                  mass="2.4"/>
+            <freejoint name="move0_1"/>
+            <geom name="sp0"
+                  pos="4.50711455 -9.14270959  19.69110459"
+                  size="1"
+                  type="sphere"
+                  rgba="1 0 0 1"
+                  mass="1"/>
+            <geom name="sp1"
+                  pos="3.95804993 4.64950745 10.04440166"
+                  size="1"
+                  type="sphere"
+                  rgba="1 0 0 1"
+                  mass="1"/>
+
+            <site name="s0" pos=" 4.50711455 -9.14270959  19.69110459" rgba="1 0 0 1" size="0.01"/>
+            <site name="s1" pos="3.95804993 4.64950745 10.04440166" rgba="1 0 0 1" size="0.01"/>
+        </body>
+
+        <body name="r23">
+            <geom name="r23"
+                  fromto="-4.79183289 -0.87960362  10.04440133  6.87804206 6.49201368 19.69110425"
+                  type="cylinder"
+                  size="0.5"
+                  mass="2.4"/>
+            <freejoint name="move2_3"/>
+            <geom name="sp2"
+                  pos="-4.79183289 -0.87960362  10.04440133"
+                  size="1"
+                  type="sphere"
+                  rgba="1 0 0 1"
+                  mass="1"/>
+            <geom name="sp3"
+                  pos="6.87804206 6.49201368 19.69110425"
+                  size="1"
+                  type="sphere"
+                  rgba="1 0 0 1"
+                  mass="1"/>
+
+            <site name="s2" pos="-4.79183289 -0.87960362  10.04440133" rgba="1 0 0 1" size="0.01"/>
+            <site name="s3" pos="6.87804206 6.49201368 19.69110425" rgba="1 0 0 1" size="0.01"/>
+        </body>
+
+        <body name="r45">
+            <geom name="r45"
+                  fromto=" 4.37145737 -5.69266941  10.04440201  -7.84748693  0.72793401  19.69110363"
+                  type="cylinder"
+                  size="0.5"
+                  mass="2.4"/>
+            <freejoint name="move4_5"/>
+            <geom name="sp4"
+                  pos="4.37145737 -5.69266941  10.04440201"
+                  size="1"
+                  type="sphere"
+                  rgba="1 0 0 1"
+                  mass="1"/>
+            <geom name="sp5"
+                  pos="-7.84748693  0.72793401  19.69110363"
+                  size="1"
+                  type="sphere"
+                  rgba="1 0 0 1"
+                  mass="1"/>
+
+            <site name="s4" pos=" 4.37145737 -5.69266941  10.04440201" rgba="1 0 0 1" size="0.01"/>
+            <site name="s5" pos="-7.84748693  0.72793401  19.69110363" rgba="1 0 0 1" size="0.01"/>
+        </body>
+
+        <body name="r67">
+            <geom name="r67"
+                  fromto="-2.14797444  7.85710112  14.86269575   -1.60039838 -5.92764414 24.52015705"
+                  type="cylinder"
+                  size="0.5"
+                  rgba="0 1 0 1"
+                  mass="2.4"/>
+            <freejoint name="move6_7"/>
+            <geom name="sp6"
+                  pos="-2.14797444  7.85710112  14.86269575"
+                  size="1"
+                  type="sphere"
+                  rgba="1 0 0 1"
+                  mass="1"/>
+            <geom name="sp7"
+                  pos="-1.60039838 -5.92764414 24.52015705"
+                  size="1"
+                  type="sphere"
+                  rgba="1 0 0 1"
+                  mass="1"/>
+
+            <site name="s6" pos="-2.14797444  7.85710112  14.86269575" rgba="1 0 0 1" size="0.01"/>
+            <site name="s7" pos="-1.60039838 -5.92764414 24.52015705" rgba="1 0 0 1" size="0.01"/>
+        </body>
+
+        <body name="r89">
+            <geom name="r89"
+                  fromto="-4.51667933 -7.77137222  14.86269614    7.14746927 -0.40478    24.52015733"
+                  type="cylinder"
+                  size="0.5"
+                  mass="10"/>
+            <freejoint name="move8_9"/>
+            <geom name="sp8"
+                  pos="-4.51667933 -7.77137222  14.86269614"
+                  size="1"
+                  type="sphere"
+                  rgba="1 0 0 1"
+                  mass="1"/>
+            <geom name="sp9"
+                  pos="7.14746927 -0.40478    24.52015733"
+                  size="1"
+                  type="sphere"
+                  rgba="1 0 0 1"
+                  mass="1"/>
+
+            <site name="s8" pos="-4.51667933 -7.77137222  14.86269614" rgba="1 0 0 1" size="0.01"/>
+            <site name="s9" pos=" 7.14746927 -0.40478    24.52015733" rgba="1 0 0 1" size="0.01"/>
+        </body>
+
+        <body name="r1011">
+            <geom name="r1011"
+                  fromto="10.20232581 -2.00849264  14.86269674   -2.00940351  4.40966401 24.52015669"
+                  type="cylinder"
+                  size="0.5"
+                  mass="10"/>
+            <freejoint name="move10_11"/>
+            <geom name="sp10"
+                  pos="10.20232581 -2.00849264  14.86269674"
+                  size="1"
+                  type="sphere"
+                  rgba="1 0 0 1"
+                  mass="1"/>
+            <geom name="sp11"
+                  pos="-2.00940351  4.40966401 24.52015669"
+                  size="1"
+                  type="sphere"
+                  rgba="1 0 0 1"
+                  mass="1"/>
+
+            <site name="s10" pos="10.20232581 -2.00849264  14.86269674" rgba="1 0 0 1" size="0.01"/>
+            <site name="s11" pos="-2.00940351  4.40966401 24.52015669" rgba="1 0 0 1" size="0.01"/>
+        </body>
+    </worldbody>
+
+    <!-- TENDONS -->
+
+    <sensor>
+        <framepos name="pos_s0" objname="s0" objtype="site"/>
+        <framelinvel name="linvel_s0" objname="s0" objtype="site"/>
+        <framelinacc name="linacc_s0" objname="s0" objtype="site"/>
+        <framepos name="pos_s1" objname="s1" objtype="site"/>
+        <framelinvel name="linvel_s1" objname="s1" objtype="site"/>
+        <framelinacc name="linacc_s1" objname="s1" objtype="site"/>
+        <framepos name="pos_s2" objname="s2" objtype="site"/>
+        <framelinvel name="linvel_s2" objname="s2" objtype="site"/>
+        <framelinacc name="linacc_s2" objname="s2" objtype="site"/>
+        <framepos name="pos_s3" objname="s3" objtype="site"/>
+        <framelinvel name="linvel_s3" objname="s3" objtype="site"/>
+        <framelinacc name="linacc_s3" objname="s3" objtype="site"/>
+        <framepos name="pos_s4" objname="s4" objtype="site"/>
+        <framelinvel name="linvel_s4" objname="s4" objtype="site"/>
+        <framelinacc name="linacc_s4" objname="s4" objtype="site"/>
+        <framepos name="pos_s5" objname="s5" objtype="site"/>
+        <framelinvel name="linvel_s5" objname="s5" objtype="site"/>
+        <framelinacc name="linacc_s5" objname="s5" objtype="site"/>
+        <framepos name="pos_s6" objname="s6" objtype="site"/>
+        <framelinvel name="linvel_s6" objname="s6" objtype="site"/>
+        <framelinacc name="linacc_s6" objname="s6" objtype="site"/>
+        <framepos name="pos_s7" objname="s7" objtype="site"/>
+        <framelinvel name="linvel_s7" objname="s7" objtype="site"/>
+        <framelinacc name="linacc_s7" objname="s7" objtype="site"/>
+        <framepos name="pos_s8" objname="s8" objtype="site"/>
+        <framelinvel name="linvel_s8" objname="s8" objtype="site"/>
+        <framelinacc name="linacc_s8" objname="s8" objtype="site"/>
+        <framepos name="pos_s9" objname="s9" objtype="site"/>
+        <framelinvel name="linvel_s9" objname="s9" objtype="site"/>
+        <framelinacc name="linacc_s9" objname="s9" objtype="site"/>
+        <framepos name="pos_s10" objname="s10" objtype="site"/>
+        <framelinvel name="linvel_s10" objname="s10" objtype="site"/>
+        <framelinacc name="linacc_s10" objname="s10" objtype="site"/>
+        <framepos name="pos_s11" objname="s11" objtype="site"/>
+        <framelinvel name="linvel_s11" objname="s11" objtype="site"/>
+        <framelinacc name="linacc_s11" objname="s11" objtype="site"/>
+
+        <framelinacc name="linacc_r01" objname="r01" objtype="body"/>
+        <frameangacc name="angacc_r01" objname="r01" objtype="body"/>
+        <framepos name="pos_r01" objname="r01" objtype="body"/>
+        <framelinvel name="linvel_r01" objname="r01" objtype="body"/>
+        <frameangvel name="angvel_r01" objname="r01" objtype="body"/>
+        <framequat name="quat_r01" objname="r01" objtype="body"/>
+
+        <framelinacc name="linacc_r23" objname="r23" objtype="body"/>
+        <frameangacc name="angacc_r23" objname="r23" objtype="body"/>
+        <framepos name="pos_r23" objname="r23" objtype="body"/>
+        <framelinvel name="linvel_r23" objname="r23" objtype="body"/>
+        <frameangvel name="angvel_r23" objname="r23" objtype="body"/>
+        <framequat name="quat_r23" objname="r23" objtype="body"/>
+
+        <framelinacc name="linacc_r45" objname="r45" objtype="body"/>
+        <frameangacc name="angacc_r45" objname="r45" objtype="body"/>
+        <framepos name="pos_r45" objname="r45" objtype="body"/>
+        <framelinvel name="linvel_r45" objname="r45" objtype="body"/>
+        <frameangvel name="angvel_r45" objname="r45" objtype="body"/>
+        <framequat name="quat_r45" objname="r45" objtype="body"/>
+
+        <framelinacc name="linacc_r67" objname="r67" objtype="body"/>
+        <frameangacc name="angacc_r67" objname="r67" objtype="body"/>
+        <framepos name="pos_r67" objname="r67" objtype="body"/>
+        <framelinvel name="linvel_r67" objname="r67" objtype="body"/>
+        <frameangvel name="angvel_r67" objname="r67" objtype="body"/>
+        <framequat name="quat_r67" objname="r67" objtype="body"/>
+
+        <framelinacc name="linacc_r89" objname="r89" objtype="body"/>
+        <frameangacc name="angacc_r89" objname="r89" objtype="body"/>
+        <framepos name="pos_r89" objname="r89" objtype="body"/>
+        <framelinvel name="linvel_r89" objname="r89" objtype="body"/>
+        <frameangvel name="angvel_r89" objname="r89" objtype="body"/>
+        <framequat name="quat_r89" objname="r89" objtype="body"/>
+
+        <framelinacc name="linacc_r1011" objname="r1011" objtype="body"/>
+        <frameangacc name="angacc_r1011" objname="r1011" objtype="body"/>
+        <framepos name="pos_r1011" objname="r1011" objtype="body"/>
+        <framelinvel name="linvel_r1011" objname="r1011" objtype="body"/>
+        <frameangvel name="angvel_r1011" objname="r1011" objtype="body"/>
+        <framequat name="quat_r1011" objname="r1011" objtype="body"/>
+    </sensor>
+
+    <tendon>
+        <spatial name="td_0" springlength="9.5" damping="92" stiffness="469">
+            <site site="s0"/>
+            <site site="s10"/>
+        </spatial>
+        <spatial name="td_1" springlength="9.5" damping="124" stiffness="626">
+            <site site="s1"/>
+            <site site="s4"/>
+        </spatial>
+        <spatial name="td_2" springlength="9.5" damping="73" stiffness="681">
+            <site site="s2"/>
+            <site site="s6"/>
+        </spatial>
+        <spatial name="td_3" springlength="9.5" damping="165" stiffness="556">
+            <site site="s3"/>
+            <site site="s1"/>
+        </spatial>
+        <spatial name="td_4" springlength="9.5" damping="60" stiffness="423">
+            <site site="s4"/>
+            <site site="s8"/>
+        </spatial>
+        <spatial name="td_5" springlength="9.5" damping="113" stiffness="668">
+            <site site="s5"/>
+            <site site="s2"/>
+        </spatial>
+        <spatial name="td_6" springlength="9.5" damping="139" stiffness="662">
+            <site site="s6"/>
+            <site site="s5"/>
+        </spatial>
+        <spatial name="td_7" springlength="9.5" damping="182" stiffness="405">
+            <site site="s7"/>
+            <site site="s11"/>
+        </spatial>
+        <spatial name="td_8" springlength="9.5" damping="71" stiffness="300">
+            <site site="s8"/>
+            <site site="s7"/>
+        </spatial>
+        <spatial name="td_9" springlength="9.5" damping="135" stiffness="596">
+            <site site="s9"/>
+            <site site="s0"/>
+        </spatial>
+        <spatial name="td_10" springlength="9.5" damping="69" stiffness="673">
+            <site site="s10"/>
+            <site site="s9"/>
+        </spatial>
+        <spatial name="td_11" springlength="9.5" damping="197" stiffness="418">
+            <site site="s11"/>
+            <site site="s3"/>
+        </spatial>
+        <spatial name="td_12" springlength="9.5" damping="59" stiffness="555">
+            <site site="s0"/>
+            <site site="s8"/>
+        </spatial>
+        <spatial name="td_13" springlength="9.5" damping="62" stiffness="634">
+            <site site="s0"/>
+            <site site="s4"/>
+        </spatial>
+        <spatial name="td_14" springlength="9.5" damping="78" stiffness="480">
+            <site site="s10"/>
+            <site site="s1"/>
+        </spatial>
+        <spatial name="td_15" springlength="9.5" damping="163" stiffness="544">
+            <site site="s10"/>
+            <site site="s3"/>
+        </spatial>
+        <spatial name="td_16" springlength="9.5" damping="150" stiffness="585">
+            <site site="s9"/>
+            <site site="s11"/>
+        </spatial>
+        <spatial name="td_17" springlength="9.5" damping="155" stiffness="322">
+            <site site="s9"/>
+            <site site="s7"/>
+        </spatial>
+        <spatial name="td_18" springlength="9.5" damping="132" stiffness="348">
+            <site site="s2"/>
+            <site site="s4"/>
+        </spatial>
+        <spatial name="td_19" springlength="9.5" damping="93" stiffness="577">
+            <site site="s2"/>
+            <site site="s1"/>
+        </spatial>
+        <spatial name="td_20" springlength="9.5" damping="168" stiffness="599">
+            <site site="s6"/>
+            <site site="s3"/>
+        </spatial>
+        <spatial name="td_21" springlength="9.5" damping="66" stiffness="317">
+            <site site="s6"/>
+            <site site="s11"/>
+        </spatial>
+        <spatial name="td_22" springlength="9.5" damping="172" stiffness="347">
+            <site site="s5"/>
+            <site site="s7"/>
+        </spatial>
+        <spatial name="td_23" springlength="9.5" damping="109" stiffness="519">
+            <site site="s5"/>
+            <site site="s8"/>
+        </spatial>
+    </tendon>
+
+    <!-- ACTUATION -->
+
+    <!--    <actuator>-->
+    <!--        <position tendon="td_0"/>-->
+    <!--        <position tendon="td_1"/>-->
+    <!--        <position tendon="td_2"/>-->
+    <!--        <position tendon="td_3"/>-->
+    <!--        <position tendon="td_4"/>-->
+    <!--        <position tendon="td_5"/>-->
+    <!--        <position tendon="td_6"/>-->
+    <!--        <position tendon="td_7"/>-->
+    <!--        <position tendon="td_8"/>-->
+    <!--        <position tendon="td_9"/>-->
+    <!--        <position tendon="td_10"/>-->
+    <!--        <position tendon="td_11"/>-->
+    <!--        <position tendon="td_12"/>-->
+    <!--        <position tendon="td_13"/>-->
+    <!--        <position tendon="td_14"/>-->
+    <!--        <position tendon="td_15"/>-->
+    <!--        <position tendon="td_16"/>-->
+    <!--        <position tendon="td_17"/>-->
+    <!--        <position tendon="td_18"/>-->
+    <!--        <position tendon="td_19"/>-->
+    <!--        <position tendon="td_20"/>-->
+    <!--        <position tendon="td_21"/>-->
+    <!--        <position tendon="td_22"/>-->
+    <!--        <position tendon="td_23"/>-->
+    <!--    </actuator>-->
+
+    <!--    <actuator>-->
+    <!--        <general name='act_0' tendon="td_0"/>-->
+    <!--        <general name='act_1' tendon="td_1"/>-->
+    <!--        <general name='act_2' tendon="td_2"/>-->
+    <!--        <general name='act_3' tendon="td_3"/>-->
+    <!--        <general name='act_4' tendon="td_4"/>-->
+    <!--        <general name='act_5' tendon="td_5"/>-->
+    <!--        <general name='act_6' tendon="td_6"/>-->
+    <!--        <general name='act_7' tendon="td_7"/>-->
+    <!--        <general name='act_8' tendon="td_8"/>-->
+    <!--        <general name='act_9' tendon="td_9"/>-->
+    <!--        <general name='act_10' tendon="td_10"/>-->
+    <!--        <general name='act_11' tendon="td_11"/>-->
+    <!--        <general name='act_12' tendon="td_12"/>-->
+    <!--        <general name='act_13' tendon="td_13"/>-->
+    <!--        <general name='act_14' tendon="td_14"/>-->
+    <!--        <general name='act_15' tendon="td_15"/>-->
+    <!--        <general name='act_16' tendon="td_16"/>-->
+    <!--        <general name='act_17' tendon="td_17"/>-->
+    <!--        <general name='act_18' tendon="td_18"/>-->
+    <!--        <general name='act_19' tendon="td_19"/>-->
+    <!--        <general name='act_20' tendon="td_20"/>-->
+    <!--        <general name='act_21' tendon="td_21"/>-->
+    <!--        <general name='act_22' tendon="td_22"/>-->
+    <!--        <general name='act_23' tendon="td_23"/>-->
+    <!--    </actuator>-->
+
+    <!--        <actuator>-->
+    <!--        <muscle tendon="td_0" range="0.00223425 275.715"/>-->
+    <!--        <muscle tendon="td_1" range="0 1"/>-->
+    <!--        <muscle tendon="td_2" range="0 1"/>-->
+    <!--        <muscle tendon="td_3" range="0 1"/>-->
+    <!--        <muscle tendon="td_4" range="0 1"/>-->
+    <!--        <muscle tendon="td_5" range="0 1"/>-->
+    <!--        <muscle tendon="td_6" range="0 1"/>-->
+    <!--        <muscle tendon="td_7" range="0 1"/>-->
+    <!--        <muscle tendon="td_8" range="0 1"/>-->
+    <!--        <muscle tendon="td_9" range="0 1"/>-->
+    <!--        <muscle tendon="td_10" range="0 1"/>-->
+    <!--        <muscle tendon="td_11" range="0 1"/>-->
+    <!--        <muscle tendon="td_12" range="0 1"/>-->
+    <!--        <muscle tendon="td_13" range="0 1"/>-->
+    <!--        <muscle tendon="td_14" range="0 1"/>-->
+    <!--        <muscle tendon="td_15" range="0 1"/>-->
+    <!--        <muscle tendon="td_16" range="0 1"/>-->
+    <!--        <muscle tendon="td_17" range="0 1"/>-->
+    <!--        <muscle tendon="td_18" range="0 1"/>-->
+    <!--        <muscle tendon="td_19" range="0 1"/>-->
+    <!--        <muscle tendon="td_20" range="0 1"/>-->
+    <!--        <muscle tendon="td_21" range="0 1"/>-->
+    <!--        <muscle tendon="td_22" range="0 1"/>-->
+    <!--        <muscle tendon="td_23" range="0 1"/>-->
+    <!--    </actuator>-->
+
+    <!--    <actuator>-->
+    <!--        <general name="f0" gear="0 0 1 0 0 0" joint="move0_1"/>-->
+    <!--        <general name="f1" gear="0 0 1 0 0 0" joint="move2_3"/>-->
+    <!--        <general name="f2" gear="0 0 1 0 0 0" joint="move4_5"/>-->
+    <!--        <general name="f3" gear="0 0 1 0 0 0" joint="move6_7"/>-->
+    <!--        <general name="f4" gear="0 0 1 0 0 0" joint="move8_9"/>-->
+    <!--        <general name="f5" gear="0 0 1 0 0 0" joint="move10_11"/>-->
+    <!--    </actuator>-->
+</mujoco>

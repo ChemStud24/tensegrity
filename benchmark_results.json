@@ -1,0 +1,29 @@
+{
+  "metadata": {
+    "timestamp": "2026-02-14T01:24:04.783486",
+    "num_trials": 5,
+    "time_limit_seconds": 120.0,
+    "startup_delay_seconds": 7.0,
+    "xml_model": "3prism_real_upscaled_obs_course.xml",
+    "physics_rate": 1000.0,
+    "sensor_rate": 20.0,
+    "visualization": true,
+    "sensor_noise": false
+  },
+  "summary": {
+    "success_rate": 0.0,
+    "successes": 0,
+    "failures": 1,
+    "total_trials": 1,
+    "avg_time_all": 120.0
+  },
+  "trials": [
+    {
+      "trial": 1,
+      "goal_reached": false,
+      "elapsed_time": 120.0,
+      "reason": "timeout",
+      "error_message": ""
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+---
+float64 height
+float64 highest_node
+bool success

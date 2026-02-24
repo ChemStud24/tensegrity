@@ -156,8 +156,8 @@ class MotionPlanner:
 					
 					unit_vector = rotation_matrix[:,2]
 					center = [pose.position.x,pose.position.y,pose.position.z]
-					endcaps.append(np.array(center) + L/2*unit_vector)
 					endcaps.append(np.array(center) - L/2*unit_vector)
+					endcaps.append(np.array(center) + L/2*unit_vector)
 					
 					centers.append(center)
 					vectors += unit_vector
