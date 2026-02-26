@@ -14,7 +14,7 @@ import rospkg
 import socket
 from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import Image
-from tensegrity.srv import InitTracker, InitTrackerRequest, InitTrackerResponse
+from tensegrity_perception.srv import InitTracker, InitTrackerRequest, InitTrackerResponse
 from tensegrity.msg import Motor, Info, Sensor, Imu, TensegrityStamped, State, Action, Trajectory
 from geometry_msgs.msg import Point
 from symmetry_reduction_utils import *
@@ -44,7 +44,7 @@ class TensegrityRobot:
         self.d_error = [0] * self.num_motors
         self.command = [0] * self.num_motors
         self.speed = [0] * self.num_motors
-        self.flip = [1, -1, 1, 1, -1, -1] # flip direction of motors
+        self.flip = [1, 1, 1, 1, 1, 1] # flip direction of motors
         self.accelerometer = [[0]*3 for _ in range(3)]
         self.gyroscope = [[0]*3 for _ in range(3)]
         self.encoder_counts = [0]*self.num_motors
@@ -125,7 +125,7 @@ class TensegrityRobot:
         self.control_pub = rospy.Publisher('control_msg', TensegrityStamped, queue_size=10) ## correct ??
 
         package_path = rospkg.RosPack().get_path('tensegrity')
-        calibration_file = os.path.join(package_path,'calibration/new_calibration.json')
+        calibration_file = '../calibration/calibration_patrick.xls'
         
         self.m, self.b = self.read_calibration_file(calibration_file)
         
@@ -151,9 +151,11 @@ class TensegrityRobot:
 
         # gaits
         # roll = np.array([[1,1,1,1,1,1],[1,1,1,1,1,1],[1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 1.0, 0.1]])
-        roll = np.array([[1,1,1,1,1,1],[1,1,1,1,1,1],[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 1.0, 0.1]])
-        cw = np.array([[1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1], [0, 0, 0, 1, 0, 1], [0, 0, 0, 0, 0, 0.7], [0, 0, 0.7, 0, 1, 1]])
-        ccw = np.array([[1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1], [1, 1, 1, 0, 1, 1], [1, 0, 1, 0, 1, 1], [0, 0, 0, 0, 0, 0]])
+        roll = np.array([[1, 1, 0.1, 1, 1, 0.1], [0, 1, 1, 0, 1, 0.1], [1, 1, 1, 1, 1, 1]]) #new tensegrity
+        #cw = np.array([[1, 1, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0], [0, 1, 1, 0, 0.8, 0], [1, 1, 1, 1, 1, 1]]) #new tensegrity
+        cw = np.array([[0, 0, 1, 0, 1, 0], [0, 0, 0, 0, 1, 0], [1, 0.8, 0, 0, 1, 0], [1, 1, 1, 1, 1, 1]]) #based off observed video
+        #ccw = np.array([[1, 1, 1, 0, 1, 1], [1, 0, 1, 0, 1, 1], [0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]])#new tensegrity
+        ccw = np.array([[1, 1, 0, 1, 1, 1], [1, 1, 0, 0, 1, 1], [0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]]) #based off observed video
         self.all_gaits = {'roll':roll,'ccw':ccw,'cw':cw}
 
     def read_calibration_file(self, filename):
@@ -240,7 +242,11 @@ class TensegrityRobot:
            # motor.direction = command[motor_id] > 0
            motor.done = self.done[motor_id]
            motor.encoder_counts = int(self.encoder_counts[motor_id])
-           motor.encoder_length = self.encoder_length[motor_id]
+           if(motor.id < 3):
+               motor.encoder_length = 180 + self.encoder_length[motor_id]# NEW
+           else:
+               motor.encoder_length = 180 - self.encoder_length[motor_id]
+           #motor.encoder_length = self.encoder_length[motor_id]
            control_msg.motors.append(motor)
         # sensors
         for sensor_id in range(self.num_sensors):
@@ -316,7 +322,7 @@ class TensegrityRobot:
             self.which_Arduino = int(sensor_array[0])
             if(sensor_array[1] == 0.2 or sensor_array[2] == 0.2 or sensor_array[3] == 0.2 ) :
                 print('MPR121 or I2C of Arduino '+str(self.which_Arduino)+' wrongly initialized, please reboot Arduino')
-            
+
             if(int(sensor_array[0]) == 0) :
                 self.cap[0] = sensor_array[1]
                 self.cap[1] = sensor_array[2]
