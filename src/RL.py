@@ -6,7 +6,7 @@ import rospkg
 import rosnode
 from geometry_msgs.msg import Point
 from tensegrity.msg import State, Action
-from tensegrity_perception.srv import GetPose, GetPoseRequest, GetPoseResponse
+from tensegrity.srv import GetPose, GetPoseRequest, GetPoseResponse
 from scipy.spatial.transform import Rotation as R
 from Tensegrity_model_inputs import *
 from policy import ctrl_policy

@@ -48,10 +48,10 @@ from geometry_msgs.msg import Point
 
 # Try to import perception services, create mocks if not available
 try:
-    from tensegrity_perception.srv import InitTracker, InitTrackerRequest, InitTrackerResponse
-    from tensegrity_perception.srv import GetPose, GetPoseRequest, GetPoseResponse
+    from tensegrity.srv import InitTracker, InitTrackerRequest, InitTrackerResponse
+    from tensegrity.srv import GetPose, GetPoseRequest, GetPoseResponse
 except ImportError:
-    print("Warning: tensegrity_perception services not available in run_tensegrity_hybrid_mppi, using mocks")
+    print("Warning: tensegrity services not available in run_tensegrity_hybrid_mppi, using mocks")
     from unittest.mock import MagicMock
     InitTracker = InitTrackerRequest = InitTrackerResponse = MagicMock
     GetPose = GetPoseRequest = GetPoseResponse = MagicMock

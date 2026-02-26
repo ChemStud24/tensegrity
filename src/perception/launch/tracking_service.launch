@@ -1,11 +1,11 @@
 <launch>
     <!-- https://wiki.ros.org/ROS/Patterns/Parameterization#Static_Parameters -->
-    <param name="rod_mesh_file" type="str" value="$(find tensegrity_perception)/mesh/Will_strut_scaled_centered.ply"/>
-    <param name="top_endcap_mesh_file" type="str" value="$(find tensegrity_perception)/mesh/end_cap_top_new.obj"/>
-    <param name="bottom_endcap_mesh_file" type="str" value="$(find tensegrity_perception)/mesh/end_cap_bottom_new.obj"/>
-    <param name="data_cfg_file" type="str" value="$(find tensegrity_perception)/configs/data_cfg.json"/>
+    <param name="rod_mesh_file" type="str" value="$(find tensegrity)/src/perception/mesh/Will_strut_scaled_centered.ply"/>
+    <param name="top_endcap_mesh_file" type="str" value="$(find tensegrity)/src/perception/mesh/end_cap_top_new.obj"/>
+    <param name="bottom_endcap_mesh_file" type="str" value="$(find tensegrity)/src/perception/mesh/end_cap_bottom_new.obj"/>
+    <param name="data_cfg_file" type="str" value="$(find tensegrity)/src/perception/configs/data_cfg.json"/>
 
-    <node pkg="tensegrity_perception" type="tracking_service.py" name="tracking_service" output="screen" clear_params="true">
-        <rosparam command="load" file="$(find tensegrity_perception)/configs/model_params.yaml" />
+    <node pkg="tensegrity" type="tracking_service.py" name="tracking_service" output="screen" clear_params="true">
+        <rosparam command="load" file="$(find tensegrity)/src/perception/configs/model_params.yaml" />
     </node>
 </launch>

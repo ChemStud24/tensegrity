@@ -12,7 +12,9 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   geometry_msgs
+  sensor_msgs
   message_generation
+  roslaunch
 )
 
 ## System dependencies are found with CMake's conventions
@@ -69,11 +71,13 @@ add_message_files(
 )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+  DIRECTORY src/perception/srv
+  FILES
+  InitTracker.srv
+  GetPose.srv
+  GetBarHeight.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -87,6 +91,7 @@ generate_messages(
   DEPENDENCIES
   std_msgs
   geometry_msgs
+  sensor_msgs
 )
 
 ################################################
@@ -180,8 +185,12 @@ catkin_install_python(PROGRAMS
   src/mujoco_simulator/tensegrity_udp_simulator.py
   src/run_tensegrity_hybrid_mppi_simulator.py
   src/mppi_planner.py
+  src/perception/scripts/tracking_service.py
+  src/perception/scripts/mock_tracking_service.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
+
+roslaunch_add_file_check(src/perception/launch)
 
 ## Mark executables for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html

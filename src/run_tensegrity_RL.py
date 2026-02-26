@@ -14,8 +14,8 @@ import rospkg
 import socket
 from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import Image
-from tensegrity_perception.srv import InitTracker, InitTrackerRequest, InitTrackerResponse
-from tensegrity_perception.srv import GetPose, GetPoseRequest, GetPoseResponse
+from tensegrity.srv import InitTracker, InitTrackerRequest, InitTrackerResponse
+from tensegrity.srv import GetPose, GetPoseRequest, GetPoseResponse
 from tensegrity.msg import Motor, Info, Sensor, Imu, TensegrityStamped, State, Action
 from geometry_msgs.msg import Point
 from Tensegrity_model_inputs import *

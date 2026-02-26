@@ -1,4 +1,4 @@
-#!/home/willjohnson/miniconda3/envs/tensegrity/bin/python
+#!/usr/bin/env python3
 
 import os
 import json
@@ -11,8 +11,8 @@ import rospy
 import rosgraph
 import cv_bridge
 from std_msgs.msg import Float64MultiArray
-from tensegrity_perception.srv import InitTracker, InitTrackerRequest, InitTrackerResponse
-from tensegrity_perception.srv import GetPose, GetPoseRequest, GetPoseResponse
+from tensegrity.srv import InitTracker, InitTrackerRequest, InitTrackerResponse
+from tensegrity.srv import GetPose, GetPoseRequest, GetPoseResponse
 
 
 def init_tracker(rgb_im: np.ndarray, depth_im: np.ndarray, cable_lengths: np.ndarray):

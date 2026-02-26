@@ -72,7 +72,7 @@ try:
 
     # Optional imports - these are only needed for MockTracker tests
     try:
-        from tensegrity_perception.srv import (
+        from tensegrity.srv import (
             InitTracker, InitTrackerRequest, InitTrackerResponse,
             GetPose, GetPoseRequest, GetPoseResponse,
             GetBarHeight, GetBarHeightRequest, GetBarHeightResponse

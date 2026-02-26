@@ -24,7 +24,7 @@ except:
     print("Visualization will be disabled.")
     visualization = False
 
-package_path = rospkg.RosPack().get_path('tensegrity_perception')
+package_path = rospkg.RosPack().get_path('tensegrity')
 data_cfg_path = os.path.join(package_path,'configs/data_cfg.json')
 test_images_path = os.path.join(package_path,'../../data/',sys.argv[1],'color')
 

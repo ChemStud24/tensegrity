@@ -6,7 +6,7 @@
 set -e
 
 PACKAGE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-WORKSPACE_DIR="$HOME/catkin_ws_tensegrity"
+WORKSPACE_DIR="$HOME/catkin_ws_nelson"
 
 echo "======================================================================"
 echo "Setting up Catkin Workspace for Tensegrity Package"
@@ -44,10 +44,10 @@ echo "Linking tensegrity package..."
 ln -s "$PACKAGE_DIR" "$WORKSPACE_DIR/src/tensegrity"
 
 # Also link tensegrity_perception if it exists
-PERCEPTION_DIR="$(dirname "$PACKAGE_DIR")/tensegrity_perception"
+PERCEPTION_DIR="$(dirname "$PACKAGE_DIR")/tensegrity/src/perception"
 if [ -d "$PERCEPTION_DIR" ]; then
     echo "Linking tensegrity_perception package..."
-    ln -s "$PERCEPTION_DIR" "$WORKSPACE_DIR/src/tensegrity_perception"
+    ln -s "$PERCEPTION_DIR" "$WORKSPACE_DIR/src/tensegrity/src/perception"
 fi
 
 # Build workspace

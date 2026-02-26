@@ -14,7 +14,7 @@ class HSVFilterApp:
         self.root = root
         self.root.title("HSV Filter Tuner")
 
-        self.package_path = rospkg.RosPack().get_path('tensegrity_perception')
+        self.package_path = rospkg.RosPack().get_path('tensegrity')
         self.directory = os.path.join(self.package_path,'../../data',directory)
         if not os.path.isdir(self.directory):
             print(f"Directory {self.directory} does not exist")

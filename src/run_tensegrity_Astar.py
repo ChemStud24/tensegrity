@@ -14,7 +14,7 @@ import rospkg
 import socket
 from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import Image
-from tensegrity_perception.srv import InitTracker, InitTrackerRequest, InitTrackerResponse
+from tensegrity.srv import InitTracker, InitTrackerRequest, InitTrackerResponse
 from tensegrity.msg import Motor, Info, Sensor, Imu, TensegrityStamped, State, Action, Trajectory
 from geometry_msgs.msg import Point
 from symmetry_reduction_utils import *
@@ -316,25 +316,25 @@ class TensegrityRobot:
             self.which_Arduino = int(sensor_array[0])
             if(sensor_array[1] == 0.2 or sensor_array[2] == 0.2 or sensor_array[3] == 0.2 ) :
                 print('MPR121 or I2C of Arduino '+str(self.which_Arduino)+' wrongly initialized, please reboot Arduino')
-
+            
             if(int(sensor_array[0]) == 0) :
-                self.cap[4] = sensor_array[1]
-                self.cap[2] = sensor_array[2]
-                self.cap[8] = sensor_array[3]
-                self.encoder_counts[4] = sensor_array[6]
-                self.encoder_counts[2] = sensor_array[5]
-            if(int(sensor_array[0]) == 1) :
-                self.cap[3] = sensor_array[1]
-                self.cap[1] = sensor_array[2] 
-                self.cap[7] = sensor_array[3]
-                self.encoder_counts[3] = sensor_array[6]
-                self.encoder_counts[1] = sensor_array[5]
-            if(int(sensor_array[0]) == 2) :
-                self.cap[5] = sensor_array[1]
-                self.cap[0] = sensor_array[2] 
-                self.cap[6] = sensor_array[3]
-                self.encoder_counts[5] = sensor_array[6]
+                self.cap[0] = sensor_array[1]
+                self.cap[1] = sensor_array[2]
+                self.cap[8] = sensor_array[4]
+                self.encoder_counts[1] = sensor_array[6]
                 self.encoder_counts[0] = sensor_array[5]
+            if(int(sensor_array[0]) == 1) :
+                self.cap[2] = sensor_array[1]
+                self.cap[3] = sensor_array[2] 
+                self.cap[7] = sensor_array[4]
+                self.encoder_counts[3] = sensor_array[6]
+                self.encoder_counts[2] = sensor_array[5]
+            if(int(sensor_array[0]) == 2) :
+                self.cap[4] = sensor_array[1]
+                self.cap[5] = sensor_array[2] 
+                self.cap[6] = sensor_array[4]
+                self.encoder_counts[5] = sensor_array[6]
+                self.encoder_counts[4] = sensor_array[5]
 
             self.encoder_length = [counts/self.encoder_resolution/self.gear_ratio*np.pi*self.winch_diameter for counts in self.encoder_counts]
             

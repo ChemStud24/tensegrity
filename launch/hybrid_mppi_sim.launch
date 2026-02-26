@@ -26,7 +26,7 @@
     <arg name="orientation_noise_std" default="0.0"/>
 
     <!-- Load perception config parameters -->
-    <param name="data_cfg_file" type="str" value="$(find tensegrity_perception)/configs/data_cfg.json" if="$(eval optenv('TENSEGRITY_PERCEPTION_AVAILABLE', 'true') == 'true')"/>
+    <param name="data_cfg_file" type="str" value="$(find tensegrity)/configs/data_cfg.json" if="$(eval optenv('TENSEGRITY_PERCEPTION_AVAILABLE', 'true') == 'true')"/>
 
     <!-- 1. MuJoCo UDP Simulator -->
     <node pkg="tensegrity" type="tensegrity_udp_simulator.py" name="mujoco_simulator" output="screen">
@@ -39,7 +39,7 @@
     </node>
 
     <!-- 2. Mock Tracking Service -->
-    <node pkg="tensegrity_perception" type="mock_tracking_service.py" name="mock_tracking_service" output="screen">
+    <node pkg="tensegrity" type="mock_tracking_service.py" name="mock_tracking_service" output="screen">
         <param name="simulator_host" value="127.0.0.1"/>
         <param name="simulator_pose_port" value="2391"/>
         <param name="position_noise_std" value="$(arg position_noise_std)"/>

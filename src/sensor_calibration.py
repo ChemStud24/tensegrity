@@ -37,14 +37,14 @@ class TensegrityRobot:
         self.d_error = [0] * self.num_motors
         self.command = [0] * self.num_motors
         self.speed = [0] * self.num_motors
-        self.flip = [1, 1, -1, 1, -1, -1] # flip direction of motors
+        self.flip = [1, 1, 1, 1, 1, 1] # flip direction of motors
         self.accelerometer = [[0]*3 for _ in range(3)]
         self.gyroscope = [[0]*3 for _ in range(3)]
         self.encoder_counts = [0]*self.num_motors
         self.encoder_length = [0]*self.num_motors
-        self.RANGE = 100
-        self.LEFT_RANGE = 100
-        self.max_speed = 80
+        self.RANGE = 80
+        self.LEFT_RANGE = 80
+        self.max_speed = 60
         self.tol = 0.15
         self.low_tol = 0.15
         self.P = 6.0
@@ -53,7 +53,7 @@ class TensegrityRobot:
         self.gear_ratio = 150
         self.winch_diameter = 6.35
         self.encoder_resolution = 12
-        
+
         self.num_steps = None
         self.state = None
         self.states = None
@@ -72,7 +72,8 @@ class TensegrityRobot:
         self.UDP_PORT = 2390     # Same port used in the Arduino sketch
         self.sock_receive = None
         self.sock_send = None
-        self.addresses = [None] * self.num_arduino
+        #self.addresses = [('172.16.71.78', 11311),('172.16.71.79', 11311),('172.16.71.80', 11311)]#[None] * self.num_arduino
+        self.addresses = [('172.16.71.74', 11311),('172.16.71.75', 11311),('172.16.71.76', 11311)]#[None] * self.num_arduino
         self.offset = None # Nb of leading end ending 0 preventing errors 
 
         #keyboard variables
@@ -82,8 +83,16 @@ class TensegrityRobot:
         self.three_pressed = False
         self.four_pressed = False
         self.five_pressed = False
+        self.z_pressed = False
         
-
+        #Home motor encoders at 180mm
+        self.calibrate_zero = True
+        self.calibrate_one = True
+        self.calibrate_two = True
+        self.calibrate_three = True
+        self.calibrate_four = True
+        self.calibrate_five = True
+        
     def initialize(self):
 
         self.my_listener = keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
@@ -93,7 +102,7 @@ class TensegrityRobot:
         self.control_pub = rospy.Publisher('control_msg', TensegrityStamped, queue_size=10) ## correct ??
 
         package_path = rospkg.RosPack().get_path('tensegrity')
-        calibration_file = os.path.join(package_path,'calibration/new_calibration.json')
+        calibration_file = '../calibration/calibration_charles.xls'#os.path.join(package_path,'calibration/new_calibration.json')
         
         #self.m = np.array([0.04437, 0.06207, 0.02356, 0.04440, 0.04681, 0.05381, 0.02841, 0.03599, 0.03844])
         #self.b = np.array([15.763, 13.524, 15.708, 10.084, 15.628, 15.208, 16.356, 12.575, 13.506])
@@ -107,7 +116,7 @@ class TensegrityRobot:
         states = np.array([[0.0, 1.0, 0.1, 0.0, 1.0, 1.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]])#steps gait
         states = np.array([[0.0, 1.0, 1.0, 0.0, 1.0, 0.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]) # one step and recover
         """
-        self.states = np.array([[0.0, 1.0, 1.0, 0.0, 1.0, 0.1],[1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.0, 1.0, 0.1, 0.0],[0.1, 1.0, 1.0, 0.1, 1.0, 1.0],[1.0, 0.0, 1.0, 0.1, 0.0, 1.0],[1.0, 1.0, 0.1, 1.0, 1.0, 0.1]]) # quasi-static rolling
+        self.states = np.array([[0.0, 1.0, 1.0, 0.0, 1.0, 0.1],[1.0, 0.0, 1.0, 1.0, 0.0, 1.0],[1.0, 1.0, 0.0, 1.0, 0.1, 0.0],[0.1, 1.0, 1.0, 0.0, 1.0, 1.0],[1.0, 0.0, 1.0, 0.0, 0.0, 1.0],[1.0, 1.0, 0.0, 1.0, 1.0, 0.0]]) # quasi-static rolling
         #self.states = np.array([[1, 1, 1, 0, 1, 1], [1, 0, 1, 0, 1, 1], [0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]]) # counterclockwise
         #self.states = np.array([[0, 0, 0, 1, 0, 1], [0, 0, 0, 0, 0, 0.7], [0, 0, 0.7, 0, 1, 1], [1, 1, 1, 1, 1, 1]]) # clockwise 
         #self.states = np.array([[1, 1, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0], [0, 1, 1, 0, 0.8, 0], [1, 1, 1, 1, 1, 1], [1, 0, 1, 0, 0, 0], [1, 0, 0, 0, 0, 0], [1, 1, 0, 0.8, 0, 0], [1, 1, 1, 1, 1, 1], [0, 1, 1, 0, 0, 0], [0, 0, 1, 0, 0, 0], [1, 0, 1, 0, 0, 0.8], [1, 1, 1, 1, 1, 1]]) #clockwise
@@ -117,7 +126,7 @@ class TensegrityRobot:
         self.offset = 3
         self.done = np.array([False] * self.num_motors)
         self.stop_msg = ' '.join(['0'] * (self.num_motors+2*self.offset))
-        self.init_speed = 70
+        self.init_speed = 50
 
     def read_calibration_file(self, filename):
         try : 
@@ -206,7 +215,11 @@ class TensegrityRobot:
            # motor.direction = command[motor_id] > 0
            motor.done = self.done[motor_id]
            motor.encoder_counts = int(self.encoder_counts[motor_id])
-           motor.encoder_length = self.encoder_length[motor_id]
+           if(motor.id < 3):
+               motor.encoder_length = 180 + self.encoder_length[motor_id]# NEW
+           else:
+               motor.encoder_length = 180 - self.encoder_length[motor_id]
+           #motor.encoder_length = self.encoder_length[motor_id]
            control_msg.motors.append(motor)
         # sensors
         for sensor_id in range(self.num_sensors):
@@ -270,12 +283,11 @@ class TensegrityRobot:
                 self.which_Arduino = int(sensor_array[0])
                 if(sensor_array[1] == 0.2 or sensor_array[2] == 0.2 or sensor_array[3] == 0.2 ):
                     print('MPR121 or I2C of Arduino '+str(int(sensor_array[0]))+' wrongly initialized, please reboot Arduino')
-
-                if(int(sensor_array[0]) == 0) :
+                '''if(int(sensor_array[0]) == 0) :
                     self.cap[4] = sensor_array[1]
                     self.cap[2] = sensor_array[2]
                     self.cap[8] = sensor_array[3]
-                    self.encoder_counts[4] = sensor_array[6]
+                    lf.encoder_counts[4] = sensor_array[6]
                     self.encoder_counts[2] = sensor_array[5]
                 if(int(sensor_array[0]) == 1) :
                     self.cap[3] = sensor_array[1]
@@ -289,9 +301,28 @@ class TensegrityRobot:
                     self.cap[6] = sensor_array[3]
                     self.encoder_counts[5] = sensor_array[6]
                     self.encoder_counts[0] = sensor_array[5]
+'''
+                if(int(sensor_array[0]) == 0) :
+                    self.cap[0] = sensor_array[1]
+                    self.cap[1] = sensor_array[2]
+                    self.cap[8] = sensor_array[4]
+                    self.encoder_counts[1] = sensor_array[6]
+                    self.encoder_counts[0] = sensor_array[5]
+                if(int(sensor_array[0]) == 1) :
+                    self.cap[2] = sensor_array[1]
+                    self.cap[3] = sensor_array[2] 
+                    self.cap[7] = sensor_array[4]
+                    self.encoder_counts[3] = sensor_array[6]
+                    self.encoder_counts[2] = sensor_array[5]
+                if(int(sensor_array[0]) == 2) :
+                    self.cap[4] = sensor_array[1]
+                    self.cap[5] = sensor_array[2] 
+                    self.cap[6] = sensor_array[4]
+                    self.encoder_counts[5] = sensor_array[6]
+                    self.encoder_counts[4] = sensor_array[5]
 
                 self.encoder_length = [counts/self.encoder_resolution/self.gear_ratio*np.pi*self.winch_diameter for counts in self.encoder_counts]
-                
+
                 #add control code here
                 if not 0.2 in self.cap: #Default capacitance value of MPR121
                     for i in range(len(self.cap)) :
@@ -405,8 +436,8 @@ class TensegrityRobot:
             elif key == keyboard.KeyCode.from_char('4'):
                 self.four_pressed = True
             elif key == keyboard.KeyCode.from_char('5'):
-                self.five_pressed = True
-
+                self.five_pressed = True         
+                
         except AttributeError:
             pass
 
@@ -441,6 +472,9 @@ class TensegrityRobot:
         elif key == keyboard.KeyCode.from_char('b'):
             for i in range(len(self.addresses)) :
                     self.send_command(self.stop_msg, self.addresses[i],0)
+#        elif key == keyboard.KeyCode.from_char('z'):
+#            self.z_pressed = False
+
             
     def run(self):
         print("Initializing")

@@ -37,9 +37,9 @@ from scipy.spatial.transform import Rotation as R
 
 # Try to import perception services, create mocks if not available
 try:
-    from tensegrity_perception.srv import GetPose, GetPoseRequest, GetPoseResponse, GetBarHeight
+    from tensegrity.srv import GetPose, GetPoseRequest, GetPoseResponse, GetBarHeight
 except ImportError:
-    print("Warning: tensegrity_perception services not available in mppi_planner, using mocks")
+    print("Warning: tensegrity services not available in mppi_planner, using mocks")
     from unittest.mock import MagicMock
     GetPose = GetPoseRequest = GetPoseResponse = GetBarHeight = MagicMock
 from Tensegrity_model_inputs import *

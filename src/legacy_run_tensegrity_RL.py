@@ -24,8 +24,8 @@ import rospkg
 import rosgraph
 import cv_bridge
 from std_msgs.msg import Float64MultiArray
-from tensegrity_perception.srv import InitTracker, InitTrackerRequest, InitTrackerResponse
-from tensegrity_perception.srv import GetPose, GetPoseRequest, GetPoseResponse
+from tensegrity.srv import InitTracker, InitTrackerRequest, InitTrackerResponse
+from tensegrity.srv import GetPose, GetPoseRequest, GetPoseResponse
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import Point
 from symmetry_reduction_utils import *

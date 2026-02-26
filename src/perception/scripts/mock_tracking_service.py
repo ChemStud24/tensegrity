@@ -14,7 +14,7 @@ Architecture:
 
 Usage:
     1. Start the MuJoCo UDP simulator: python tensegrity_udp_simulator.py
-    2. Start this service: rosrun tensegrity_perception mock_tracking_service.py
+    2. Start this service: rosrun tensegrity mock_tracking_service.py
     3. Run your control code normally
 """
 
@@ -39,9 +39,9 @@ from scipy.spatial.transform import Rotation
 
 from tensegrity.msg import SensorsStamped, TensegrityStamped, PoseStateStamped
 
-from tensegrity_perception.srv import InitTracker, InitTrackerRequest, InitTrackerResponse
-from tensegrity_perception.srv import GetPose, GetPoseRequest, GetPoseResponse
-from tensegrity_perception.srv import GetBarHeight, GetBarHeightRequest, GetBarHeightResponse
+from tensegrity.srv import InitTracker, InitTrackerRequest, InitTrackerResponse
+from tensegrity.srv import GetPose, GetPoseRequest, GetPoseResponse
+from tensegrity.srv import GetBarHeight, GetBarHeightRequest, GetBarHeightResponse
 
 
 class MockTracker:
@@ -109,7 +109,7 @@ class MockTracker:
 
         if self.save_data:
             try:
-                data_path = os.path.normpath(os.path.join(rospkg.RosPack().get_path('tensegrity_perception'),'../../data/'))
+                data_path = os.path.normpath(os.path.join(rospkg.RosPack().get_path('tensegrity'),'../../data/'))
                 self.output_dir = os.path.join(data_path, datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
                 self.color_dir = os.path.join(self.output_dir, 'color')
                 self.depth_dir = os.path.join(self.output_dir, 'depth')
@@ -396,7 +396,7 @@ def main():
     # Load configuration
     try:
         import rospkg
-        package_path = rospkg.RosPack().get_path("tensegrity_perception")
+        package_path = rospkg.RosPack().get_path("tensegrity")
 
         # Try to load data config (same as real tracker)
         data_cfg_file = rospy.get_param("data_cfg_file", None)

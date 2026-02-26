@@ -1,4 +1,4 @@
-#!/home/willjohnson/miniconda3/envs/tensegrity/bin/python
+#!/usr/bin/env python3
 
 import os
 import time
@@ -36,9 +36,9 @@ from geometry_msgs.msg import Pose
 # =============================== Untested ==================================
 from tensegrity.msg import SensorsStamped, TensegrityStamped, PoseStateStamped
 # ===========================================================================
-from tensegrity_perception.srv import InitTracker, InitTrackerRequest, InitTrackerResponse
-from tensegrity_perception.srv import GetPose, GetPoseRequest, GetPoseResponse
-from tensegrity_perception.srv import GetBarHeight, GetBarHeightRequest, GetBarHeightResponse
+from tensegrity.srv import InitTracker, InitTrackerRequest, InitTrackerResponse
+from tensegrity.srv import GetPose, GetPoseRequest, GetPoseResponse
+from tensegrity.srv import GetBarHeight, GetBarHeightRequest, GetBarHeightResponse
 
 from numba import njit, prange
 
@@ -132,7 +132,7 @@ class Tracker:
         self.latest_bar_height = 0
 
         # saving data
-        data_path = os.path.join(rospkg.RosPack().get_path('tensegrity_perception'),'../../data/')
+        data_path = os.path.join(rospkg.RosPack().get_path('tensegrity'),'../../data/')
         self.output_dir = data_path + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         self.color_dir = os.path.join(self.output_dir, 'color')
         self.depth_dir = os.path.join(self.output_dir, 'depth')

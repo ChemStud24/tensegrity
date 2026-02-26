@@ -37,10 +37,10 @@ from geometry_msgs.msg import Point
 
 # Try to import perception services, create mocks if not available
 try:
-    from tensegrity_perception.srv import InitTracker, InitTrackerRequest, InitTrackerResponse
-    from tensegrity_perception.srv import GetPose, GetPoseRequest, GetPoseResponse
+    from tensegrity.srv import InitTracker, InitTrackerRequest, InitTrackerResponse
+    from tensegrity.srv import GetPose, GetPoseRequest, GetPoseResponse
 except ImportError:
-    print("Warning: tensegrity_perception services not available in run_tensegrity_hybrid_mppi, using mocks")
+    print("Warning: tensegrity services not available in run_tensegrity_hybrid_mppi, using mocks")
     from unittest.mock import MagicMock
     InitTracker = InitTrackerRequest = InitTrackerResponse = MagicMock
     GetPose = GetPoseRequest = GetPoseResponse = MagicMock
@@ -366,29 +366,47 @@ class TensegrityRobot:
                 if sensor_array[1] == 0.2 or sensor_array[2] == 0.2 or sensor_array[3] == 0.2:
                     print("MPR121 or I2C of Arduino " + str(self.which_Arduino) + " wrongly initialized, please reboot Arduino")
 
-            if int(sensor_array[0]) == 0:
-                self.cap[4] = sensor_array[1]
-                self.cap[2] = sensor_array[2]
-                self.cap[8] = sensor_array[3]
-                self.encoder_counts[4] = sensor_array[6]
-                self.encoder_counts[2] = sensor_array[5]
-            if int(sensor_array[0]) == 1:
-                self.cap[3] = sensor_array[1]
+            # if int(sensor_array[0]) == 0:
+            #     self.cap[4] = sensor_array[1]
+            #     self.cap[2] = sensor_array[2]
+            #     self.cap[8] = sensor_array[3]
+            #     self.encoder_counts[4] = sensor_array[6]
+            #     self.encoder_counts[2] = sensor_array[5]
+            # if int(sensor_array[0]) == 1:
+            #     self.cap[3] = sensor_array[1]
+            #     self.cap[1] = sensor_array[2]
+            #     self.cap[7] = sensor_array[3]
+            #     self.encoder_counts[3] = sensor_array[6]
+            #     self.encoder_counts[1] = sensor_array[5]
+            # if int(sensor_array[0]) == 2:
+            #     self.cap[5] = sensor_array[1]
+            #     self.cap[0] = sensor_array[2]
+            #     self.cap[6] = sensor_array[3]
+            #     self.encoder_counts[5] = sensor_array[6]
+            #     self.encoder_counts[0] = sensor_array[5]
+            if(int(sensor_array[0]) == 0) :
+                self.cap[0] = sensor_array[1]
                 self.cap[1] = sensor_array[2]
-                self.cap[7] = sensor_array[3]
-                self.encoder_counts[3] = sensor_array[6]
-                self.encoder_counts[1] = sensor_array[5]
-            if int(sensor_array[0]) == 2:
-                self.cap[5] = sensor_array[1]
-                self.cap[0] = sensor_array[2]
-                self.cap[6] = sensor_array[3]
-                self.encoder_counts[5] = sensor_array[6]
+                self.cap[8] = sensor_array[4]
+                self.encoder_counts[1] = sensor_array[6]
                 self.encoder_counts[0] = sensor_array[5]
+            if(int(sensor_array[0]) == 1) :
+                self.cap[2] = sensor_array[1]
+                self.cap[3] = sensor_array[2] 
+                self.cap[7] = sensor_array[4]
+                self.encoder_counts[3] = sensor_array[6]
+                self.encoder_counts[2] = sensor_array[5]
+            if(int(sensor_array[0]) == 2) :
+                self.cap[4] = sensor_array[1]
+                self.cap[5] = sensor_array[2] 
+                self.cap[6] = sensor_array[4]
+                self.encoder_counts[5] = sensor_array[6]
+                self.encoder_counts[4] = sensor_array[5]
 
-                self.encoder_length = [
-                    counts / self.encoder_resolution / self.gear_ratio * np.pi * self.winch_diameter
-                    for counts in self.encoder_counts
-                ]
+            self.encoder_length = [
+                counts / self.encoder_resolution / self.gear_ratio * np.pi * self.winch_diameter
+                for counts in self.encoder_counts
+            ]
 
             if 0.2 not in self.cap:
                 for i in range(len(self.cap)):
@@ -663,34 +681,34 @@ class TensegrityRobot:
         bottom_nodes = self.bottom3(endcaps) if endcaps is not None else None
         return bottom_nodes
 
-    # def on_press(self, key):
-    #     try:
-    #         if key == keyboard.KeyCode.from_char("s"):
-    #             self.quitting = True
-    #             raise S_Q_Pressed()
-    #         elif key == keyboard.KeyCode.from_char("r"):
-    #             self.states = np.array([[1.0] * self.num_motors] * self.num_steps)
-    #             self.done = np.array([False] * self.num_motors)
-    #             self.tol = 0.2
-    #             self.P = 5.0
-    #             self.max_speed = 70
-    #     except AttributeError:
-    #         pass
-    #     except S_Q_Pressed:
-    #         print("\nStopping motors")
-    #         self.keep_going = False
-    #         for i in range(len(self.addresses)):
-    #             if self.addresses[i] is not None:
-    #                 self.send_command(self.stop_msg, self.addresses[i], 0)
+    def on_press(self, key):
+        try:
+            if key == keyboard.KeyCode.from_char("s"):
+                self.quitting = True
+                raise S_Q_Pressed()
+            elif key == keyboard.KeyCode.from_char("r"):
+                self.states = np.array([[1.0] * self.num_motors] * self.num_steps)
+                self.done = np.array([False] * self.num_motors)
+                self.tol = 0.2
+                self.P = 5.0
+                self.max_speed = 70
+        except AttributeError:
+            pass
+        except S_Q_Pressed:
+            print("\nStopping motors")
+            self.keep_going = False
+            for i in range(len(self.addresses)):
+                if self.addresses[i] is not None:
+                    self.send_command(self.stop_msg, self.addresses[i], 0)
 
-    # def on_release(self, key):
-    #     # Keep same stop behavior
-    #     if key in [
-    #         keyboard.KeyCode.from_char(str(d)) for d in range(6)
-    #     ] or key in [keyboard.KeyCode.from_char("f"), keyboard.KeyCode.from_char("b")]:
-    #         for i in range(len(self.addresses)):
-    #             if self.addresses[i] is not None:
-    #                 self.send_command(self.stop_msg, self.addresses[i], 0)
+    def on_release(self, key):
+        # Keep same stop behavior
+        if key in [
+            keyboard.KeyCode.from_char(str(d)) for d in range(6)
+        ] or key in [keyboard.KeyCode.from_char("f"), keyboard.KeyCode.from_char("b")]:
+            for i in range(len(self.addresses)):
+                if self.addresses[i] is not None:
+                    self.send_command(self.stop_msg, self.addresses[i], 0)
 
     def init_tracker(self):
         print("i got to init_tracker")

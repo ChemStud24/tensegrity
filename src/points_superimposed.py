@@ -523,7 +523,7 @@ if __name__ == '__main__':
 		error("You must choose a predefined trajectory.")
 
 	# get camera parameters
-	config_path = os.path.join(rospkg.RosPack().get_path('tensegrity_perception'),'configs/data_cfg.json')
+	config_path = os.path.join(rospkg.RosPack().get_path('tensegrity'),'configs/data_cfg.json')
 	data_cfg = json.load(open(config_path,'r'))
 	cam_intr = data_cfg.get('cam_intr')
 	cam_extr = data_cfg.get('cam_extr')
