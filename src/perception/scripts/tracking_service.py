@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 
 import os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 import time
 import datetime
 import json
@@ -132,7 +135,7 @@ class Tracker:
         self.latest_bar_height = 0
 
         # saving data
-        data_path = os.path.join(rospkg.RosPack().get_path('tensegrity'),'../../data/')
+        data_path = os.path.join(rospkg.RosPack().get_path('tensegrity'), 'data/')
         self.output_dir = data_path + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         self.color_dir = os.path.join(self.output_dir, 'color')
         self.depth_dir = os.path.join(self.output_dir, 'depth')
