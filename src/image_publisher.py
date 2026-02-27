@@ -29,10 +29,10 @@ class RealSenseCamera:
             self.config = rs.config()
 
             # for L515
-            # self.config.enable_stream(rs.stream.depth, 1024, 768, rs.format.z16, 30)
-            # self.config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 30)
-            self.config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
-            self.config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+            self.config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
+            self.config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 30)
+            #self.config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
+            #self.config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
             # self.config.enable_stream(rs.stream.depth, 320, 240, rs.format.z16, 30)
             # self.config.enable_stream(rs.stream.color, 640, 360, rs.format.bgr8, 30)
 
