@@ -1,0 +1,471 @@
+<!--
+  ~ Copyright (c) 2020.  -  present.  Kun Wang. All Rights Reserved.
+  -->
+
+<mujoco model="TT (v1.31)">
+    <include file="./common/skybox.xml"/>
+    <include file="./common/visual.xml"/>
+    <include file="./common/materials.xml"/>
+    <compiler angle="degree" coordinate="global" inertiafromgeom="true" autolimits="true">
+        <lengthrange timestep="0.001"/>
+    </compiler>
+
+    <option timestep="0.001"
+            gravity="0 0 -9.81"
+            cone="elliptic"
+            solver="Newton"
+            integrator="Euler">
+        <flag sensornoise="disable"
+              frictionloss="disable"/>
+    </option>
+
+    <visual>
+        <global offwidth="1024" offheight="768"/>
+    </visual>
+
+    <default>
+        <geom conaffinity="1" condim="6" contype="1" rgba="0.75 0.75 0.75 1" size="0.014" solref="-5000 -50"
+              density="1000" friction="0.9 0.005 0.0001"/>
+        <site type="sphere" size="0.02"/>
+        <tendon width="0.005" rgba="1 1 1 0.5" damping="1000" stiffness="100000" springlength="1.5"/>
+        <general ctrlrange="-100 0" dyntype="filter" gainprm="15000 0 0" biastype="none" dynprm="1 0 0" biasprm="0 0 0"/>
+    </default>
+
+    <asset>
+        <!--        <texture name="smallgrid" type="2d" builtin="checker" rgb1=".1 .2 .3" rgb2=".2 .3 .4" width="50" height="50" mark="edge" markrgb=".2 .3 .4"/>-->
+        <!--        <material name="smallgrid" texture="smallgrid" texrepeat="40 40" texuniform="true" reflectance=".2"/>-->
+        <texture builtin="gradient" height="100" rgb1="1 1 1" rgb2="0 0 0" type="skybox"
+                 width="100"/>
+        <texture builtin="flat" height="1278" mark="cross" markrgb="1 1 1" name="texgeom"
+                 random="0.01" rgb1="0.8 0.6 0.4" rgb2="0.8 0.6 0.4" type="cube" width="127"/>
+        <texture builtin="checker" height="100" name="texplane" rgb1="0 0 0" rgb2="0.8 0.8 0.8"
+                 type="2d" width="100"/>
+        <material name="MatPlane" reflectance="0." shininess="0.5" specular="0.5" texrepeat="30 30"
+                  texture="texplane"/>
+        <material name="geom" texture="texgeom" texuniform="true"/>
+    </asset>
+
+    <worldbody>
+
+        <!--        <light cutoff="100" diffuse="1 1 1" dir="-0 0 -1.3" directional="true" exponent="1"-->
+        <!--               pos="0 0 1.3" specular=".1 .1 .1"/>-->
+        <light name='mylight' pos="0 0 6"/>
+        <geom conaffinity="1" material="grid" name="floor" pos="0 0 0"
+              rgba="0.8 0.9 0.8 1" size="40 40 1" type="plane"/>
+        <!-- top 90 camera-->
+        <!--        <camera name="camera" pos="0 0 100" axisangle="0 0 1 0"/>-->
+<!--         top camera-->
+<!--                <camera name="camera" pos="0 -2 20" axisangle="1 0 0 10"/>-->
+        <!--         side camera-->
+<!--        <camera name="camera" pos="2.404 -17.028 6.563" xyaxes="0.990 0.140 -0.000 -0.050 0.353 0.934"/>-->
+        <camera name="camera" pos="-1.707 -9.267 38.018" xyaxes="0.994 -0.113 -0.000 0.111 0.970 0.218"/>
+
+
+        <!-- ======= RODS ======= -->
+
+        <body name="r01">
+            <geom name="r01"
+                  fromto="0.882119167055171  1.0611885778364565 0.1750029667013473 -0.9719295726826546 -0.9903467866877387  1.8826931824269368"
+                  size="0.016"
+                  type="cylinder"
+                  rgba="0.15 0.15 0.15 1"
+                  mass="41.8"/>
+            <freejoint name="move4_5"/>
+            <geom name="s0"
+                  pos="0.882119167055171  1.0611885778364565 0.1750029667013473 "
+                  size="0.175"
+                  type="sphere"
+                  rgba="1 0 0 .5"
+                  mass="10.5"/>
+            <geom name="s1"
+                  pos="-0.9719295726826546 -0.9903467866877387  1.8826931824269368"
+                  size="0.175"
+                  type="sphere"
+                  rgba="1 0 0 1"
+                  mass="10.5"/>
+            <geom name="b0"
+                  fromto="0.7537619483470462  0.9191592083664168  0.29322767234560654 0.4970475069025072 0.6351004649689698 0.5296770873444215"
+                  size="0.175"
+                  type="cylinder"
+                  rgba="0 0 0 1"
+                  mass="35.3"/>
+            <geom name="b1"
+                  fromto="-0.5868579125299906 -0.5642586738202515  1.5280190617838625 -0.8435723539745295 -0.8483174172176986  1.7644684767826773"
+                  size="0.175"
+                  type="cylinder"
+                  rgba="0 0 0 1"
+                  mass="35.3"/>
+            <site name="s0"  pos="0.882119167055171  1.0611885778364565 0.1750029667013473 " rgba="0 0 1 1" size=".001"/>
+            <site name="s1"  pos="-0.9719295726826546 -0.9903467866877387  1.8826931824269368" rgba="0 0 1 1" size=".001"/>
+<!--            <site name="s2"  pos="-0.550854   -1.66771965      2.08008949" rgba="0 1 0 1" size=".001"/>-->
+<!--            <site name="s3"  pos="0.2599148     1.34654389     1.17489933" rgba="0 1 0 1" size=".001"/>-->
+<!--            <site name="s4"  pos="-1.10041725  0.16742836      3.30294061" rgba="1 0 0 1" size=".001"/>-->
+<!--            <site name="s5"  pos="1.1975093    -0.70022171     1.17474492" rgba="1 0 0 1" size=".001"/>-->
+            <site name="s_0_4"  pos="0.9906579896332081  1.0766388440544916  0.31140536135468655 " rgba="0 0 0 1" size=".02"/>
+            <site name="s_0_3"  pos="0.9763402764561951  0.9263432319289753  0.11530275539240686" rgba="0 0 0 1" size=".02"/>
+            <site name="s_0_2"  pos="0.7735803444771353 1.0457383116184213 0.0386005720480076" rgba="0 0 0 1" size=".02"/>
+            <site name="s_0_b2" pos="0.787898057654148  1.1960339237439377 0.2347031780102874" rgba="0 0 0 1" size=".02"/>
+            <site name="s_b0_4" pos="0.8232464192170441  0.9800708151442422  0.44184356808916436" rgba="0 0 0 1" size=".02"/>
+            <site name="s_1_4"  pos="-0.9749308183638299 -0.8768111332132026  2.0158308852555176" rgba="0 0 0 1" size=".02"/>
+            <site name="s_1_3"  pos="-0.8282309784384962 -1.064721738312775   1.9493571200771096  " rgba="0 0 0 1" size=".02"/>
+            <site name="s_1_b3" pos="-0.96892832700148   -1.103882440162274   1.7495554795983563 " rgba="0 0 0 1" size=".02"/>
+            <site name="s_1_5"  pos="-1.1156281669268138 -0.9159718350627014  1.8160292447767643" rgba="0 0 0 1" size=".02"/>
+            <site name="s_b1_5" pos="-0.9771173786913705 -0.8184194563079616  1.6553958481959492" rgba="0 0 0 1" size=".02"/>
+        </body>
+
+        <body name="r23">
+            <geom name="r23"
+                  fromto="-1.0094624224958126   1.360854579979269    0.17500034134980624  0.5375349889449423 -1.4188569117435554  0.8402093259308009"
+                  size="0.016"
+                  type="cylinder"
+                  rgba="0.15 0.15 0.15 1"
+                  mass="41.8"/>
+            <freejoint name="move0_1"/>
+            <geom name="s2"
+                  pos="-1.0094624224958126   1.360854579979269    0.17500034134980624 "
+                  size="0.175"
+                  type="sphere"
+                  mass="10.5"
+                  rgba="0 1 0 0.5"
+            />
+            <geom name="s3"
+                  pos="0.5375349889449423 -1.4188569117435554  0.8402093259308009"
+                  size="0.175"
+                  type="sphere"
+                  rgba="0 1 0 1"
+                  mass="10.5"/>
+            <geom name="b2"
+                  fromto="-0.9023626029218085   1.16841301735633     0.22105327052780677 -0.6881629609461887   0.7835298870296781   0.31315913009968077"
+                  size="0.175"
+                  type="cylinder"
+                  rgba="0 0 0 1"
+                  mass="35.3"/>
+            <geom name="b3"
+                  fromto="0.216235527395318  -0.8415322187939641  0.7020505371809264 0.43043516937093773 -1.226415349120616    0.7941563967528004"
+                  size="0.175"
+                  type="cylinder"
+                  rgba="0 0 0 1"
+                  mass="35.3"/>
+
+            <site name="s2" pos="-1.0094624224958126   1.360854579979269    0.17500034134980624 " rgba="0 1 0 1" size=".001"/>
+            <site name="s3" pos="0.5375349889449423 -1.4188569117435554  0.8402093259308009" rgba="0 1 0 1" size=".001"/>
+
+            <site name="s_2_4"  pos="-1.0990022641477146   1.3468484105788106   0.32470486357835493" rgba="0 0 0 1" size=".02"/>
+            <site name="s_2_b4" pos="-0.88428754501261    1.4504408003009677  0.258250321383062   " rgba="0 0 0 1" size=".02"/>
+            <site name="s_2_0"  pos="-0.9199225808439104  1.3748607493797282  0.025295819121258 " rgba="0 0 0 1" size=".02"/>
+            <site name="s_b2_0" pos="-0.7821844395994944   1.2062299798563987   0.09959510321188009" rgba="0 0 0 1" size=".02"/>
+            <site name="s_2_5"  pos="-1.1346372999790146   1.2712683596575711   0.09175036131655101" rgba="0 0 0 1" size=".02"/>
+            <site name="s_3_1"  pos=" 0.5620768573988506 -1.365730582556818   1.005134429659534    " rgba="0 0 0 1" size=".02"/>
+            <site name="s_b3_1" pos=" 0.38333779981442345 -1.2124317235388076   0.9621185829628066 " rgba="0 0 0 1" size=".02"/>
+            <site name="s_3_0"  pos=" 0.6894686254076203 -1.3453759155612455  0.7939306773843928" rgba="0 0 0 1" size=".02"/>
+            <site name="s_3_5"  pos=" 0.5129931204910325 -1.4719832409302922  0.675284222202067  " rgba="0 0 0 1" size=".02"/>
+            <site name="s_3_b5" pos=" 0.38560135248226285 -1.4923379079258654   0.8864879744772082 " rgba="0 0 0 1" size=".02"/>
+
+        </body>
+
+        <body name="r45">
+            <geom name="r45"
+                  fromto="0.035188368883453225 1.3573963769990258   1.68083231468616  -1.1960284245824582  -1.2462713709390296   0.17500382713016382"
+                  size="0.016"
+                  type="cylinder"
+                  rgba="0.15 0.15 0.15 1"
+                  mass="41.8"/>
+            <freejoint name="move2_3"/>
+            <geom name="s4"
+                  pos="0.035188368883453225 1.3573963769990258   1.68083231468616"
+                  size="0.175"
+                  type="sphere"
+                  rgba="0 0 1 0.5"
+                  mass="10.5"/>
+            <geom name="s5"
+                  pos="-1.1960284245824582  -1.2462713709390296   0.17500382713016382"
+                  size="0.175"
+                  type="sphere"
+                  rgba="0 0 1 1"
+                  mass="10.5"/>
+            <geom name="b4"
+                  fromto="-0.050049716017154244  1.1771424576815566    1.5765826511425596 -0.22052588767755188  0.816634615114984    1.3680833217815032"
+                  size="0.175"
+                  type="cylinder"
+                  rgba="0 0 0 1"
+                  mass="35.3"/>
+            <geom name="b5"
+                  fromto="-0.940314168021453   -0.7055096090549879   0.48775282003482046 -1.1107903396818506  -1.0660174516215604   0.27925349067376404"
+                  size="0.175"
+                  type="cylinder"
+                  rgba="0 0 0 1"
+                  mass="35.3"/>
+            <site name="s4" pos="0.035188368883453225 1.3573963769990258   1.68083231468616" rgba="1 0 0 1" size=".001"/>
+            <site name="s5" pos="-1.1960284245824582  -1.2462713709390296   0.17500382713016382" rgba="1 0 0 1" size=".001"/>
+
+            <site name="s_4_1"  pos="-0.01583535771085587  1.292324883604675    1.835063569857925        " rgba="0 0 0 1" size=".02"/>
+            <site name="s_4_0"  pos="0.18889712397579106 1.2753271176468575  1.6970574580553315    " rgba="0 0 0 1" size=".02"/>
+            <site name="s_4_2"  pos="-0.11852038620888483  1.439465636351194    1.6646071713169883  " rgba="0 0 0 1" size=".02"/>
+            <site name="s_b4_2" pos="-0.1883838906643846  1.2717233444423952  1.526153374088421  " rgba="0 0 0 1" size=".02"/>
+            <site name="s_4_b0" pos="0.08621209547776221 1.4224678703933766  1.5266010595143948      " rgba="0 0 0 1" size=".02"/>
+            <site name="s_5_1"  pos="-1.337336789774619  -1.239006133141629   0.2779803402118666 " rgba="0 0 0 1" size=".02"/>
+            <site name="s_5_b1" pos="-1.1168972171208877 -1.350755240042981   0.290962324458916 " rgba="0 0 0 1" size=".02"/>
+            <site name="s_5_3"  pos="-1.0547200593902972  -1.2535366087364295   0.07202731404846086 " rgba="1 1 1 1" size=".02"/>
+            <site name="s_b5_3" pos="-0.9502027088484603 -1.1115562320309142  0.2266908394644932 " rgba="0 0 0 1" size=".02"/>
+            <site name="s_5_2"  pos="-1.2751596320440282  -1.1417875018350774   0.05904532980141186" rgba="0 0 0 1" size=".02"/>
+        </body>
+        <!--        <site name="goal0" pos="-1.26635648  0.2232676 0.7483" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal3" pos="-0.526801260936938 0.11491475650521706 0.7693472393630397" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal4" pos="-0.767906147123102 0.28387059958202254 0.5851695060874491" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal5" pos="-1.0998481788554193 0.2634834134489566 0.3772923234528743" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal6" pos="-1.3777621366407182 0.29972843768707097 0.8149152074326697" rgba="1 1 1 1" size="0.3"/>-->
+        <site name="goal7" pos="-1.532910493484217 0.4083786629197874 0.63959192550948" rgba="1 1 1 1" size="0.3"/>
+<!--        <site name="goal8" pos="-1.7837915574179553 0.8922958710367445 0.5282011688652721" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal9" pos="-1.626570189633326 0.7691358424619592 0.8363647251448318" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal10" pos="-1.7089739240300617 0.9056685159025397 0.7338980815399659" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal11" pos="-1.8046705419805011 1.1159836167025146 0.595849845124318" rgba="1 1 1 1" size="0.3"/>-->
+        <site name="goal12" pos="-2.495821000778793 1.5167252501444315 0.4217293004836831" rgba="1 1 1 1" size="0.3"/>
+<!--        <site name="goal13" pos="-2.7696415879300633 1.7371327283561862 0.8181108383082036" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal14" pos="-2.9197016167090037 1.886859806079479 0.6408806966071863" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal15" pos="-3.099086867822397 2.377134715691391 0.523317740459386" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal16" pos="-2.9590686545217326 2.220213393574834 0.8368636713796245" rgba="1 1 1 1" size="0.3"/>-->
+        <site name="goal17" pos="-3.1111631906355135 2.413972529518608 0.7340687750555802" rgba="1 1 1 1" size="0.3"/>
+<!--        <site name="goal18" pos="-3.2117686286284837 2.6841584178405378 0.5991756229412145" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal19" pos="-3.8413590078976174 3.1508277665868434 0.4271470300303594" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal20" pos="-4.05720943025573 3.4267746899978344 0.8160829133186315" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal21" pos="-4.158235554050058 3.589600809923318 0.6443268741474614" rgba="1 1 1 1" size="0.3"/>-->
+        <site name="goal22" pos="-4.227425822982069 4.111594885766533 0.5318295221563493" rgba="1 1 1 1" size="0.3"/>
+<!--        <site name="goal23" pos="-4.1434473511350935 3.9019902346372937 0.8327739685994756" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal24" pos="-4.229520553196416 4.09677591642226 0.7434710938487651" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal25" pos="-4.303343091816657 4.39205727407898 0.5994843642094296" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal26" pos="-4.861785534743354 4.939117449366187 0.4387684589241943" rgba="1 1 1 1" size="0.3"/>-->
+        <site name="goal27" pos="-5.0556094108549035 5.259079926652782 0.8156994522480226" rgba="1 1 1 1" size="0.3"/>
+<!--        <site name="goal28" pos="-5.140405778432193 5.434858384206282 0.645369168000533" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal29" pos="-5.150892955848128 5.967086642146083 0.5328661130706589" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal30" pos="-5.06907373975563 5.7772494363377715 0.8350740633099466" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal31" pos="-5.122736443797248 5.9923643228340095 0.7392027183526668" rgba="1 1 1 1" size="0.3"/>-->
+        <site name="goal32" pos="-5.150853411863889 6.28663938301997 0.5961565832577911" rgba="1 1 1 1" size="0.3"/>
+<!--        <site name="goal33" pos="-5.5918034790582505 6.930775443256706 0.4347822201489358" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal34" pos="-5.763957236384708 7.277055554491365 0.8178281464824094" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal35" pos="-5.832087950603878 7.494777291806307 0.6399689156689289" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal36" pos="-5.7803128279817315 8.016670254660818 0.5239514085827609" rgba="1 1 1 1" size="0.3"/>-->
+        <site name="goal37" pos="-5.711792572231443 7.829593889990612 0.836670904234326" rgba="1 1 1 1" size="0.3"/>
+<!--        <site name="goal38" pos="-5.767346215989142 8.069805492444734 0.7345278611078118" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal39" pos="-5.742325557806482 8.349033478826106 0.5997431961756255" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal40" pos="-6.112631719656936 9.038010120107296 0.4260829379833469" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal41" pos="-6.198136487972828 9.393435378726378 0.8132221071318958" rgba="1 1 1 1" size="0.3"/>-->
+        <site name="goal42" pos="-6.2229891493275 9.596280209235603 0.6433120231587421" rgba="1 1 1 1" size="0.3"/>
+<!--        <site name="goal43" pos="-6.059845174939052 10.04407758435066 0.5360229619517098" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal44" pos="-6.041291112655917 9.86675833982464 0.8382520510646202" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal45" pos="-6.1478318230356 9.863663936773463 0.47344205696822234" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal46" pos="-6.190166993790694 9.522694063868734 0.4053913006010716" rgba="1 1 1 1" size="0.3"/>-->
+        <site name="goal47" pos="-6.269303201884564 9.088862431433755 0.5803680822402119" rgba="1 1 1 1" size="0.3"/>
+<!--        <site name="goal48" pos="-6.367288262638851 8.346106733993297 0.8473530676630926" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal49" pos="-6.480695591877193 8.358238761622255 0.48907003708981794" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal50" pos="-6.685205056748757 8.022299457692327 0.3963074762809988" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal51" pos="-6.923713103139838 7.672856070908427 0.5874293082908542" rgba="1 1 1 1" size="0.3"/>-->
+        <site name="goal52" pos="-7.260729330216538 7.043417966927539 0.8589724131157275" rgba="1 1 1 1" size="0.3"/>
+<!--        <site name="goal53" pos="-7.36163065160568 7.098600108497583 0.4886783318125499" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal54" pos="-7.679122187947275 6.877901836179542 0.39993108807384753" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal55" pos="-8.025131002140762 6.650070863868791 0.575361654065908" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal56" pos="-8.569525806340502 6.220437768462872 0.8573536076910061" rgba="1 1 1 1" size="0.3"/>-->
+        <site name="goal57" pos="-8.648557840591627 6.301804778296673 0.4846557384379448" rgba="1 1 1 1" size="0.3"/>
+<!--        <site name="goal58" pos="-9.019122047978689 6.207416387585039 0.4026752614416999" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal59" pos="-9.457214069540166 6.122371137794832 0.5780899294059609" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal60" pos="-10.15434026151108 5.946656829277312 0.8516242749417645" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal61" pos="-10.1822027815407 6.055186964465179 0.4893613681134899" rgba="1 1 1 1" size="0.3"/>-->
+        <site name="goal62" pos="-10.570810369510346 6.1116937700689995 0.39625012816129984" rgba="1 1 1 1" size="0.3"/>
+<!--        <site name="goal63" pos="-11.000842469329436 6.188310379246665 0.5874097479345973" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal64" pos="-11.724728448551419 6.260486765084493 0.858400914002322" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal65" pos="-11.709640738733691 6.387489455009974 0.48822588904637737" rgba="1 1 1 1" size="0.3"/>-->
+<!--        <site name="goal66" pos="-12.047633673163494 6.584354009165783 0.4030803210733389" rgba="1 1 1 1" size="0.3"/>-->
+        <site name="goal67" pos="-12.422895642122569 6.810104965964038 0.5763190811241805" rgba="1 1 1 1" size="0.3"/>
+<!--        <site name="goal68" pos="-13.04858086300183 7.169675840867472 0.8535885138987016" rgba="1 1 1 1" size="0.3"/>-->
+
+    </worldbody>
+
+    <tendon>
+        <spatial name="td_0" rgba="0.6 0.6 0.6 0.5">
+            <site site="s_3_b5"/>
+            <site site="s_b5_3"/>
+        </spatial>
+        <spatial name="td_1" rgba="0.6 0.6 0.6 0.5">
+            <site site="s_1_b3"/>
+            <site site="s_b3_1"/>
+        </spatial>
+        <spatial name="td_2" rgba="0.6 0.6 0.6 0.5">
+            <site site="s_5_b1"/>
+            <site site="s_b1_5"/>
+        </spatial>
+        <spatial name="td_3" rgba="0.6 0.6 0.6 0.5">
+            <site site="s_0_b2"/>
+            <site site="s_b2_0"/>
+        </spatial>
+        <spatial name="td_4" rgba="0.6 0.6 0.6 0.5">
+            <site site="s_4_b0"/>
+            <site site="s_b0_4"/>
+        </spatial>
+        <spatial name="td_5" rgba="0.6 0.6 0.6 0.5">
+            <site site="s_2_b4"/>
+            <site site="s_b4_2"/>
+        </spatial>
+        <spatial name="td_6" springlength="1.4" stiffness="10000" width="0.025" rgba="1 1 1 0.5">
+            <site site="s_3_5"/>
+            <site site="s_5_3"/>
+        </spatial>
+        <spatial name="td_7" springlength="1.4" stiffness="10000" width="0.025" rgba="1 1 1 0.5">
+            <site site="s_1_3"/>
+            <site site="s_3_1"/>
+        </spatial>
+        <spatial name="td_8" springlength="1.4" stiffness="10000" width="0.025" rgba="1 1 1 0.5">
+            <site site="s_1_5"/>
+            <site site="s_5_1"/>
+        </spatial>
+        <spatial name="td_9" springlength="1.4" stiffness="10000" width="0.025" rgba="1 1 1 0.5">
+            <site site="s_0_2"/>
+            <site site="s_2_0"/>
+        </spatial>
+        <spatial name="td_10" springlength="1.4" stiffness="10000" width="0.025" rgba="1 1 1 0.5">
+            <site site="s_0_4"/>
+            <site site="s_4_0"/>
+        </spatial>
+        <spatial name="td_11" springlength="1.4" stiffness="10000" width="0.025" rgba="1 1 1 0.5">
+            <site site="s_2_4"/>
+            <site site="s_4_2"/>
+        </spatial>
+        <spatial name="td_12" springlength="1.75" stiffness="10000" width="0.025" rgba="1 1 1 0.5">
+            <site site="s_2_5"/>
+            <site site="s_5_2"/>
+        </spatial>
+        <spatial name="td_13" springlength="1.75" stiffness="10000" width="0.025" rgba="1 1 1 0.5">
+            <site site="s_0_3"/>
+            <site site="s_3_0"/>
+        </spatial>
+        <spatial name="td_14" springlength="1.75" stiffness="10000" width="0.025" rgba="1 1 1 0.5">
+            <site site="s_1_4"/>
+            <site site="s_4_1"/>
+        </spatial>
+    </tendon>
+
+    <sensor>
+        <framepos name="pos_s0" objname="s0" objtype="site"/>
+        <framepos name="pos_s1" objname="s1" objtype="site"/>
+        <framepos name="pos_s2" objname="s2" objtype="site"/>
+        <framepos name="pos_s3" objname="s3" objtype="site"/>
+        <framepos name="pos_s4" objname="s4" objtype="site"/>
+        <framepos name="pos_s5" objname="s5" objtype="site"/>
+        <framepos name="pos_s_0_4" objname="s_0_4" objtype="site"/>
+        <framepos name="pos_s_0_3" objname="s_0_3" objtype="site"/>
+        <framepos name="pos_s_0_2" objname="s_0_2" objtype="site"/>
+        <framepos name="pos_s_b0_4" objname="s_b0_4" objtype="site"/>
+        <framepos name="pos_s_0_b2" objname="s_0_b2" objtype="site"/>
+        <framepos name="pos_s_1_4" objname="s_1_4" objtype="site"/>
+        <framepos name="pos_s_1_3" objname="s_1_3" objtype="site"/>
+        <framepos name="pos_s_1_5" objname="s_1_5" objtype="site"/>
+        <framepos name="pos_s_1_b3" objname="s_1_b3" objtype="site"/>
+        <framepos name="pos_s_b1_5" objname="s_b1_5" objtype="site"/>
+        <framepos name="pos_s_2_4" objname="s_2_4" objtype="site"/>
+        <framepos name="pos_s_2_0" objname="s_2_0" objtype="site"/>
+        <framepos name="pos_s_2_5" objname="s_2_5" objtype="site"/>
+        <framepos name="pos_s_b2_0" objname="s_b2_0" objtype="site"/>
+        <framepos name="pos_s_2_b4" objname="s_2_b4" objtype="site"/>
+        <framepos name="pos_s_3_1" objname="s_3_1" objtype="site"/>
+        <framepos name="pos_s_3_0" objname="s_3_0" objtype="site"/>
+        <framepos name="pos_s_3_5" objname="s_3_5" objtype="site"/>
+        <framepos name="pos_s_3_b5" objname="s_3_b5" objtype="site"/>
+        <framepos name="pos_s_b3_1" objname="s_b3_1" objtype="site"/>
+        <framepos name="pos_s_4_1" objname="s_4_1" objtype="site"/>
+        <framepos name="pos_s_4_0" objname="s_4_0" objtype="site"/>
+        <framepos name="pos_s_4_2" objname="s_4_2" objtype="site"/>
+        <framepos name="pos_s_4_b0" objname="s_4_b0" objtype="site"/>
+        <framepos name="pos_s_b4_2" objname="s_b4_2" objtype="site"/>
+        <framepos name="pos_s_5_1" objname="s_5_1" objtype="site"/>
+        <framepos name="pos_s_5_3" objname="s_5_3" objtype="site"/>
+        <framepos name="pos_s_5_2" objname="s_5_2" objtype="site"/>
+        <framepos name="pos_s_5_b1" objname="s_5_b1" objtype="site"/>
+        <framepos name="pos_s_b5_3" objname="s_b5_3" objtype="site"/>
+
+        <framelinvel name="linvel_s0" objname="s0" objtype="site"/>
+        <framelinvel name="linvel_s1" objname="s1" objtype="site"/>
+        <framelinvel name="linvel_s2" objname="s2" objtype="site"/>
+        <framelinvel name="linvel_s3" objname="s3" objtype="site"/>
+        <framelinvel name="linvel_s4" objname="s4" objtype="site"/>
+        <framelinvel name="linvel_s5" objname="s5" objtype="site"/>
+        <framelinvel name="linvel_s_0_4" objname="s_0_4" objtype="site"/>
+        <framelinvel name="linvel_s_0_3" objname="s_0_3" objtype="site"/>
+        <framelinvel name="linvel_s_0_2" objname="s_0_2" objtype="site"/>
+        <framelinvel name="linvel_s_1_4" objname="s_1_4" objtype="site"/>
+        <framelinvel name="linvel_s_1_3" objname="s_1_3" objtype="site"/>
+        <framelinvel name="linvel_s_1_5" objname="s_1_5" objtype="site"/>
+        <framelinvel name="linvel_s_2_4" objname="s_2_4" objtype="site"/>
+        <framelinvel name="linvel_s_2_0" objname="s_2_0" objtype="site"/>
+        <framelinvel name="linvel_s_2_5" objname="s_2_5" objtype="site"/>
+        <framelinvel name="linvel_s_3_1" objname="s_3_1" objtype="site"/>
+        <framelinvel name="linvel_s_3_0" objname="s_3_0" objtype="site"/>
+        <framelinvel name="linvel_s_3_5" objname="s_3_5" objtype="site"/>
+        <framelinvel name="linvel_s_4_1" objname="s_4_1" objtype="site"/>
+        <framelinvel name="linvel_s_4_0" objname="s_4_0" objtype="site"/>
+        <framelinvel name="linvel_s_4_2" objname="s_4_2" objtype="site"/>
+        <framelinvel name="linvel_s_5_1" objname="s_5_1" objtype="site"/>
+        <framelinvel name="linvel_s_5_3" objname="s_5_3" objtype="site"/>
+        <framelinvel name="linvel_s_5_2" objname="s_5_2" objtype="site"/>
+
+        <framelinacc name="linacc_s0" objname="s0" objtype="site"/>
+        <framelinacc name="linacc_s1" objname="s1" objtype="site"/>
+        <framelinacc name="linacc_s2" objname="s2" objtype="site"/>
+        <framelinacc name="linacc_s3" objname="s3" objtype="site"/>
+        <framelinacc name="linacc_s4" objname="s4" objtype="site"/>
+        <framelinacc name="linacc_s5" objname="s5" objtype="site"/>
+        <framelinacc name="linacc_s_0_4" objname="s_0_4" objtype="site"/>
+        <framelinacc name="linacc_s_0_3" objname="s_0_3" objtype="site"/>
+        <framelinacc name="linacc_s_0_2" objname="s_0_2" objtype="site"/>
+        <framelinacc name="linacc_s_1_4" objname="s_1_4" objtype="site"/>
+        <framelinacc name="linacc_s_1_3" objname="s_1_3" objtype="site"/>
+        <framelinacc name="linacc_s_1_5" objname="s_1_5" objtype="site"/>
+        <framelinacc name="linacc_s_2_4" objname="s_2_4" objtype="site"/>
+        <framelinacc name="linacc_s_2_0" objname="s_2_0" objtype="site"/>
+        <framelinacc name="linacc_s_2_5" objname="s_2_5" objtype="site"/>
+        <framelinacc name="linacc_s_3_1" objname="s_3_1" objtype="site"/>
+        <framelinacc name="linacc_s_3_0" objname="s_3_0" objtype="site"/>
+        <framelinacc name="linacc_s_3_5" objname="s_3_5" objtype="site"/>
+        <framelinacc name="linacc_s_4_1" objname="s_4_1" objtype="site"/>
+        <framelinacc name="linacc_s_4_0" objname="s_4_0" objtype="site"/>
+        <framelinacc name="linacc_s_4_2" objname="s_4_2" objtype="site"/>
+        <framelinacc name="linacc_s_5_1" objname="s_5_1" objtype="site"/>
+        <framelinacc name="linacc_s_5_3" objname="s_5_3" objtype="site"/>
+        <framelinacc name="linacc_s_5_2" objname="s_5_2" objtype="site"/>
+
+        <framelinacc name="linacc_r01" objname="r01" objtype="geom"/>
+        <frameangacc name="angacc_r01" objname="r01" objtype="geom"/>
+        <framepos name="pos_r01" objname="r01" objtype="geom"/>
+        <framelinvel name="linvel_r01" objname="r01" objtype="geom"/>
+        <frameangvel name="angvel_r01" objname="r01" objtype="geom"/>
+        <framequat name="quat_r01" objname="r01" objtype="geom"/>
+
+        <framelinacc name="linacc_r23" objname="r23" objtype="geom"/>
+        <frameangacc name="angacc_r23" objname="r23" objtype="geom"/>
+        <framepos name="pos_r23" objname="r23" objtype="geom"/>
+        <framelinvel name="linvel_r23" objname="r23" objtype="geom"/>
+        <frameangvel name="angvel_r23" objname="r23" objtype="geom"/>
+        <framequat name="quat_r23" objname="r23" objtype="geom"/>
+
+        <framelinacc name="linacc_r45" objname="r45" objtype="geom"/>
+        <frameangacc name="angacc_r45" objname="r45" objtype="geom"/>
+        <framepos name="pos_r45" objname="r45" objtype="geom"/>
+        <framelinvel name="linvel_r45" objname="r45" objtype="geom"/>
+        <frameangvel name="angvel_r45" objname="r45" objtype="geom"/>
+        <framequat name="quat_r45" objname="r45" objtype="geom"/>
+    </sensor>
+
+    <actuator>
+        <general name='act_0' tendon="td_0"/>
+        <general name='act_1' tendon="td_1"/>
+        <general name='act_2' tendon="td_2"/>
+        <general name='act_3' tendon="td_3"/>
+        <general name='act_4' tendon="td_4"/>
+        <general name='act_5' tendon="td_5"/>
+        <!--        <general name='act_6' tendon="td_6"/>-->
+        <!--        <general name='act_7' tendon="td_7"/>-->
+        <!--        <general name='act_8' tendon="td_8"/>-->
+    </actuator>
+    <!--    <actuator>-->
+    <!--        <general name="f0" gear="0 0 10 0 0 0" joint="move0_1"/>-->
+    <!--        <general name="f1" gear="0 0 10 0 0 0" joint="move2_3"/>-->
+    <!--        <general name="f2" gear="0 0 10 0 0 0" joint="move4_5"/>-->
+    <!--    </actuator>-->
+</mujoco>

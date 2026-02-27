@@ -1,0 +1,23 @@
+{
+  "sim_config": "simulators/configs/6_bar_new_platform_tensegrity_sim_config.json",
+  "num_steps_fwd": 1,
+  "num_hist": 1,
+  "num_ctrls_hist": 5,
+  "batch_size": 128,
+  "trainable_params": [
+  ],
+  "optimizer_params": {
+    "lr": 1e-5,
+    "weight_decay": 0.01
+  },
+  "data_root": "../data_sets/tensegrity_real_datasets/mjc_sixbar_newplat_v0/",
+  "train_data_paths": [
+
+  ],
+  "val_data_paths": [
+
+  ],
+  "load_sim": false,
+  "load_sim_path": "",
+  "output_path": "../../tensegrity/data_sets/tensegrity_real_datasets/new_platform_models/l4dc/s2s_6bar/e2e_gnn_v0/"
+}

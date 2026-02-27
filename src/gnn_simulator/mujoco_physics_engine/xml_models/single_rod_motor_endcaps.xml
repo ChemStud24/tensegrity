@@ -1,0 +1,157 @@
+<!--
+  ~ Copyright (c) 2020.  -  present.  Kun Wang. All Rights Reserved.
+  -->
+
+<mujoco model="TT (v1.31)">
+    <include file="./common/skybox.xml"/>
+    <include file="./common/visual.xml"/>
+    <include file="./common/materials.xml"/>
+    <compiler angle="degree" coordinate="global" inertiafromgeom="true">
+             <lengthrange timestep="0.01"/>
+    </compiler>
+
+    <option timestep="0.01"
+            gravity="0 0 -9.81"
+            solver="Newton"
+            integrator="Euler"
+            iterations="10000">
+        <flag sensornoise="disable"
+            frictionloss="disable"/>
+    </option>
+
+    <visual>
+        <global offwidth="1280" offheight="720"/>
+    </visual>
+
+    <default>
+        <geom conaffinity="1" condim="3" contype="1" material="geom" rgba="1 .84 0 1" size="0.014"
+              density="1000" friction="0.7 0.8 0.7"/>
+        <site type="sphere" size="0.005"/>
+        <tendon width="0.1" rgba="1 0 0 1" damping="10" stiffness="100"/>
+        <position ctrllimited="true" ctrlrange="-100 100"/>
+    </default>
+
+    <asset>
+        <!--        <texture name="smallgrid" type="2d" builtin="checker" rgb1=".1 .2 .3" rgb2=".2 .3 .4" width="50" height="50" mark="edge" markrgb=".2 .3 .4"/>-->
+        <!--        <material name="smallgrid" texture="smallgrid" texrepeat="40 40" texuniform="true" reflectance=".2"/>-->
+        <texture builtin="gradient" height="100" rgb1="1 1 1" rgb2="0 0 0" type="skybox"
+                 width="100"/>
+        <texture builtin="flat" height="1278" mark="cross" markrgb="1 1 1" name="texgeom"
+                 random="0.01" rgb1="0.8 0.6 0.4" rgb2="0.8 0.6 0.4" type="cube" width="127"/>
+        <texture builtin="checker" height="100" name="texplane" rgb1="0 0 0" rgb2="0.8 0.8 0.8"
+                 type="2d" width="100"/>
+        <material name="MatPlane" reflectance="0." shininess="0.5" specular="0.5" texrepeat="30 30"
+                  texture="texplane"/>
+        <material name="geom" texture="texgeom" texuniform="true"/>
+    </asset>
+
+    <worldbody>
+
+        <!--        <light cutoff="100" diffuse="1 1 1" dir="-0 0 -1.3" directional="true" exponent="1"-->
+        <!--               pos="0 0 1.3" specular=".1 .1 .1"/>-->
+        <light name='mylight' pos="0 0 6"/>
+        <geom conaffinity="1" material="grid" name="floor" pos="0 0 0"
+              rgba="0.8 0.9 0.8 1" size="40 40 1" type="plane"/>
+
+        <camera name="camera" pos="-2.067 -16.780 5.827" xyaxes="0.995 -0.101 0.000 0.027 0.266 0.963"/>
+        <camera name="corl" pos="-0.244 0.120 -6.862" xyaxes="-0.442 -0.897 -0.000 -0.896 0.441 0.040"/>
+
+
+
+        <!-- ======= RODS ======= -->
+        <body name="r01">
+            <geom name="r01"
+                  fromto="-1.369575604775021 -0.7799842492566997  3.17499564642021237 0.6453632584660283 0.9359648201845696 5.0612724348545726"
+                  size="0.016"
+                  type="cylinder"
+                  mass="41.8"/>
+            <freejoint name="move4_5"/>
+            <geom name="s0"
+                  pos="-1.369575604775021 -0.7799842492566997  3.17499564642021237"
+                  size="0.175"
+                  type="sphere"
+                  rgba="1 0 0 1"
+                  mass="10.5"/>
+            <geom name="s1"
+                  pos="0.6453632584660283 0.9359648201845696 5.0612724348545726"
+                  size="0.175"
+                  type="sphere"
+                  rgba="1 0 0 1"
+                  mass="10.5"/>
+            <geom name="b0"
+                  fromto="-1.2300798392057177 -0.6611877768244697  3.3055840377002411 -0.9510883036892538 -0.4235948282317682  3.5667608243586112"
+                  size="0.175"
+                  type="cylinder"
+                  rgba="0 0 0 1"
+                  mass="35.3"/>
+            <geom name="b1"
+                  fromto="0.22687595738026092 0.5795753991596383 4.669507256916174 0.5058674928967248 0.8171683477523398 4.9306840435745443"
+                  size="0.175"
+                  type="cylinder"
+                  rgba="0 0 0 1"
+                  mass="35.3"/>
+            <site name="s0"  pos="-1.369575604775021 -0.7799842492566997  3.17499564642021237" rgba="0 0 1 1" size=".001"/>
+            <site name="s1"  pos="0.6453632584660283 0.9359648201845696 5.0612724348545726" rgba="0 0 1 1" size=".001"/>
+        </body>
+
+<!--        <body name="r01">-->
+<!--            <geom name="1r01"-->
+<!--                  fromto="-1.63 0.0  0.0 -1.096 0.0 0.0"-->
+<!--                  size="0.016"-->
+<!--                  type="cylinder"-->
+<!--                  mass="41.8"/>-->
+<!--            <geom name="2r01"-->
+<!--                  fromto="-0.556 0.0  0.0 -0.015 0.0 0.0"-->
+<!--                  size="0.016"-->
+<!--                  type="cylinder"-->
+<!--                  mass="41.8"/>-->
+<!--            <geom name="3r01"-->
+<!--                  fromto="0.015 0.0  0.0 0.556 0.0 0.0"-->
+<!--                  size="0.016"-->
+<!--                  type="cylinder"-->
+<!--                  mass="41.8"/>-->
+<!--            <geom name="4r01"-->
+<!--                  fromto="1.096 0.0  0.0 1.63 0.0 0.0"-->
+<!--                  size="0.016"-->
+<!--                  type="cylinder"-->
+<!--                  mass="41.8"/>-->
+<!--            <freejoint name="move4_5"/>-->
+<!--            <geom name="s0"-->
+<!--                  pos="-1.84 0.0 0.0"-->
+<!--                  size="0.175"-->
+<!--                  type="sphere"-->
+<!--                  rgba="1 0 0 1"-->
+<!--                  mass="10.5"/>-->
+<!--            <geom name="s1"-->
+<!--                  pos="1.84 0.0 0.0"-->
+<!--                  size="0.175"-->
+<!--                  type="sphere"-->
+<!--                  rgba="1 0 0 1"-->
+<!--                  mass="10.5"/>-->
+<!--            <geom name="b0"-->
+<!--                  fromto="-1.036 0 0 -0.586 0 0"-->
+<!--                  size="0.175"-->
+<!--                  type="cylinder"-->
+<!--                  rgba="0 0 0 1"-->
+<!--                  mass="35.3"/>-->
+<!--            <geom name="b1"-->
+<!--                  fromto="0.586 0 0 1.036 0 0"-->
+<!--                  size="0.175"-->
+<!--                  type="cylinder"-->
+<!--                  rgba="0 0 0 1"-->
+<!--                  mass="35.3"/>-->
+<!--        </body>-->
+    </worldbody>
+    <sensor>
+<!--        <framelinacc name="linacc" objname="rod01" objtype="geom"/>-->
+<!--        <frameangacc name="angacc" objname="rod01" objtype="geom"/>-->
+        <framepos name="pos" objname="r01" objtype="body"/>
+        <framelinvel name="linvel" objname="r01" objtype="body"/>
+        <frameangvel name="angvel" objname="r01" objtype="body"/>
+        <framequat name="quat" objname="r01" objtype="body"/>
+
+        <framepos name="pos_s0" objname="s0" objtype="site"/>
+        <framepos name="pos_s1" objname="s1" objtype="site"/>
+    </sensor>
+
+</mujoco>

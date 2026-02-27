@@ -1,0 +1,126 @@
+<!--
+  ~ Copyright (c) 2020.  -  present.  Kun Wang. All Rights Reserved.
+  -->
+
+<mujoco model="TT (v1.31)">
+    <compiler angle="degree" coordinate="global" inertiafromgeom="true">
+             <lengthrange timestep="0.005"/>
+    </compiler>
+
+    <option timestep="0.005"
+            gravity="0 0 -9.81"
+            solver="Newton"
+            integrator="Euler"
+            iterations="1000">
+        <flag sensornoise="disable"
+            frictionloss="disable"/>
+    </option>
+
+    <visual>
+        <global offwidth="1280" offheight="720"/>
+    </visual>
+
+    <default>
+        <geom conaffinity="1" condim="3" contype="1" material="geom" rgba="1 .84 0 1" size="0.014"
+              density="1000" friction="1.000 0.00 1.000"/>
+        <site type="sphere" size="0.005"/>
+        <tendon width="0.1" rgba="1 0 0 1" damping="10" stiffness="100"/>
+        <position ctrllimited="true" ctrlrange="-100 100"/>
+    </default>
+
+    <asset>
+        <texture builtin="gradient" height="100" rgb1="1 1 1" rgb2="0 0 0" type="skybox"
+                 width="100"/>
+        <texture builtin="flat" height="1278" mark="cross" markrgb="1 1 1" name="texgeom"
+                 random="0.01" rgb1="0.8 0.6 0.4" rgb2="0.8 0.6 0.4" type="cube" width="127"/>
+        <texture builtin="checker" height="100" name="texplane" rgb1="0 0 0" rgb2="0.8 0.8 0.8"
+                 type="2d" width="100"/>
+        <material name="MatPlane" reflectance="0.5" shininess="1" specular="1" texrepeat="30 30"
+                  texture="texplane"/>
+        <material name="geom" texture="texgeom" texuniform="true"/>
+    </asset>
+
+    <worldbody>
+
+        <light cutoff="100" diffuse="1 1 1" dir="-0 0 -1.3" directional="true" exponent="1"
+               pos="0 0 1.3" specular=".1 .1 .1"/>
+        <geom conaffinity="1" material="grid" name="floor" pos="0 0 0"
+              rgba="0.8 0.9 0.8 1" size="40 40 1" type="plane"/>
+
+        <camera name="camera" pos="3.757 -64.089 20.103" xyaxes="0.998 0.059 0.000 -0.017 0.298 0.954"/>
+
+
+        <!-- ======= RODS ======= -->
+        <body name="r01">
+            <geom name="rod01"
+                  fromto="-3.0 0 3 3 0 3"
+                  size="0.5"
+                  type="cylinder"
+                  solref="-1000 -10"
+                   rgba="0 0 1 1"
+                  mass="5.0"/>
+            <freejoint name="move0_1"/>
+            <geom name="sphere0"
+                  pos="-3.0 0 3"
+                  size="1"
+                  type="sphere"
+                  mass="1.5"
+                  rgba="0 0 1 1"
+                  solref="-1000 -10"
+            />
+            <geom name="sphere1"
+                  pos="3 0 3"
+                  size="1"
+                  type="sphere"
+                  mass="1.5"
+                  rgba="0 0 1 1"
+                  solref="-1000 -10"
+            />
+
+            <site name="s0" pos="-3.0 0 3" rgba="0 0 0 1" size=".05"/>
+            <site name="s1" pos="3 0 3" rgba="0 0 0 1" size=".05"/>
+        </body>
+
+        <body name="r23">
+            <geom name="rod23"
+                  fromto="-3.0 0 3 3 0 3"
+                  size="0.5"
+                  type="cylinder"
+                  solref="-1000 -10"
+                  rgba="1 0 0 0.3"
+                  mass="5.0"/>
+            <freejoint name="move2_3"/>
+            <geom name="sphere2"
+                  pos="-3.0 0 3"
+                  size="1"
+                  type="sphere"
+                  mass="1.5"
+                  rgba="1 0 0 0.3"
+                  solref="-1000 -10"
+            />
+            <geom name="sphere3"
+                  pos="3 0 3"
+                  size="1"
+                  type="sphere"
+                  mass="1.5"
+                  rgba="1 0 0 0.3"
+                  solref="-1000 -10"
+            />
+
+            <site name="s2" pos="-3.0 0 3" rgba="0 0 0 1" size=".05"/>
+            <site name="s3" pos="3 0 3" rgba="0 0 0 1" size=".05"/>
+        </body>
+    </worldbody>
+    <sensor>
+        <framelinacc name="linacc" objname="rod01" objtype="geom"/>
+        <frameangacc name="angacc" objname="rod01" objtype="geom"/>
+        <framepos name="pos" objname="rod01" objtype="geom"/>
+        <framelinvel name="linvel" objname="rod01" objtype="geom"/>
+        <frameangvel name="angvel" objname="rod01" objtype="geom"/>
+        <framequat name="quat" objname="rod01" objtype="geom"/>
+
+        <framepos name="pos_s0" objname="s0" objtype="site"/>
+        <framepos name="pos_s1" objname="s1" objtype="site"/>
+    </sensor>
+
+</mujoco>

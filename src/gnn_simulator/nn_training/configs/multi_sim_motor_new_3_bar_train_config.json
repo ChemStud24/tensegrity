@@ -1,0 +1,30 @@
+{
+  "sim_config": "simulators/configs/new_3_bar_15_cables_5d_gnn_sim_config.json",
+  "num_steps_fwd": 1,
+  "num_hist": 1,
+  "num_ctrls_hist": 20,
+  "batch_size": 128,
+  "trainable_params": [
+  ],
+  "optimizer_params": {
+    "lr": 1e-5,
+    "weight_decay": 0.01
+  },
+  "data_root": "/home/nelsonchen/research/tensegrity/data_sets/tensegrity_real_datasets/",
+  "train_data_paths": [
+    "mjc_6d_new_platform_real_dl_v1/dataset_0/mjc_ccw_1",
+    "mjc_6d_new_platform_real_dl_v1/dataset_0/mjc_ccw_2",
+    "mjc_6d_new_platform_real_dl_v1/dataset_0/mjc_cw_1",
+    "mjc_6d_new_platform_real_dl_v1/dataset_0/mjc_cw_2",
+    "mjc_6d_new_platform_real_dl_v1/dataset_0/mjc_roll_2",
+    "mjc_6d_new_platform_real_dl_v1/dataset_0/mjc_roll_3"
+  ],
+  "val_data_paths": [
+    "mjc_6d_new_platform_real_dl_v1/dataset_0/mjc_ccw_3",
+    "mjc_6d_new_platform_real_dl_v1/dataset_0/mjc_cw_3",
+    "mjc_6d_new_platform_real_dl_v1/dataset_0/mjc_roll_4"
+  ],
+  "load_sim": false,
+  "load_sim_path": "../../tensegrity/data_sets/tensegrity_real_datasets/new_platform_models/3bar_dataset0_multi_recur_motor2/best_rollout_model.pt",
+  "output_path": "../../tensegrity/data_sets/tensegrity_real_datasets/new_platform_models/3bar_dataset0_multi_recur_motor2/"
+}

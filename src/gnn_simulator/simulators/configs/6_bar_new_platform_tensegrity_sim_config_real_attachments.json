@@ -1,0 +1,1047 @@
+{
+  "gravity": [
+    0.0,
+    0.0,
+    -9.81
+  ],
+  "tensegrity_cfg": {
+    "name": "6bar",
+    "rods": [
+      {
+        "name": "rod_01",
+        "graph_type": "dense",
+        "end_pts": [
+          [
+            0.86495027,
+            -1.64162551,
+            3.71431618
+          ],
+          [
+            0.76876615,
+            0.77446952,
+            2.02442463
+          ]
+        ],
+        "linear_vel": [
+          0,
+          0,
+          0
+        ],
+        "ang_vel": [
+          0,
+          0,
+          0
+        ],
+        "rod_split_length": 0.98,
+        "rod_radius": 0.0159,
+        "rod_mass": 6.5,
+        "sphere_radius": 0.175,
+        "sphere_mass": 15.1,
+        "motor_mass": 58.1,
+        "motor_radius": 0.2,
+        "motor_length": 0.45,
+        "motor_offset": 1.025,
+        "housing_mass": 90,
+        "housing_radius": 0.02,
+        "housing_length": 1.43,
+        "sites": [
+          "s_0",
+          "s_1",
+          "s_0_4",
+          "s_0_8",
+          "s_0_9",
+          "s_0_10",
+          "s_1_4",
+          "s_1_2",
+          "s_1_3",
+          "s_1_10"
+        ]
+      },
+      {
+        "name": "rod_23",
+        "graph_type": "dense",
+        "end_pts": [
+          [
+            -0.82084178,
+            -0.10409556,
+            2.02442457
+          ],
+          [
+            1.22346529,
+            1.1872507,
+            3.71431611
+          ]
+        ],
+        "linear_vel": [
+          0,
+          0,
+          0
+        ],
+        "ang_vel": [
+          0,
+          0,
+          0
+        ],
+        "rod_split_length": 0.98,
+        "rod_radius": 0.0159,
+        "rod_mass": 6.5,
+        "sphere_radius": 0.175,
+        "sphere_mass": 15.1,
+        "motor_mass": 58.1,
+        "motor_radius": 0.2,
+        "motor_length": 0.45,
+        "motor_offset": 1.025,
+        "housing_mass": 90,
+        "housing_radius": 0.02,
+        "housing_length": 1.43,
+        "sites": [
+          "s_2",
+          "s_3",
+          "s_2_1",
+          "s_2_6",
+          "s_2_5",
+          "s_2_4",
+          "s_3_1",
+          "s_3_6",
+          "s_3_11",
+          "s_3_10"
+        ]
+      },
+      {
+        "name": "rod_45",
+        "graph_type": "dense",
+        "end_pts": [
+          [
+            0.73482154,
+            -1.04145398,
+            2.02442469
+          ],
+          [
+            -1.40567048,
+            0.083295429,
+            3.714316007
+          ]
+        ],
+        "linear_vel": [
+          0,
+          0,
+          0
+        ],
+        "ang_vel": [
+          0,
+          0,
+          0
+        ],
+        "rod_split_length": 0.98,
+        "rod_radius": 0.0159,
+        "rod_mass": 6.5,
+        "sphere_radius": 0.175,
+        "sphere_mass": 15.1,
+        "motor_mass": 58.1,
+        "motor_radius": 0.2,
+        "motor_length": 0.45,
+        "motor_offset": 1.025,
+        "housing_mass": 90,
+        "housing_radius": 0.02,
+        "housing_length": 1.43,
+        "sites": [
+          "s_4",
+          "s_5",
+          "s_4_1",
+          "s_4_2",
+          "s_4_8",
+          "s_4_0",
+          "s_5_6",
+          "s_5_2",
+          "s_5_8",
+          "s_5_7"
+        ]
+      },
+      {
+        "name": "rod_67",
+        "graph_type": "dense",
+        "end_pts": [
+          [
+            -0.4096663,
+            1.39357879,
+            2.95441689
+          ],
+          [
+            -0.31374294,
+            -1.02120734,
+            4.64619307
+          ]
+        ],
+        "linear_vel": [
+          0,
+          0,
+          0
+        ],
+        "ang_vel": [
+          0,
+          0,
+          0
+        ],
+        "rod_split_length": 0.98,
+        "rod_radius": 0.0159,
+        "rod_mass": 6.5,
+        "sphere_radius": 0.175,
+        "sphere_mass": 15.1,
+        "motor_mass": 58.1,
+        "motor_radius": 0.2,
+        "motor_length": 0.45,
+        "motor_offset": 1.025,
+        "housing_mass": 90,
+        "housing_radius": 0.02,
+        "housing_length": 1.43,
+        "sites": [
+          "s_6",
+          "s_7",
+          "s_6_2",
+          "s_6_3",
+          "s_6_11",
+          "s_6_5",
+          "s_7_8",
+          "s_7_9",
+          "s_7_11",
+          "s_7_5"
+        ]
+      },
+      {
+        "name": "rod_89",
+        "graph_type": "dense",
+        "end_pts": [
+          [
+            -0.76779011,
+            -1.43420255,
+            2.95441696
+          ],
+          [
+            1.275513826,
+            -0.14373657,
+            4.64619312
+          ]
+        ],
+        "linear_vel": [
+          0,
+          0,
+          0
+        ],
+        "ang_vel": [
+          0,
+          0,
+          0
+        ],
+        "rod_split_length": 0.98,
+        "rod_radius": 0.0159,
+        "rod_mass": 6.5,
+        "sphere_radius": 0.175,
+        "sphere_mass": 15.1,
+        "motor_mass": 58.1,
+        "motor_radius": 0.2,
+        "motor_length": 0.45,
+        "motor_offset": 1.025,
+        "housing_mass": 90,
+        "housing_radius": 0.02,
+        "housing_length": 1.43,
+        "sites": [
+          "s_8",
+          "s_9",
+          "s_8_0",
+          "s_8_4",
+          "s_8_5",
+          "s_8_7",
+          "s_9_0",
+          "s_9_10",
+          "s_9_11",
+          "s_9_7"
+        ]
+      },
+      {
+        "name": "rod_1011",
+        "graph_type": "dense",
+        "end_pts": [
+          [
+            1.85942952,
+            -0.43864653,
+            3.0362161
+          ],
+          [
+            -0.2782539,
+            0.9020555,
+            4.56439398
+          ]
+        ],
+        "linear_vel": [
+          0,
+          0,
+          0
+        ],
+        "ang_vel": [
+          0,
+          0,
+          0
+        ],
+        "rod_split_length": 0.98,
+        "rod_radius": 0.0159,
+        "rod_mass": 6.5,
+        "sphere_radius": 0.175,
+        "sphere_mass": 15.1,
+        "motor_mass": 58.1,
+        "motor_radius": 0.2,
+        "motor_length": 0.45,
+        "motor_offset": 1.025,
+        "housing_mass": 90,
+        "housing_radius": 0.02,
+        "housing_length": 1.43,
+        "sites": [
+          "s_10",
+          "s_11",
+          "s_10_0",
+          "s_10_9",
+          "s_10_3",
+          "s_10_1",
+          "s_11_7",
+          "s_11_9",
+          "s_11_3",
+          "s_11_6"
+        ]
+      }
+    ],
+    "system_topology": {
+      "sites": {
+        "s_0": [
+          0.86495027,
+          -1.64162551,
+          3.71431618
+        ],
+        "s_1": [
+          0.76876615,
+          0.77446952,
+          2.02442463
+        ],
+        "s_2": [
+          -0.82084178,
+          -0.10409556,
+          2.02442457
+        ],
+        "s_3": [
+          1.22346529,
+          1.1872507,
+          3.71431611
+        ],
+        "s_4": [
+          0.73482154,
+          -1.04145398,
+          2.02442469
+        ],
+        "s_5": [
+          -1.40567048,
+          0.083295429,
+          3.714316007
+        ],
+        "s_6": [
+          -0.4096663,
+          1.39357879,
+          2.95441689
+        ],
+        "s_7": [
+          -0.31374294,
+          -1.02120734,
+          4.64619307
+        ],
+        "s_8": [
+          -0.76779011,
+          -1.43420255,
+          2.95441696
+        ],
+        "s_9": [
+          1.275513826,
+          -0.14373657,
+          4.64619312
+        ],
+        "s_10": [
+          1.85942952,
+          -0.43864653,
+          3.0362161
+        ],
+        "s_11": [
+          -0.2782539,
+          0.9020555,
+          4.56439398
+        ],
+        "s_0_4": [
+          0.86898769,
+          -1.74179199,
+          3.57087498
+        ],
+        "s_0_8": [
+          0.69008992,
+          -1.6486152,
+          3.71427537
+        ],
+        "s_0_9": [
+          0.86091285,
+          -1.54145903,
+          3.85775737
+        ],
+        "s_0_10": [
+          1.03981062,
+          -1.63463582,
+          3.71435698
+        ],
+        "s_1_4": [
+          0.77280358,
+          0.67430304,
+          1.88098344
+        ],
+        "s_1_2": [
+          0.5939058,
+          0.76747983,
+          2.02438383
+        ],
+        "s_1_3": [
+          0.76472873,
+          0.87463599,
+          2.16786583
+        ],
+        "s_1_10": [
+          0.9436265,
+          0.7814592,
+          2.02446544
+        ],
+        "s_2_1": [
+          -0.73611376,
+          -0.05051584,
+          1.88098338
+        ],
+        "s_2_6": [
+          -0.91432523,
+          0.04384309,
+          2.02446532
+        ],
+        "s_2_5": [
+          -0.9055698,
+          -0.15767528,
+          2.16786577
+        ],
+        "s_2_4": [
+          -0.72735833,
+          -0.25203421,
+          2.02438383
+        ],
+        "s_3_1": [
+          1.3081933,
+          1.24083043,
+          3.57087492
+        ],
+        "s_3_6": [
+          1.12998184,
+          1.33518936,
+          3.71435686
+        ],
+        "s_3_11": [
+          1.13873727,
+          1.13367099,
+          3.85775731
+        ],
+        "s_3_10": [
+          1.31694873,
+          1.03931206,
+          3.71427537
+        ],
+        "s_4_1": [
+          0.78422877,
+          -0.87973247,
+          1.9793683
+        ],
+        "s_4_2": [
+          0.62500157,
+          -1.04584382,
+          1.88824356
+        ],
+        "s_4_8": [
+          0.68541432,
+          -1.20317549,
+          2.06948109
+        ],
+        "s_4_0": [
+          0.84464152,
+          -1.03706415,
+          2.16060583
+        ],
+        "s_5_6": [
+          -1.356263253,
+          0.245016942,
+          3.669259613
+        ],
+        "s_5_2": [
+          -1.515490453,
+          0.078905592,
+          3.578134873
+        ],
+        "s_5_8": [
+          -1.455077703,
+          -0.078426088,
+          3.759372403
+        ],
+        "s_5_7": [
+          -1.295850503,
+          0.087685262,
+          3.850497143
+        ],
+        "s_6_2": [
+          -0.46159011,
+          1.29630921,
+          2.81852154
+        ],
+        "s_6_3": [
+          -0.24264373,
+          1.36822017,
+          2.90875068
+        ],
+        "s_6_11": [
+          -0.35774249,
+          1.49084837,
+          3.09031224
+        ],
+        "s_6_5": [
+          -0.57668887,
+          1.41893741,
+          3.0000831
+        ],
+        "s_7_8": [
+          -0.36566675,
+          -1.11847692,
+          4.51029771
+        ],
+        "s_7_9": [
+          -0.14672038,
+          -1.04656596,
+          4.60052685
+        ],
+        "s_7_11": [
+          -0.26181913,
+          -0.92393776,
+          4.78208842
+        ],
+        "s_7_5": [
+          -0.48076551,
+          -0.99584872,
+          4.69185927
+        ],
+        "s_8_0": [
+          -0.67434373,
+          -1.58216462,
+          2.95441735
+        ],
+        "s_8_4": [
+          -0.68293615,
+          -1.38061286,
+          2.81105396
+        ],
+        "s_8_5": [
+          -0.8612365,
+          -1.28624048,
+          2.95441658
+        ],
+        "s_8_7": [
+          -0.85264408,
+          -1.48779224,
+          3.09777997
+        ],
+        "s_9_0": [
+          1.368960209,
+          -0.291698634,
+          4.646193503
+        ],
+        "s_9_10": [
+          1.360367789,
+          -0.090146884,
+          4.502830113
+        ],
+        "s_9_11": [
+          1.182067439,
+          0.004225496,
+          4.646192733
+        ],
+        "s_9_7": [
+          1.190659859,
+          -0.197326264,
+          4.789556123
+        ],
+        "s_10_0": [
+          1.79305845,
+          -0.5945082,
+          3.08011395
+        ],
+        "s_10_9": [
+          1.96012047,
+          -0.44121843,
+          3.17932347
+        ],
+        "s_10_3": [
+          1.92580059,
+          -0.28278486,
+          2.99231825
+        ],
+        "s_10_1": [
+          1.75873857,
+          -0.43607463,
+          2.89310873
+        ],
+        "s_11_7": [
+          -0.34462497,
+          0.74619383,
+          4.60829183
+        ],
+        "s_11_9": [
+          -0.17756296,
+          0.8994836,
+          4.70750135
+        ],
+        "s_11_3": [
+          -0.21188283,
+          1.05791717,
+          4.52049613
+        ],
+        "s_11_6": [
+          -0.37894485,
+          0.9046274,
+          4.42128661
+        ]
+      },
+      "topology": {
+        "s0": [
+          "rod_01",
+          "cable_0",
+          "cable_9",
+          "cable_12",
+          "cable_13"
+        ],
+        "s1": [
+          "rod_01",
+          "cable_1",
+          "cable_3",
+          "cable_14",
+          "cable_19"
+        ],
+        "s2": [
+          "rod_23",
+          "cable_2",
+          "cable_5",
+          "cable_18",
+          "cable_19"
+        ],
+        "s3": [
+          "rod_23",
+          "cable_3",
+          "cable_11",
+          "cable_15",
+          "cable_20"
+        ],
+        "s4": [
+          "rod_45",
+          "cable_1",
+          "cable_4",
+          "cable_13",
+          "cable_18"
+        ],
+        "s5": [
+          "rod_45",
+          "cable_5",
+          "cable_6",
+          "cable_22",
+          "cable_23"
+        ],
+        "s6": [
+          "rod_67",
+          "cable_2",
+          "cable_6",
+          "cable_20",
+          "cable_21"
+        ],
+        "s7": [
+          "rod_67",
+          "cable_7",
+          "cable_8",
+          "cable_17",
+          "cable_22"
+        ],
+        "s8": [
+          "rod_89",
+          "cable_4",
+          "cable_8",
+          "cable_12",
+          "cable_23"
+        ],
+        "s9": [
+          "rod_89",
+          "cable_9",
+          "cable_10",
+          "cable_16",
+          "cable_17"
+        ],
+        "s10": [
+          "rod_1011",
+          "cable_0",
+          "cable_10",
+          "cable_14",
+          "cable_15"
+        ],
+        "s11": [
+          "rod_1011",
+          "cable_7",
+          "cable_11",
+          "cable_16",
+          "cable_21"
+        ]
+      }
+    },
+    "cables": [
+      {
+        "name": "cable_0",
+        "type": "actuated_cable",
+        "winch_r": 0.035,
+        "motor_speed": 0.4,
+        "stiffness": 30000,
+        "damping": 1000,
+        "rest_length": 2.7,
+        "init_act_length": 1.2,
+        "end_pts": [
+          "s_0_10",
+          "s_10_0"
+        ]
+      },
+      {
+        "name": "cable_1",
+        "type": "actuated_cable",
+        "winch_r": 0.035,
+        "motor_speed": 0.4,
+        "stiffness": 30000,
+        "damping": 1000,
+        "rest_length": 2.7,
+        "init_act_length": 1.2,
+        "end_pts": [
+          "s_1_4",
+          "s_4_1"
+        ]
+      },
+      {
+        "name": "cable_2",
+        "type": "actuated_cable",
+        "winch_r": 0.035,
+        "motor_speed": 0.4,
+        "stiffness": 30000,
+        "damping": 1000,
+        "rest_length": 2.7,
+        "init_act_length": 1.2,
+        "end_pts": [
+          "s_2_6",
+          "s_6_2"
+        ]
+      },
+      {
+        "name": "cable_3",
+        "type": "actuated_cable",
+        "winch_r": 0.035,
+        "motor_speed": 0.4,
+        "stiffness": 30000,
+        "damping": 1000,
+        "rest_length": 2.7,
+        "init_act_length": 1.2,
+        "end_pts": [
+          "s_1_3",
+          "s_3_1"
+        ]
+      },
+      {
+        "name": "cable_4",
+        "type": "actuated_cable",
+        "winch_r": 0.035,
+        "motor_speed": 0.4,
+        "stiffness": 30000,
+        "damping": 1000,
+        "rest_length": 2.7,
+        "init_act_length": 1.2,
+        "end_pts": [
+          "s_4_8",
+          "s_8_4"
+        ]
+      },
+      {
+        "name": "cable_5",
+        "type": "actuated_cable",
+        "winch_r": 0.035,
+        "motor_speed": 0.4,
+        "stiffness": 30000,
+        "damping": 1000,
+        "rest_length": 2.7,
+        "init_act_length": 1.2,
+        "end_pts": [
+          "s_2_5",
+          "s_5_2"
+        ]
+      },
+      {
+        "name": "cable_6",
+        "type": "actuated_cable",
+        "winch_r": 0.035,
+        "motor_speed": 0.4,
+        "stiffness": 30000,
+        "damping": 1000,
+        "rest_length": 2.7,
+        "init_act_length": 1.2,
+        "end_pts": [
+          "s_5_6",
+          "s_6_5"
+        ]
+      },
+      {
+        "name": "cable_7",
+        "type": "actuated_cable",
+        "winch_r": 0.035,
+        "motor_speed": 0.4,
+        "stiffness": 30000,
+        "damping": 1000,
+        "rest_length": 2.7,
+        "init_act_length": 1.2,
+        "end_pts": [
+          "s_7_11",
+          "s_11_7"
+        ]
+      },
+      {
+        "name": "cable_8",
+        "type": "actuated_cable",
+        "winch_r": 0.035,
+        "motor_speed": 0.4,
+        "stiffness": 30000,
+        "damping": 1000,
+        "rest_length": 2.7,
+        "init_act_length": 1.2,
+        "end_pts": [
+          "s_7_8",
+          "s_8_7"
+        ]
+      },
+      {
+        "name": "cable_9",
+        "type": "actuated_cable",
+        "winch_r": 0.035,
+        "motor_speed": 0.4,
+        "stiffness": 30000,
+        "damping": 1000,
+        "rest_length": 2.7,
+        "init_act_length": 1.2,
+        "end_pts": [
+          "s_0_9",
+          "s_9_0"
+        ]
+      },
+      {
+        "name": "cable_10",
+        "type": "actuated_cable",
+        "winch_r": 0.035,
+        "motor_speed": 0.4,
+        "stiffness": 30000,
+        "damping": 1000,
+        "rest_length": 2.7,
+        "init_act_length": 1.2,
+        "end_pts": [
+          "s_9_10",
+          "s_10_9"
+        ]
+      },
+      {
+        "name": "cable_11",
+        "type": "actuated_cable",
+        "winch_r": 0.035,
+        "motor_speed": 0.4,
+        "stiffness": 30000,
+        "damping": 1000,
+        "rest_length": 2.7,
+        "init_act_length": 1.2,
+        "end_pts": [
+          "s_3_11",
+          "s_11_3"
+        ]
+      },
+      {
+        "name": "cable_12",
+        "type": "actuated_cable",
+        "winch_r": 0.035,
+        "motor_speed": 0.4,
+        "stiffness": 30000,
+        "damping": 1000,
+        "rest_length": 2.7,
+        "init_act_length": 1.2,
+        "end_pts": [
+          "s_0_8",
+          "s_8_0"
+        ]
+      },
+      {
+        "name": "cable_13",
+        "type": "actuated_cable",
+        "winch_r": 0.035,
+        "motor_speed": 0.4,
+        "stiffness": 30000,
+        "damping": 1000,
+        "rest_length": 2.7,
+        "init_act_length": 1.0,
+        "end_pts": [
+          "s_0_4",
+          "s_4_0"
+        ]
+      },
+      {
+        "name": "cable_14",
+        "type": "actuated_cable",
+        "winch_r": 0.035,
+        "motor_speed": 0.4,
+        "stiffness": 30000,
+        "damping": 1000,
+        "rest_length": 2.7,
+        "init_act_length": 1.2,
+        "end_pts": [
+          "s_1_10",
+          "s_10_1"
+        ]
+      },
+      {
+        "name": "cable_15",
+        "type": "actuated_cable",
+        "winch_r": 0.035,
+        "motor_speed": 0.4,
+        "stiffness": 30000,
+        "damping": 1000,
+        "rest_length": 2.7,
+        "init_act_length": 1.2,
+        "end_pts": [
+          "s_3_10",
+          "s_10_3"
+        ]
+      },
+      {
+        "name": "cable_16",
+        "type": "actuated_cable",
+        "winch_r": 0.035,
+        "motor_speed": 0.4,
+        "stiffness": 30000,
+        "damping": 1000,
+        "rest_length": 2.7,
+        "init_act_length": 1.2,
+        "end_pts": [
+          "s_9_11",
+          "s_11_9"
+        ]
+      },
+      {
+        "name": "cable_17",
+        "type": "actuated_cable",
+        "winch_r": 0.035,
+        "motor_speed": 0.4,
+        "stiffness": 30000,
+        "damping": 1000,
+        "rest_length": 2.7,
+        "init_act_length": 1.2,
+        "end_pts": [
+          "s_7_9",
+          "s_9_7"
+        ]
+      },
+      {
+        "name": "cable_18",
+        "type": "actuated_cable",
+        "winch_r": 0.035,
+        "motor_speed": 0.4,
+        "stiffness": 30000,
+        "damping": 1000,
+        "rest_length": 2.7,
+        "init_act_length": 1.2,
+        "end_pts": [
+          "s_2_4",
+          "s_4_2"
+        ]
+      },
+      {
+        "name": "cable_19",
+        "type": "actuated_cable",
+        "winch_r": 0.035,
+        "motor_speed": 0.4,
+        "stiffness": 30000,
+        "damping": 1000,
+        "rest_length": 2.7,
+        "init_act_length": 1.2,
+        "end_pts": [
+          "s_1_2",
+          "s_2_1"
+        ]
+      },
+      {
+        "name": "cable_20",
+        "type": "actuated_cable",
+        "winch_r": 0.035,
+        "motor_speed": 0.4,
+        "stiffness": 30000,
+        "damping": 1000,
+        "rest_length": 2.7,
+        "init_act_length": 1.2,
+        "end_pts": [
+          "s_3_6",
+          "s_6_3"
+        ]
+      },
+      {
+        "name": "cable_21",
+        "type": "actuated_cable",
+        "winch_r": 0.035,
+        "motor_speed": 0.4,
+        "stiffness": 30000,
+        "damping": 1000,
+        "rest_length": 2.7,
+        "init_act_length": 1.2,
+        "end_pts": [
+          "s_6_11",
+          "s_11_6"
+        ]
+      },
+      {
+        "name": "cable_22",
+        "type": "actuated_cable",
+        "winch_r": 0.035,
+        "motor_speed": 0.4,
+        "stiffness": 30000,
+        "damping": 1000,
+        "rest_length": 2.7,
+        "init_act_length": 1.2,
+        "end_pts": [
+          "s_5_7",
+          "s_7_5"
+        ]
+      },
+      {
+        "name": "cable_23",
+        "type": "actuated_cable",
+        "winch_r": 0.035,
+        "motor_speed": 0.4,
+        "stiffness": 30000,
+        "damping": 1000,
+        "rest_length": 2.7,
+        "init_act_length": 1.2,
+        "end_pts": [
+          "s_5_8",
+          "s_8_5"
+        ]
+      }
+    ]
+  },
+  "contact_params": {
+    "restitution": 0.0,
+    "baumgarte": 0.2,
+    "friction": 0.9210786094694333,
+    "friction_damping": 0.8,
+    "rolling_friction": 0.9
+  }
+}

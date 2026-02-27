@@ -1,0 +1,37 @@
+{
+  "sim_config": "simulators/configs/6_bar_new_platform_tensegrity_sim_config.json",
+  "num_steps_fwd": 1,
+  "num_hist": 1,
+  "num_ctrls_hist": 0,
+  "batch_size": 128,
+  "trainable_params": [
+  ],
+  "param_ranges": {
+    "simulator.collision_resp_gen.contact_params.restitution": [-1, 1],
+    "simulator.collision_resp_gen.contact_params.baumgarte": [0, 1.0],
+    "simulator.collision_resp_gen.contact_params.friction": [0.3, 1.5],
+    "simulator.collision_resp_gen.contact_params.friction_damping": [0.0, 1.0],
+    "simulator.collision_resp_gen.contact_params.rolling_friction": [0.0, 1.0]
+  },
+  "optimizer_params": {
+    "lr": 1e-5,
+    "weight_decay": 0.01
+  },
+  "data_root": "../data_sets/tensegrity_real_datasets/mjc_sixbar_newplat_v0/",
+  "train_data_paths": [
+    "mjc_6d_new_platform_real_dl_v1/dataset_9/real_ccw_1",
+    "mjc_6d_new_platform_real_dl_v1/dataset_9/real_ccw_2",
+    "mjc_6d_new_platform_real_dl_v1/dataset_9/real_cw_1",
+    "mjc_6d_new_platform_real_dl_v1/dataset_9/real_cw_2",
+    "mjc_6d_new_platform_real_dl_v1/dataset_9/real_roll_2",
+    "mjc_6d_new_platform_real_dl_v1/dataset_9/real_roll_3"
+  ],
+  "val_data_paths": [
+    "mjc_6d_new_platform_real_dl_v1/dataset_9/real_ccw_3",
+    "mjc_6d_new_platform_real_dl_v1/dataset_9/real_cw_3",
+    "mjc_6d_new_platform_real_dl_v1/dataset_9/real_roll_4"
+  ],
+  "load_sim": false,
+  "load_sim_path": "../../tensegrity/data_sets/tensegrity_real_datasets/new_platform_models/l4dc/s2s_6bar/kun_partial_baseline/best_rollout_model.pt",
+  "output_path": "../../tensegrity/data_sets/tensegrity_real_datasets/new_platform_models/l4dc/s2s_6bar/kun_partial_baseline/"
+}

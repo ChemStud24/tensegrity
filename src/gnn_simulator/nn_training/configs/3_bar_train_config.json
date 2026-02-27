@@ -1,0 +1,26 @@
+{
+  "sim_config": "simulators/configs/new_3_bar_15_cables_5d_sim_config.json",
+  "num_steps_fwd": 1,
+  "batch_size": 128,
+  "trainable_params": [
+  ],
+  "optimizer_params": {
+    "lr": 1e-5,
+    "weight_decay": 0.01
+  },
+  "param_ranges": {
+    "simulator.collision_resp_gen.contact_params.restitution": [-1, 1],
+    "simulator.collision_resp_gen.contact_params.baumgarte": [0, 1.0],
+    "simulator.collision_resp_gen.contact_params.friction": [0.3, 1.5],
+    "simulator.collision_resp_gen.contact_params.friction_damping": [0.0, 1.0],
+    "simulator.collision_resp_gen.contact_params.rolling_friction": [0.0, 1.0]
+  },
+  "data_root": "/home/nelsonchen/research/tensegrity/data_sets/tensegrity_real_datasets/",
+  "train_data_paths": [
+  ],
+  "val_data_paths": [
+  ],
+  "load_sim": false,
+  "load_sim_path": "",
+  "output_path": "../../tensegrity/data_sets/tensegrity_real_datasets/new_platform_models/ld4c_comparisons/s2s/"
+}

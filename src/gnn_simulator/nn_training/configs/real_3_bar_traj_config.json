@@ -1,0 +1,27 @@
+{
+  "sim_config": "simulators/configs/real_attachments_3_bar_tensegrity_gnn.json",
+  "trainable_params": [
+  ],
+  "optimizer_params": {
+    "lr": 1e-8
+  },
+  "train_data_paths": [
+    "../../tensegrity/data_sets/tensegrity_real_datasets/R2S2R/train/R2S2Rrolling_1/",
+    "../../tensegrity/data_sets/tensegrity_real_datasets/R2S2R/train/R2S2Rrolling_2/",
+    "../../tensegrity/data_sets/tensegrity_real_datasets/R2S2R/train/R2S2Rrolling_11/",
+    "../../tensegrity/data_sets/tensegrity_real_datasets/R2S2R/train/R2S2Rccw_1/",
+    "../../tensegrity/data_sets/tensegrity_real_datasets/R2S2R/train/R2S2Rccw_3/",
+    "../../tensegrity/data_sets/tensegrity_real_datasets/R2S2R/train/R2S2Rcrawling_3/",
+    "../../tensegrity/data_sets/tensegrity_real_datasets/R2S2R/train/R2S2Rcrawling_5/",
+    "../../tensegrity/data_sets/tensegrity_real_datasets/R2S2R/train/R2S2Rexpansion_1/"
+  ],
+  "val_data_paths": [
+    "../../tensegrity/data_sets/tensegrity_real_datasets/R2S2R/val/R2S2Rccw_2/",
+    "../../tensegrity/data_sets/tensegrity_real_datasets/R2S2R/test/R2S2Rcw_23/",
+    "../../tensegrity/data_sets/tensegrity_real_datasets/R2S2R/val/R2S2Rcrawling_6/",
+    "../../tensegrity/data_sets/tensegrity_real_datasets/R2S2R/val/R2S2Rrolling_7/"
+  ],
+  "load_sim": true,
+  "load_sim_path": "../../tensegrity/data_sets/tensegrity_real_datasets/mjc_syn_models/6d_twist_v3/best_rollout_model.pt",
+  "output_path": "../../tensegrity/data_sets/tensegrity_real_datasets/models/6d_mjc_warm_real_data_finetune/"
+}

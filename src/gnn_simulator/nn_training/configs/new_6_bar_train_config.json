@@ -1,0 +1,25 @@
+{
+  "sim_config": "simulators/configs/6_bar_new_platform_tensegrity_gnn_sim_config.json",
+  "num_steps_fwd": 1,
+  "num_hist": 1,
+  "num_ctrls_hist": 4,
+  "batch_size": 128,
+  "trainable_params": [
+  ],
+  "optimizer_params": {
+    "lr": 1e-5,
+    "weight_decay": 0.01
+  },
+  "train_data_paths": [
+    "../../tensegrity/data_sets/tensegrity_real_datasets/6bar_newplat_data_v4/mppi_run_0/",
+    "../../tensegrity/data_sets/tensegrity_real_datasets/6bar_newplat_data_v4/mppi_run_1/",
+    "../../tensegrity/data_sets/tensegrity_real_datasets/6bar_newplat_data_v4/pthrow_2/"
+  ],
+  "val_data_paths": [
+    "../../tensegrity/data_sets/tensegrity_real_datasets/6bar_newplat_data_v4/pdrop_3/",
+    "../../tensegrity/data_sets/tensegrity_real_datasets/6bar_newplat_data_v4/pthrow_3/"
+  ],
+  "load_sim": false,
+  "load_sim_path": "../../tensegrity/data_sets/tensegrity_real_datasets/new_platform_models/test/best_rollout_model.pt",
+  "output_path": "../../tensegrity/data_sets/tensegrity_real_datasets/new_platform_models/test/"
+}

@@ -1,0 +1,57 @@
+{
+  "sim_config": "simulators/configs/new_3_bar_15_cables_5d_gnn_sim_config.json",
+  "num_steps_fwd": 1,
+  "num_hist": 1,
+  "num_ctrls_hist": 2,
+  "batch_size": 128,
+  "trainable_params": [
+  ],
+  "optimizer_params": {
+    "lr": 1e-5,
+    "weight_decay": 0.01
+  },
+  "data_root": "/common/home/nc833/research/tensegrity/data_sets/tensegrity_real_datasets/",
+  "train_data_paths": [
+    "mjc_6d_new_platform_v6/dataset_0/ccw_0",
+    "mjc_6d_new_platform_v6/dataset_0/ccw_1",
+    "mjc_6d_new_platform_v6/dataset_0/cw_0",
+    "mjc_6d_new_platform_v6/dataset_0/cw_1",
+    "mjc_6d_new_platform_v6/dataset_0/roll_0",
+    "mjc_6d_new_platform_v6/dataset_0/roll_1",
+    "mjc_6d_new_platform_v6/dataset_4/ccw_0",
+    "mjc_6d_new_platform_v6/dataset_4/ccw_1",
+    "mjc_6d_new_platform_v6/dataset_4/cw_0",
+    "mjc_6d_new_platform_v6/dataset_4/cw_1",
+    "mjc_6d_new_platform_v6/dataset_4/roll_0",
+    "mjc_6d_new_platform_v6/dataset_4/roll_1",
+    "mjc_6d_new_platform_v6/dataset_7/ccw_0",
+    "mjc_6d_new_platform_v6/dataset_7/ccw_1",
+    "mjc_6d_new_platform_v6/dataset_7/cw_0",
+    "mjc_6d_new_platform_v6/dataset_7/cw_1",
+    "mjc_6d_new_platform_v6/dataset_7/roll_0",
+    "mjc_6d_new_platform_v6/dataset_7/roll_1",
+    "mjc_6d_new_platform_v6/dataset_8/ccw_0",
+    "mjc_6d_new_platform_v6/dataset_8/ccw_1",
+    "mjc_6d_new_platform_v6/dataset_8/cw_0",
+    "mjc_6d_new_platform_v6/dataset_8/cw_1",
+    "mjc_6d_new_platform_v6/dataset_8/roll_0",
+    "mjc_6d_new_platform_v6/dataset_8/roll_1",
+    "new_platform_models/multi_4step_recur_motor_newds/mppi_ds_iter1_7/free_run_v0/",
+    "new_platform_models/multi_4step_recur_motor_newds/mppi_ds_iter1_7/free_run_v1/",
+    "new_platform_models/multi_4step_recur_motor_newds/mppi_ds_iter1_7/free_run_v2/",
+    "new_platform_models/multi_4step_recur_motor_newds/mppi_ds_iter1_7/free_run_v3/",
+    "new_platform_models/multi_4step_recur_motor_newds/mppi_ds_iter1_7/free_run_v4/",
+    "new_platform_models/multi_4step_recur_motor_newds/mppi_ds_iter1_7/free_run_v5/"
+  ],
+  "val_data_paths": [
+    "mjc_6d_new_platform_v6/dataset_7/ccw_2",
+    "mjc_6d_new_platform_v6/dataset_7/cw_2",
+    "mjc_6d_new_platform_v6/dataset_7/roll_2",
+    "new_platform_models/multi_4step_recur_motor_newds/mppi_ds_iter1_7/free_run_v6/",
+    "new_platform_models/multi_4step_recur_motor_newds/mppi_ds_iter1_7/free_run_v7/",
+    "new_platform_models/multi_4step_recur_motor_newds/mppi_ds_iter1_7/free_run_v8/"
+  ],
+  "load_sim": false,
+  "load_sim_path": "../../tensegrity/data_sets/tensegrity_real_datasets/new_platform_models/multi_4step_motor_newds_iter1_v2/best_rollout_model.pt",
+  "output_path": "../../tensegrity/data_sets/tensegrity_real_datasets/new_platform_models/multi_4step_motor_newds_iter1_v2/"
+}
