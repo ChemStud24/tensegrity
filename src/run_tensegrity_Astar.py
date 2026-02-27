@@ -44,14 +44,14 @@ class TensegrityRobot:
         self.d_error = [0] * self.num_motors
         self.command = [0] * self.num_motors
         self.speed = [0] * self.num_motors
-        self.flip = [1, -1, 1, 1, -1, -1] # flip direction of motors
+        self.flip = [-1, 1, -1, 1, -1, 1] # flip direction of motors
         self.accelerometer = [[0]*3 for _ in range(3)]
         self.gyroscope = [[0]*3 for _ in range(3)]
         self.encoder_counts = [0]*self.num_motors
         self.encoder_length = [0]*self.num_motors
         self.RANGE024 = 100
         self.RANGE135 = 100
-        self.max_speed = 70
+        self.max_speed = 0
         self.tol = 0.15
         self.low_tol = 0.15
         self.P = 10.0
@@ -496,65 +496,75 @@ class TensegrityRobot:
             self.prev_error[i] = 0
             self.cum_error[i] = 0
 
-        # addjust the ranges and gait based on MPC results
-        action = self.action_sequence[0]
+        try:
+            # addjust the ranges and gait based on MPC results
+            action = self.action_sequence[0]
 
-        print('Action Sequence: ',self.action_sequence)
-                                
-        if action == 'cw':
-            self.next_states = self.all_gaits.get('cw')
-            # bottom_nodes = prev_nodes.get(prev_bottom_nodes)
-            bottom_nodes = self.bottom3(endcaps)
-            if not bottom_nodes in prev_nodes.keys():
-                bottom_nodes = self.prev_bottom_nodes
-            # prev_bottom_nodes = bottom_nodes
-            self.prev_bottom_nodes = prev_nodes.get(bottom_nodes)
-            print('Bottom Nodes: ',bottom_nodes)
-            self.next_states = transform_gait(self.next_states,bottom_nodes)
-            self.state = 1
-            self.prev_gait = 'cw'
+            print('Action Sequence: ',self.action_sequence)
+                                    
+            if action == 'cw':
+                self.next_states = self.all_gaits.get('cw')
+                # bottom_nodes = prev_nodes.get(prev_bottom_nodes)
+                bottom_nodes = self.bottom3(endcaps)
+                if not bottom_nodes in prev_nodes.keys():
+                    bottom_nodes = self.prev_bottom_nodes
+                # prev_bottom_nodes = bottom_nodes
+                self.prev_bottom_nodes = prev_nodes.get(bottom_nodes)
+                print('Bottom Nodes: ',bottom_nodes)
+                self.next_states = transform_gait(self.next_states,bottom_nodes)
+                self.state = 1
+                self.prev_gait = 'cw'
 
-            self.RANGE024 = 100
-            self.RANGE135 = 100
-        elif action == 'ccw':
-            self.next_states = self.all_gaits.get('ccw')
-            bottom_nodes = self.bottom3(endcaps)
-            if not bottom_nodes in prev_nodes.keys():
-                bottom_nodes = self.prev_bottom_nodes
-            print('Bottom Nodes: ','Bottom Nodes: ',bottom_nodes)
-            self.next_states = transform_gait(self.next_states,bottom_nodes)
-            self.state = 1
-            self.prev_gait = 'ccw'
+                self.RANGE024 = 100
+                self.RANGE135 = 100
+            elif action == 'ccw':
+                self.next_states = self.all_gaits.get('ccw')
+                bottom_nodes = self.bottom3(endcaps)
+                if not bottom_nodes in prev_nodes.keys():
+                    bottom_nodes = self.prev_bottom_nodes
+                print('Bottom Nodes: ','Bottom Nodes: ',bottom_nodes)
+                self.next_states = transform_gait(self.next_states,bottom_nodes)
+                self.state = 1
+                self.prev_gait = 'ccw'
 
-            self.RANGE024 = 100
-            self.RANGE135 = 100
-        else:
-            # if we have successive rolling steps,
-            # change the ranges but skip the transition
-            if not self.prev_gait in ['cw','ccw']:
-                for i in range(self.num_motors):
-                    self.done[i] = True
-            self.next_states = self.all_gaits.get('roll')
-            # bottom_nodes = next_nodes.get(prev_bottom_nodes)
-            bottom_nodes = self.bottom3(endcaps)
-            if not bottom_nodes in prev_nodes.keys():
-                bottom_nodes = self.prev_bottom_nodes
-            # prev_bottom_nodes = bottom_nodes
-            self.prev_bottom_nodes = next_nodes.get(bottom_nodes)
-            print('Bottom Nodes: ',bottom_nodes)
-            self.next_states = transform_gait(self.next_states,bottom_nodes)
-            if self.reverse_the_gait:
-                self.next_states = reverse_gait(self.next_states,bottom_nodes)
-            self.state = 1
-            self.prev_gait = 'roll'
-            ranges = action.split('_')
-            self.RANGE024 = int(ranges[-1])
-            self.RANGE135 = int(ranges[-2])
-            if self.RANGE135 >= 130 or self.RANGE024 >= 130:
-                self.tol = 0.35
+                self.RANGE024 = 100
+                self.RANGE135 = 100
             else:
-                self.tol = 0.15
-        print('Action: ',action)
+                # if we have successive rolling steps,
+                # change the ranges but skip the transition
+                if not self.prev_gait in ['cw','ccw']:
+                    for i in range(self.num_motors):
+                        self.done[i] = True
+                self.next_states = self.all_gaits.get('roll')
+                # bottom_nodes = next_nodes.get(prev_bottom_nodes)
+                bottom_nodes = self.bottom3(endcaps)
+                if not bottom_nodes in prev_nodes.keys():
+                    bottom_nodes = self.prev_bottom_nodes
+                # prev_bottom_nodes = bottom_nodes
+                self.prev_bottom_nodes = next_nodes.get(bottom_nodes)
+                print('Bottom Nodes: ',bottom_nodes)
+                self.next_states = transform_gait(self.next_states,bottom_nodes)
+                if self.reverse_the_gait:
+                    self.next_states = reverse_gait(self.next_states,bottom_nodes)
+                self.state = 1
+                self.prev_gait = 'roll'
+                ranges = action.split('_')
+                self.RANGE024 = int(ranges[-1])
+                self.RANGE135 = int(ranges[-2])
+                if self.RANGE135 >= 130 or self.RANGE024 >= 130:
+                    self.tol = 0.35
+                else:
+                    self.tol = 0.15
+            print('Action: ',action)
+
+        except:
+            print("Stopping - end of plan")
+            self.action_sequence = ['planning__planning']
+            # self.next_states = np.array([[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1]])
+            # self.state = 1
+            # self.RANGE024 = 100
+            # self.RANGE135 = 100
+            # self.tol = 0.15
 
         # # catch perception error
         # if self.next_states is None:
@@ -589,7 +599,7 @@ class TensegrityRobot:
                 self.done = np.array([False] * self.num_motors)
                 self.tol = 0.2
                 self.P = 5.0
-                self.max_speed = 70
+                self.max_speed = 0
 
             elif key == keyboard.KeyCode.from_char('n'):
                 self.states = np.array([[1.0]*self.num_motors]*self.num_steps)

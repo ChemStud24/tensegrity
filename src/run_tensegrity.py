@@ -38,7 +38,8 @@ class TensegrityRobot:
         self.d_error = [0] * self.num_motors
         self.command = [0] * self.num_motors
         self.speed = [0] * self.num_motors
-        self.flip = [1, -1, 1, 1, -1, -1] # flip direction of motors
+        # self.flip = [1, -1, 1, 1, -1, -1] # flip direction of motors
+        self.flip = [-1, 1, -1, 1, -1, 1] # flip direction of motors
         self.accelerometer = [[0]*3 for _ in range(3)]
         self.gyroscope = [[0]*3 for _ in range(3)]
         self.encoder_counts = [0]*self.num_motors
@@ -380,9 +381,20 @@ class TensegrityRobot:
                     for i in range(len(self.addresses)) :
                         self.send_command(self.stop_msg, self.addresses[i],0)
             
-        except :
+        except Exception as e:
             print('There has been an error')
             print('Received data:', received_data)
+
+            print(f"Error type: {type(e).__name__}")
+            print(f"Error message: {e}")
+            
+
+            print("\nStopping motors")
+            self.keep_going = False
+            self.quitting = True
+            # set duty cycle as 0 to turn off the motors
+            for i in range(len(self.addresses)):
+                self.send_command(self.stop_msg, self.addresses[i], 0)
 
     def compute_command(self) :
         command_msg = self.stop_msg.split()
@@ -597,6 +609,8 @@ class TensegrityRobot:
         # Bind the socket to the address and port
         self.sock_receive.bind((self.UDP_IP, self.UDP_PORT))
         
+        # rate = rospy.Rate(30) # 30 Hz
+
         # finishing setup.
         print("Opened connection press s to stop motor and q to quit")
         while not self.quitting :
@@ -613,6 +627,9 @@ class TensegrityRobot:
                     self.sendRosMSG()
                     for i in range(self.num_sensors) :
                         print(f"Capacitance {chr(i + 97)}: {self.cap[i]:.2f} \t Length: {self.length[i]:.2f} \n")
+
+                # rate.sleep()
+
             except Exception as e:
                 print("\nStopping motors")
                 self.keep_going = False

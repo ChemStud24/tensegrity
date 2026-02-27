@@ -32,7 +32,7 @@ WiFiUDP Udp;
 
 #define AD0_VAL 0 // 1 if ICM20948 address is 0x69, 0 if address is 0x68
 
-ICM_20948_I2C myICM; // Otherwise create an ICM_20948_I2C object
+//ICM_20948_I2C myICM; // Otherwise create an IC/M_20948_I2C object
 double q[4];
 
 const int NUM_SENSORS = 4; // How many sensors will you use?

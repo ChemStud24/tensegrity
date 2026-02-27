@@ -22,8 +22,8 @@ class MotionPlanner:
 
 		# load state-action transition dictionary
 		package_path = rospkg.RosPack().get_path('tensegrity')
-		# filepath = os.path.join(package_path,'calibration/legacy_motion_primitives.pkl')
-		filepath = os.path.join(package_path,'calibration/new_platform_transformation_table.pkl')
+		filepath = os.path.join(package_path,'calibration/legacy_motion_primitives.pkl')
+		# filepath = os.path.join(package_path,'calibration/new_platform_transformation_table.pkl')
 		with open(filepath,'rb') as f:
 			self.action_dict = pickle.load(f)
 		# print(self.action_dict)
@@ -209,10 +209,10 @@ if __name__ == '__main__':
 	# obstacles = ((0.3,0.2), (0.3,0.6), (1.5, 1.0), (1.5,0.6))
 	# boundary = (-1, 3, -0.2, 1.4)
 
-	# start = (-0.15, 1.1, -np.pi/2)
-	# goal = (1.6, 0.2, -np.pi/2)
-	# obstacles = ((0.5,0), (0.5,0.4), (1.5, 1.0), (1.5,0.6))
-	# boundary = (-1, 3, -0.2, 1.4)
+	start = (-0.15, 1.1, -np.pi/2)
+	goal = (1.6, 0.2, -np.pi/2)
+	obstacles = ((0.5,0), (0.5,0.4), (1.5, 1.0), (1.5,0.6))
+	boundary = (-1, 3, -0.2, 1.4)
 
 	# meteroid
 	# start = (-0.1,0.8,-np.pi/2)
@@ -244,11 +244,11 @@ if __name__ == '__main__':
 	# obstacles = ((0.5,0.3),(0.5,0.5),(1.5,1.05),(1.5,0.95))
 	# boundary = (-1,3,-0.2,1.4)
 
-	# outside2 (closed-loop)
-	start = (0.5,1.1,np.pi/2)
-	goal = (1.7,0.2,0)
-	obstacles = ((0.5,0.3),(0.5,0.5),(1.1,0.5),(1.1,0.4))
-	boundary = (-1,3,-0.2,1.4)
+	# # outside2 (closed-loop)
+	# start = (0.5,1.1,np.pi/2)
+	# goal = (1.7,0.2,0)
+	# obstacles = ((0.5,0.3),(0.5,0.5),(1.1,0.5),(1.1,0.4))
+	# boundary = (-1,3,-0.2,1.4)
 
 	rospy.init_node('motion_planner')
 	planner = MotionPlanner(start, goal, boundary, obstacles, heur_type="dist")

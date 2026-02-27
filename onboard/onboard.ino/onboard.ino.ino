@@ -20,7 +20,7 @@ unsigned int localPort = 2390; // local port to listen on
 //Configuration Arduino//
 /////////////////////////
 
-#define N_Arduino 2 // To change in function of which Arduino is used
+#define N_Arduino 0 // To change in function of which Arduino is used
 
 int motor_numbers[3][2] = {{2,4},{1,3},{0,5}};
 #define Nb_motors 6 // To change in function of the number of motor used
