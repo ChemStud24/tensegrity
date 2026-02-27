@@ -173,7 +173,7 @@ class TensegrityRobot:
         self.control_pub = rospy.Publisher("/control_msg", TensegrityStamped, queue_size=10)
 
         package_path = rospkg.RosPack().get_path("tensegrity")
-        calibration_file = os.path.join(package_path, "calibration/new_calibration.json")
+        calibration_file = '../calibration/calibration_patrick.xls'
         self.m, self.b = self.read_calibration_file(calibration_file)
 
         # Default gait library (same as A* runner)
@@ -195,6 +195,7 @@ class TensegrityRobot:
         self.init_speed = 70
 
         # gaits
+        '''
         roll = np.array(
             [
                 [1, 1, 1, 1, 1, 1],
@@ -229,6 +230,13 @@ class TensegrityRobot:
                 [1, 1, 1, 1, 1, 1],
             ]
         )
+        '''
+        roll = np.array([[1, 1, 1, 1, 1, 1], [1, 1, 0.1, 1, 1, 0.1], [0, 1, 1, 0, 1, 0.1], [1, 1, 1, 1, 1, 1]]) #new tensegrity
+        #roll = np.array([[1, 1, 1, 1, 1, 1], [1, 1, 0.1, 1, 1, 0.1], [0, 1, 1, 0, 1, 0.1], [1, 1, 1, 1, 1, 1]]) #based off observed video
+        #cw = np.array([[1, 1, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0], [0, 1, 1, 0, 0.8, 0], [1, 1, 1, 1, 1, 1]]) #new tensegrity
+        cw = np.array([[1, 1, 1, 1, 1, 1],[0, 0, 1, 0, 1, 0], [0, 0, 0, 0, 1, 0], [1, 0.8, 0, 0, 1, 0], [1, 1, 1, 1, 1, 1]]) #based off observed video
+        #ccw = np.array([[1, 1, 1, 0, 1, 1], [1, 0, 1, 0, 1, 1], [0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]])#new tensegrity
+        ccw = np.array([[1, 1, 1, 1, 1, 1],[1, 1, 0, 1, 1, 1], [1, 1, 0, 0, 1, 1], [0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]]) #based off observed video
         self.all_gaits = {"roll": roll, "ccw": ccw, "cw": cw, "rest": rest}
         # self.states = np.vstack([roll])
         # self.states = transform_gait(self.states, self.prev_bottom_nodes)
@@ -311,7 +319,7 @@ class TensegrityRobot:
             motor.done = bool(self.done[motor_id]) if self.done is not None else False
             motor.encoder_counts = int(self.encoder_counts[motor_id])
             motor.encoder_counts = int(self.encoder_counts[motor_id])
-            if(motor.id < 3):
+            if(motor.id % 2 == 1):
                 motor.encoder_length = 180 + self.encoder_length[motor_id]# NEW
             else:
                 motor.encoder_length = 180 - self.encoder_length[motor_id]
@@ -395,20 +403,20 @@ class TensegrityRobot:
                 self.cap[0] = sensor_array[1]
                 self.cap[1] = sensor_array[2]
                 self.cap[8] = sensor_array[4]
-                self.encoder_counts[1] = sensor_array[6]
-                self.encoder_counts[0] = sensor_array[5]
+                self.encoder_counts[1] = sensor_array[5]
+                self.encoder_counts[0] = sensor_array[6]
             if(int(sensor_array[0]) == 1) :
                 self.cap[2] = sensor_array[1]
                 self.cap[3] = sensor_array[2] 
                 self.cap[7] = sensor_array[4]
-                self.encoder_counts[3] = sensor_array[6]
-                self.encoder_counts[2] = sensor_array[5]
+                self.encoder_counts[3] = sensor_array[5]
+                self.encoder_counts[2] = sensor_array[6]
             if(int(sensor_array[0]) == 2) :
                 self.cap[4] = sensor_array[1]
                 self.cap[5] = sensor_array[2] 
                 self.cap[6] = sensor_array[4]
-                self.encoder_counts[5] = sensor_array[6]
-                self.encoder_counts[4] = sensor_array[5]
+                self.encoder_counts[5] = sensor_array[5]
+                self.encoder_counts[4] = sensor_array[6]
 
             self.encoder_length = [
                 counts / self.encoder_resolution / self.gear_ratio * np.pi * self.winch_diameter
@@ -497,6 +505,7 @@ class TensegrityRobot:
                     self.d_error[i] = self.error[i] - self.prev_error[i]
                     self.cum_error[i] = self.cum_error[i] + self.error[i]
                     self.prev_error[i] = self.error[i]
+                    
                     
                     self.command[i] = max([min([self.P * self.error[i] + self.I * self.cum_error[i] + self.D * self.d_error[i], 1]), -1])
                     self.speed[i] = self.command[i] * self.max_speed * self.flip[i]
@@ -813,4 +822,3 @@ if __name__ == "__main__":
 
     tensegrity_robot = TensegrityRobot()
     tensegrity_robot.run()
-

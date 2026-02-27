@@ -72,8 +72,8 @@ class TensegrityRobot:
         self.UDP_PORT = 2390     # Same port used in the Arduino sketch
         self.sock_receive = None
         self.sock_send = None
-        #self.addresses = [('172.16.71.78', 11311),('172.16.71.79', 11311),('172.16.71.80', 11311)]#[None] * self.num_arduino
-        self.addresses = [('172.16.71.74', 11311),('172.16.71.75', 11311),('172.16.71.76', 11311)]#[None] * self.num_arduino
+        self.addresses = [None] * self.num_arduino
+        #self.addresses = [('172.16.71.74', 11311),('172.16.71.75', 11311),('172.16.71.76', 11311)]#[None] * self.num_arduino
         self.offset = None # Nb of leading end ending 0 preventing errors 
 
         #keyboard variables
@@ -102,7 +102,7 @@ class TensegrityRobot:
         self.control_pub = rospy.Publisher('control_msg', TensegrityStamped, queue_size=10) ## correct ??
 
         package_path = rospkg.RosPack().get_path('tensegrity')
-        calibration_file = '../calibration/calibration_charles.xls'#os.path.join(package_path,'calibration/new_calibration.json')
+        calibration_file = '../calibration/calibration_patrick.xls'#os.path.join(package_path,'calibration/new_calibration.json')
         
         #self.m = np.array([0.04437, 0.06207, 0.02356, 0.04440, 0.04681, 0.05381, 0.02841, 0.03599, 0.03844])
         #self.b = np.array([15.763, 13.524, 15.708, 10.084, 15.628, 15.208, 16.356, 12.575, 13.506])
@@ -215,7 +215,7 @@ class TensegrityRobot:
            # motor.direction = command[motor_id] > 0
            motor.done = self.done[motor_id]
            motor.encoder_counts = int(self.encoder_counts[motor_id])
-           if(motor.id < 3):
+           if(motor.id % 2 == 1):
                motor.encoder_length = 180 + self.encoder_length[motor_id]# NEW
            else:
                motor.encoder_length = 180 - self.encoder_length[motor_id]
@@ -306,20 +306,20 @@ class TensegrityRobot:
                     self.cap[0] = sensor_array[1]
                     self.cap[1] = sensor_array[2]
                     self.cap[8] = sensor_array[4]
-                    self.encoder_counts[1] = sensor_array[6]
-                    self.encoder_counts[0] = sensor_array[5]
+                    self.encoder_counts[1] = sensor_array[5]
+                    self.encoder_counts[0] = sensor_array[6]
                 if(int(sensor_array[0]) == 1) :
                     self.cap[2] = sensor_array[1]
                     self.cap[3] = sensor_array[2] 
                     self.cap[7] = sensor_array[4]
-                    self.encoder_counts[3] = sensor_array[6]
-                    self.encoder_counts[2] = sensor_array[5]
+                    self.encoder_counts[3] = sensor_array[5]
+                    self.encoder_counts[2] = sensor_array[6]
                 if(int(sensor_array[0]) == 2) :
                     self.cap[4] = sensor_array[1]
                     self.cap[5] = sensor_array[2] 
                     self.cap[6] = sensor_array[4]
-                    self.encoder_counts[5] = sensor_array[6]
-                    self.encoder_counts[4] = sensor_array[5]
+                    self.encoder_counts[5] = sensor_array[5]
+                    self.encoder_counts[4] = sensor_array[6]
 
                 self.encoder_length = [counts/self.encoder_resolution/self.gear_ratio*np.pi*self.winch_diameter for counts in self.encoder_counts]
 
