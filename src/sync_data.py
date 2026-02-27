@@ -22,7 +22,7 @@ from tensegrity.msg import TensegrityStamped, NodesStamped
 class SyncDataWriter:
 
     def __init__(self, output_dir='output'):
-        data_path = os.path.join(rospkg.RosPack().get_path('tensegrity'),'../../data/')
+        data_path = os.path.join(rospkg.RosPack().get_path('tensegrity'),'data/')
         output_dir = os.path.join(data_path,output_dir)
 
         self.bridge = CvBridge()

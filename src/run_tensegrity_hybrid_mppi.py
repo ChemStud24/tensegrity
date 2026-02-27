@@ -222,6 +222,7 @@ class TensegrityRobot:
                 [1, 1, 1, 1, 1, 1],
             ]
         )
+        '''
         rest = np.array(
             [
                 [1, 1, 1, 1, 1, 1],
@@ -230,7 +231,7 @@ class TensegrityRobot:
                 [1, 1, 1, 1, 1, 1],
             ]
         )
-        '''
+        
         roll = np.array([[1, 1, 1, 1, 1, 1], [1, 1, 0.1, 1, 1, 0.1], [0, 1, 1, 0, 1, 0.1], [1, 1, 1, 1, 1, 1]]) #new tensegrity
         #roll = np.array([[1, 1, 1, 1, 1, 1], [1, 1, 0.1, 1, 1, 0.1], [0, 1, 1, 0, 1, 0.1], [1, 1, 1, 1, 1, 1]]) #based off observed video
         #cw = np.array([[1, 1, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0], [0, 1, 1, 0, 0.8, 0], [1, 1, 1, 1, 1, 1]]) #new tensegrity

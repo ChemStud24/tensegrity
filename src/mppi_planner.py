@@ -429,7 +429,7 @@ if __name__ == '__main__':
 	}
 
 	mppi_params = {
-		"sim": "../data_sets/tensegrity_real_datasets/new_platform_models/3bar_ds8_multi_8_mppi_turn_prims_v2.2/best_rollout_model.pt",
+		"sim": "3bar_ds8_multi_8_mppi_turn_prims_v2.2/best_rollout_model.pt",
 		'strategy': 'min',
 		'device': 'cuda',
 		'cost_weights': (1.0, 0.0, 0.0),
