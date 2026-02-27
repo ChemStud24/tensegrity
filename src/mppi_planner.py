@@ -48,8 +48,18 @@ import torch
 
 class PlannerMPPI:
 
-	def __init__(self, start, goal, boundary, init_cable_lengths, obstacles=[], grid_step=0.01, tol=0.1,
-	             planner_params={}, pose_queue_size=20, obstacle_size=(0.2, 0.2)):
+	def __init__(self, start, goal, boundary, init_cable_lengths, obstacles=[], grid_step=10, tol=0.1,
+	             planner_params={}, pose_queue_size=20):
+
+		start = (start[0] / 1000, start[1] / 1000, start[2])
+		goal = (goal[0] / 1000, goal[1] / 1000, goal[2])
+		boundary = (boundary[0] / 1000, boundary[1] / 1000, boundary[2] / 1000, boundary[3] / 1000)
+		obstacles = [(obs[0] / 1000, obs[1] / 1000, obs[2] / 1000, obs[3] / 1000) for obs in obstacles]
+		grid_step = grid_step / 1000
+
+		self.grid_step = grid_step
+		self.tol = tol
+
 		pub_topic = '/action_mppi_msg'
 		self.pub = rospy.Publisher(pub_topic, ActionHybridMPPI, queue_size=10)
 
@@ -81,7 +91,8 @@ class PlannerMPPI:
 		self.astar_params = astar_params_scaled
 
 		# Convert obstacles from 2-tuple (center) to 4-tuple (bounding box) format if needed
-		converted_obstacles = self._convert_obstacles(obstacles, obstacle_size)
+		# converted_obstacles = self._convert_obstacles(obstacles, obstacle_size)
+		converted_obstacles = obstacles
 
 		# Initialize HybridAStarMPPIPlanner
 		self.planner = HybridAStarMPPIPlanner(
@@ -146,7 +157,7 @@ class PlannerMPPI:
 
 		return converted
 
-	def _compute_init_rest_lens(self, init_cable_lengths, min_length=80, range_=120, tol=0.1):
+	def _compute_init_rest_lens(self, init_cable_lengths, min_length=80, range_=120, tol=0.05):
 		sim = self.planner.mppi_controller.sim
 		init_cable_lengths = 10 * torch.tensor(
 			init_cable_lengths,
@@ -154,7 +165,7 @@ class PlannerMPPI:
 			device=sim.device
 		).reshape(1, -1, 1)
 
-		target_gaits = ((init_cable_lengths * 100 - min_length) / range_).reshape(1, -1, 1)
+		target_gaits = ((init_cable_lengths - min_length) / range_).reshape(1, -1, 1)
 		sim.run_target_gait(
 			sim.get_curr_state(),
 			target_gaits,
@@ -216,44 +227,6 @@ class PlannerMPPI:
 		# Read converged rest lengths, unscale back to meters
 		rest_lens = sim.mjc_model.tendon_lengthspring[:sim.n_actuators, 0].copy() / scale
 		return rest_lens
-		
-
-	def _initialize_pose_from_state(self, state):
-		"""Convert state (x, y, theta) to pose format (7D: x, y, z, qx, qy, qz, qw)"""
-		x, y, theta = state
-		# Create pose: position (x, y, 0) and quaternion from theta
-		quat = R.from_euler('z', theta).as_quat()  # Returns [x, y, z, w]
-		pose = np.array([[x, y, 0.0, quat[0], quat[1], quat[2], quat[3]]])
-		timestamp = 0.0
-		self.prev_pose_and_t.append((pose, timestamp))
-
-		# Also add initial pose to pose_queue for immediate planning
-		# pose_queue expects 21D concatenated poses (3 poses), so replicate the single pose
-		concatenated_pose = np.tile(pose.flatten(), 3)  # 21D: replicate 7D pose 3 times
-		encoder_lengths = self.rest_lens if hasattr(self, 'rest_lens') else np.array([])
-		motor_speeds = np.zeros_like(encoder_lengths)
-		with self.pose_queue_lock:
-			self.pose_queue.append((concatenated_pose, timestamp, encoder_lengths, motor_speeds))
-
-		# Try to set pose by endpoints if the method exists
-		# (may not be available on all planner implementations)
-		try:
-			scaled_pose = pose.reshape(-1, 7)
-			scaled_pose[:, :3] *= 10.0
-			self.planner.set_pose_by_endpts(self._pose_to_endpts(scaled_pose))
-		except AttributeError:
-			# Method not available, skip initialization by endpoints
-			pass
-
-	def _pose_to_endpts(self, pose):
-		"""Convert pose to end points format (needed for some planner methods)"""
-		# This is a placeholder - actual conversion depends on your robot model
-		# For now, return a dummy endpts array
-		pose_reshaped = pose.reshape(-1, 7)
-		pos = pose_reshaped[:, :3]
-		# Create dummy endcaps (this should be replaced with actual conversion)
-		endpts = np.zeros((2, 3, 1))
-		return endpts
 
 	def state_callback(self, msg):
 		"""Callback for state messages - runs asynchronously from main callback
@@ -311,7 +284,7 @@ class PlannerMPPI:
 		# Use the latest encoder_lengths as current cable rest lengths
 		# encoder_lengths from the message represent absolute cable lengths in meters
 		if len(latest_encoder_lengths) > 0:
-			rest_lens = self.init_rest_lens + np.array(latest_encoder_lengths) / 1000
+			rest_lens = self.init_rest_lens + np.array(latest_encoder_lengths)
 		motor_speeds = latest_motor_speeds if len(latest_motor_speeds) > 0 else np.zeros_like(self.init_rest_lens)
 
 		# Plan using MPPI planner
@@ -358,9 +331,9 @@ class PlannerMPPI:
 		def pose_to_array(pose):
 			return np.array(
 				[
-					pose.position.x,
-					pose.position.y,
-					pose.position.z,
+					pose.position.x / 1000,
+					pose.position.y / 1000,
+					pose.position.z / 1000,
 					pose.orientation.w,
 					pose.orientation.x,
 					pose.orientation.y,
@@ -377,7 +350,7 @@ class PlannerMPPI:
 		# Timestamp from header
 		timestamp = msg.header.stamp.to_sec()
 
-		encoder_lengths = np.array(msg.encoder_lengths, dtype=np.float64)
+		encoder_lengths = np.array(msg.encoder_lengths, dtype=np.float64) / 1000
 		motor_speeds = np.array(msg.motor_speeds, dtype=np.float64)
 		
 		# Thread-safe append to queue
@@ -418,17 +391,11 @@ class PlannerMPPI:
 
 
 if __name__ == '__main__':
-	# Example usage - similar to planner.py
-	# start = (0.5,1.1,np.pi/2)
-	# goal = (1.7,0.2,0)
-	# obstacles = ((0.5,0.3),(0.5,0.5),(1.1,0.5),(1.1,0.4))
-	# boundary = (-1,3,-0.2,1.4)
-
-	# Default example
-	start = (0.7, 0, 0)
-	goal = (-2.7, -1.2, 0)
-	obstacles = ((-0.25, 0.0, -0.65, 0.8), (-1.80, -1.55, -1.6, -0.6))
-	boundary = (-3.5, 1.0, -1.8, 0.8)
+	# Measurements in mm
+	start = (700, 0, 0)
+	goal = (-2700, -1200, 0)
+	obstacles = ((-250, 0, -650, 800), (-1800, -1550, -1600, -600))
+	boundary = (-3500, 1000, -1800, 800)
 
 	# MPPI and A* parameters (these should be configured based on your needs)
 	astar_params = {
@@ -462,7 +429,6 @@ if __name__ == '__main__':
 	}
 
 	mppi_params = {
-		# "xml_path": "src/mujoco_simulator/xml_models/3prism_real_upscaled_obs_course.xml",
 		"sim": "../data_sets/tensegrity_real_datasets/new_platform_models/3bar_ds8_multi_8_mppi_turn_prims_v2.2/best_rollout_model.pt",
 		'strategy': 'min',
 		'device': 'cuda',
@@ -480,9 +446,9 @@ if __name__ == '__main__':
 		'astar_params': astar_params,
 	}
 
-	# Initial cable lengths (in meters) - adjust based on your robot's initial state
+	# Initial cable lengths (in mm) - adjust based on your robot's initial state
 	# This should match the actual initial cable lengths of the robot
-	init_cable_lengths = [0.2, 0.2, 0.2, 0.2, 0.2, 0.2]
+	init_cable_lengths = [180, 180, 180, 180, 180, 180]
 
 	rospy.init_node('mppi_planner')
 	with torch.no_grad():
