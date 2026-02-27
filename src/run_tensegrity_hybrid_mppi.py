@@ -94,7 +94,7 @@ class TensegrityRobot:
         self.RANGE024 = 100
         self.RANGE135 = 100
         self.max_cable_length = 0.23 # meters
-        self.min_cable_length = 0.10 # meters
+        self.min_cable_length = 0.05 # meters
         self.max_speed = 70
         self.tol = 0.15
         self.low_tol = 0.15
@@ -505,6 +505,7 @@ class TensegrityRobot:
                     self.d_error[i] = self.error[i] - self.prev_error[i]
                     self.cum_error[i] = self.cum_error[i] + self.error[i]
                     self.prev_error[i] = self.error[i]
+                    
                     
                     self.command[i] = max([min([self.P * self.error[i] + self.I * self.cum_error[i] + self.D * self.d_error[i], 1]), -1])
                     self.speed[i] = self.command[i] * self.max_speed * self.flip[i]
