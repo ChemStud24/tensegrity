@@ -480,7 +480,7 @@ if __name__ == '__main__':
 		'astar_params': astar_params,
 	}
 
-	# Initial cable lengths (in mm) - adjust based on your robot's initial state
+	# Initial cable lengths (in meters) - adjust based on your robot's initial state
 	# This should match the actual initial cable lengths of the robot
 	init_cable_lengths = [0.2, 0.2, 0.2, 0.2, 0.2, 0.2]
 

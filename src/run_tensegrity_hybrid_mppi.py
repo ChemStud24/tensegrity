@@ -471,9 +471,9 @@ class TensegrityRobot:
                     if u.shape[0] != self.num_motors:
                         u = u[: self.num_motors] if u.shape[0] > self.num_motors else np.pad(u, (0, self.num_motors - u.shape[0]))
 
-                    cap_lens = np.array(self.cap[:self.num_motors]).reshape(u.shape)
-                    upper_bound = 1.0 * (cap_lens >= self.min_cable_length)
-                    lower_bound = -1.0 * (cap_lens <= self.max_cable_length)
+                    cable_lengths = np.array(self.length[:self.num_motors]).reshape(u.shape)
+                    upper_bound = 1.0 * (cable_lengths >= self.min_cable_length)
+                    lower_bound = -1.0 * (cable_lengths <= self.max_cable_length)
                     u = np.clip(u, lower_bound, upper_bound)
             else:
                 u = np.array([0.0] * self.num_motors)
@@ -505,7 +505,6 @@ class TensegrityRobot:
                     self.d_error[i] = self.error[i] - self.prev_error[i]
                     self.cum_error[i] = self.cum_error[i] + self.error[i]
                     self.prev_error[i] = self.error[i]
-                    
                     
                     self.command[i] = max([min([self.P * self.error[i] + self.I * self.cum_error[i] + self.D * self.d_error[i], 1]), -1])
                     self.speed[i] = self.command[i] * self.max_speed * self.flip[i]
