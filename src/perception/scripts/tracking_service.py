@@ -1077,8 +1077,17 @@ class Tracker:
             rod_pcd.transform(rod_pose)
             robot_pcd += rod_pcd
 
-        scene_pcd = create_pcd(self.depth_im, self.data_cfg['cam_intr'], self.rgb_im)
+        scene_pcd = create_pcd(self.depth_im, self.data_cfg['cam_intr'], self.rgb_im,
+                               depth_trunc=self.data_cfg['depth_trunc'])
         robot_pts = np.asarray(robot_pcd.points)
+        rospy.loginfo(f"[get_3d_vis] robot_pcd z-range: {robot_pts[:,2].min():.3f} to {robot_pts[:,2].max():.3f} m, "
+                      f"extent: {robot_pts.max(0) - robot_pts.min(0)}")
+        scene_pts = np.asarray(scene_pcd.points)
+        if len(scene_pts) > 0:
+            rospy.loginfo(f"[get_3d_vis] scene_pcd z-range: {scene_pts[:,2].min():.3f} to {scene_pts[:,2].max():.3f} m, "
+                          f"num_pts: {len(scene_pts)}")
+        else:
+            rospy.logwarn("[get_3d_vis] scene_pcd is EMPTY after depth_trunc crop")
         bbox = o3d.geometry.AxisAlignedBoundingBox()
         bbox.min_bound = np.min(robot_pts, axis=0) - 0.05
         bbox.max_bound = np.max(robot_pts, axis=0) + 0.05

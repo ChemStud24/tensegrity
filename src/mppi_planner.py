@@ -42,6 +42,8 @@ except ImportError:
     print("Warning: tensegrity services not available in mppi_planner, using mocks")
     from unittest.mock import MagicMock
     GetPose = GetPoseRequest = GetPoseResponse = GetBarHeight = MagicMock
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from Tensegrity_model_inputs import *
 from gnn_simulator.model_predictive_control.hybrid_planner import HybridAStarMPPIPlanner
 import torch

@@ -183,6 +183,7 @@ include_directories(
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
   src/mujoco_simulator/tensegrity_udp_simulator.py
+  src/run_tensegrity_hybrid_mppi.py
   src/run_tensegrity_hybrid_mppi_simulator.py
   src/mppi_planner.py
   src/perception/scripts/tracking_service.py

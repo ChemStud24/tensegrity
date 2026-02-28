@@ -56,6 +56,7 @@ from tensegrity.msg import (
     Trajectory,
 )
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from symmetry_reduction_utils import *
 from points_superimposed import obstacle_trajectory
 from Tensegrity_model_inputs import *
