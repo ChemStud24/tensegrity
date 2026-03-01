@@ -431,7 +431,7 @@ if __name__ == '__main__':
 	}
 
 	mppi_params = {
-		"sim": "3bar_ds8_multi_8_mppi_turn_prims_v2.2/best_rollout_model.pt",
+		"sim": os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '3bar_ds8_multi_8_mppi_turn_prims_v2.2/best_rollout_model.pt'),
 		'strategy': 'min',
 		'device': 'cuda',
 		'cost_weights': (1.0, 0.0, 0.0),

@@ -94,8 +94,8 @@ class TensegrityRobot:
         self.encoder_length = [0] * self.num_motors
         self.RANGE024 = 100
         self.RANGE135 = 100
-        self.max_cable_length = 0.23 # meters
-        self.min_cable_length = 0.05 # meters
+        self.max_cable_length = 260 
+        self.min_cable_length = 100
         self.max_speed = 70
         self.tol = 0.15
         self.low_tol = 0.15
@@ -117,6 +117,7 @@ class TensegrityRobot:
         self.mppi_actions = None  # np.ndarray shape (T, 6)
         self.mppi_interval = None  # seconds per action row
         self.mppi_start_time = None
+        self.mppi_exec_scale = 1.0  # scaling factor for control interval
 
         self.num_steps = None
         self.state = None
@@ -604,7 +605,7 @@ class TensegrityRobot:
             # Reshape from flat to (T, num_motors)
             actions = actions_flat.reshape(-1, self.num_motors)
             self.mppi_actions = actions
-            self.mppi_interval = float(msg.control_interval) if msg.control_interval > 0 else 0.5
+            self.mppi_interval = (float(msg.control_interval) if msg.control_interval > 0 else 0.5) * self.mppi_exec_scale
             self.mppi_start_time = None
             self.control_mode = "mppi"
             return

@@ -1,3 +1,5 @@
 src/__pycache__/
 src/scratch.py
 data/*
+calibration/*
+3bar_ds8_multi_8_mppi_turn_prims_v2.2/*
