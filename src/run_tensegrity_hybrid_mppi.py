@@ -234,12 +234,17 @@ class TensegrityRobot:
             ]
         )
         
-        roll = np.array([[1, 1, 1, 1, 1, 1], [1, 1, 0.1, 1, 1, 0.1], [0, 1, 1, 0, 1, 0.1], [1, 1, 1, 1, 1, 1]]) #new tensegrity
+        # roll = np.array([[1, 1, 1, 1, 1, 1], [1, 1, 0.1, 1, 1, 0.1], [0, 1, 1, 0, 1, 0.1], [1, 1, 1, 1, 1, 1]]) #new tensegrity
         #roll = np.array([[1, 1, 1, 1, 1, 1], [1, 1, 0.1, 1, 1, 0.1], [0, 1, 1, 0, 1, 0.1], [1, 1, 1, 1, 1, 1]]) #based off observed video
         #cw = np.array([[1, 1, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0], [0, 1, 1, 0, 0.8, 0], [1, 1, 1, 1, 1, 1]]) #new tensegrity
-        cw = np.array([[1, 1, 1, 1, 1, 1],[0, 0, 1, 0, 1, 0], [0, 0, 0, 0, 1, 0], [1, 0.8, 0, 0, 1, 0], [1, 1, 1, 1, 1, 1]]) #based off observed video
+        # cw = np.array([[1, 1, 1, 1, 1, 1],[0, 0, 1, 0, 1, 0], [0, 0, 0, 0, 1, 0], [1, 0.8, 0, 0, 1, 0], [1, 1, 1, 1, 1, 1]]) #based off observed video
         #ccw = np.array([[1, 1, 1, 0, 1, 1], [1, 0, 1, 0, 1, 1], [0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]])#new tensegrity
-        ccw = np.array([[1, 1, 1, 1, 1, 1],[1, 1, 0, 1, 1, 1], [1, 1, 0, 0, 1, 1], [0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]]) #based off observed video
+        # ccw = np.array([[1, 1, 1, 1, 1, 1],[1, 1, 0, 1, 1, 1], [1, 1, 0, 0, 1, 1], [0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]]) #based off observed video
+
+        #Patrick's Prims
+        roll = np.array([[1, 1, 1, 1, 1, 1], [1, 1, 0., 1, 0.1, 0.], [0, 1, 1, 0, 1, 0.1], [1, 1, 1, 1, 1, 1]])
+        ccw = np.array([[1, 1, 1, 0, 1, 1], [1, 0, 1, 0, 1, 1], [0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]])#new tensegrity
+        cw = np.array([[1, 1, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0], [0, 1, 1, 0, 0.8, 0], [1, 1, 1, 1, 1, 1]]) 
         self.all_gaits = {"roll": roll, "ccw": ccw, "cw": cw, "rest": rest}
         # self.states = np.vstack([roll])
         # self.states = transform_gait(self.states, self.prev_bottom_nodes)

@@ -89,7 +89,7 @@ class PlannerMPPI:
 		self.mppi_params = planner_params['mppi_params']
 		# Make a copy of astar_params to avoid modifying the original
 		astar_params_scaled = copy.deepcopy(planner_params['astar_params'])
-		astar_params_scaled['gait_deltas'] = [(g[0] * 10.0, g[1] * 10.0, g[2]) for g in planner_params['astar_params']['gait_deltas']]
+		# astar_params_scaled['gait_deltas'] = [(g[0] * 10.0, g[1] * 10.0, g[2]) for g in planner_params['astar_params']['gait_deltas']]
 		self.astar_params = astar_params_scaled
 
 		# Convert obstacles from 2-tuple (center) to 4-tuple (bounding box) format if needed
@@ -403,6 +403,7 @@ if __name__ == '__main__':
 	goal = (1900, 400, -np.pi/2)
 	# obstacles = ((550,650, 1200,2400), (1750,1850, 600,1600))
 	obstacles = ((550,650, 300,500), (1750,1850, 1300,1500))
+	# boundary = (-300, 2200, 100, 1700)
 	boundary = (-300, 2200, 100, 1700)
 
 	# start = (1, 1.4, -np.pi/2)
@@ -410,8 +411,97 @@ if __name__ == '__main__':
 	# obstacles = ((1.6, 0.5), (1.6, 0.7), (1.6, 0.8), (1.6, 0.7))
 	# boundary = (-3, 2.2, 0.1, 1.7)
 
+	def rotation_angle_from_matrix( matrix):
+		"""
+		Calculate the rotation angle in radians from a 2D rotation matrix using NumPy.
 
+		Args:
+			matrix (numpy.ndarray): A 2x2 rotation matrix
+									[[cos(theta), -sin(theta)],
+									[sin(theta),  cos(theta)]]
+
+		Returns:
+			float: The rotation angle in radians.
+		"""
+		# Ensure the input is a NumPy array
+		matrix = np.array(matrix)
+		
+		# Extract sine and cosine from the matrix
+		cos_theta = matrix[0, 0]
+		sin_theta = matrix[1, 0]
+
+		# Calculate the angle using arctan2
+		angle_radians = np.arctan2(sin_theta, cos_theta)
+		if angle_radians < 0: angle_radians += 2*np.pi
+
+		return float(angle_radians)
+
+	filepath = '../calibration/new_platform_transformation_table.pkl'
+	with open(filepath,'rb') as f:
+		action_dict = pickle.load(f)
+	
+
+	primitives = ['100_100','120_120','140_140','100_120','120_100',
+			   '100_140','140_100','120_140','140_120','ccw','cw']
+
+	primitive_workspace = []
+	for prim in primitives:
+		full_prim = action_dict[prim+"__"+prim]
+		angle = rotation_angle_from_matrix(full_prim[0])
+		simple_prim = [float(full_prim[1][0]), float(full_prim[1][1]),angle]
+		primitive_workspace.append(simple_prim)	
+
+	# astar_params = {
+	# 	'gaits': [
+	# 		('roll', 100, 100),
+	# 		('roll', 120, 120),
+	# 		('roll', 140, 140),
+	# 		('roll', 100, 120),
+	# 		('roll', 120, 100),
+	# 		('roll', 100, 140),
+	# 		('roll', 140, 100),
+	# 		('roll', 120, 140),
+	# 		('roll', 140, 120),
+	# 		('ccw', 100, 100),
+	# 		('cw', 100, 100)
+			
+	# 	],
+	# 	'gait_deltas': primitive_workspace,
+	# 	'heur_type': 'wave',
+	# 	'repeat_tol': 0.7,
+	# }
 	# MPPI and A* parameters (these should be configured based on your needs)
+	# astar_params = {
+	# 	'gaits': [
+	# 		('cw', 120, 120),
+	# 		('ccw', 100, 100),
+	# 		('roll', 100, 100),
+	# 		('roll', 100, 120),
+	# 		('roll', 100, 140),
+	# 		('roll', 120, 100),
+	# 		('roll', 120, 120),
+	# 		('roll', 120, 140),
+	# 		('roll', 140, 100),
+	# 		('roll', 140, 120),
+	# 		('roll', 140, 140)
+	# 	],
+	# 	'gait_deltas': [
+	# 		(-0.40565651655197144, -1.0375710725784302, -0.5563808083534241),
+    #         (0.41965270042419434, 0.34847545623779297, -0.07213731110095978),
+    #         (-0.20067229866981506, -1.7011791467666626, -0.2842606008052826),
+    #         (-0.05496932938694954, -1.8011555671691895, -0.2927650809288025),
+    #         (0.11246095597743988, -1.9315996170043945, -0.29069265723228455),
+    #         (-0.2660592198371887, -1.7847661972045898, -0.2607172429561615),
+    #         (-0.1397669017314911, -1.876606822013855, -0.22433887422084808),
+    #         (0.08572909981012344, -1.9767913818359375, -0.23118142783641815),
+    #         (-0.2793423533439636, -1.6882871389389038, -0.2550457715988159),
+    #         (-0.16679707169532776, -1.8680886030197144, -0.22707201540470123),
+    #         (-0.05866171792149544, -2.0437886714935303, -0.1928362399339676)
+	# 	],
+	# 	'heur_type': 'wave',
+	# 	'repeat_tol': 0.4,
+	# }
+
 	astar_params = {
 		'gaits': [
 			('cw', 120, 120),
@@ -427,22 +517,21 @@ if __name__ == '__main__':
 			('roll', 140, 140)
 		],
 		'gait_deltas': [
-			(-0.40565651655197144, -1.0375710725784302, -0.5563808083534241),
-            (0.41965270042419434, 0.34847545623779297, -0.07213731110095978),
-            (-0.20067229866981506, -1.7011791467666626, -0.2842606008052826),
-            (-0.05496932938694954, -1.8011555671691895, -0.2927650809288025),
-            (0.11246095597743988, -1.9315996170043945, -0.29069265723228455),
-            (-0.2660592198371887, -1.7847661972045898, -0.2607172429561615),
-            (-0.1397669017314911, -1.876606822013855, -0.22433887422084808),
-            (0.08572909981012344, -1.9767913818359375, -0.23118142783641815),
-            (-0.2793423533439636, -1.6882871389389038, -0.2550457715988159),
-            (-0.16679707169532776, -1.8680886030197144, -0.22707201540470123),
-            (-0.05866171792149544, -2.0437886714935303, -0.1928362399339676)
+			(-0.37157151103019714, -1.1484227180480957, -0.454834908246994),
+            (0.6893242597579956, 0.6269674897193909, 0.2180231213569641),
+            (-0.1630459725856781, -1.6645100116729736, -0.2102857530117035),
+            (-0.027910035103559494, -1.7374625205993652, -0.2437712699174881),
+            (0.2542741298675537, -1.8830678462982178, -0.21396899223327637),
+            (-0.2743910253047943, -1.642714023590088, -0.1737537384033203),
+            (-0.08029751479625702, -1.8038218021392822, -0.16179166734218597),
+            (0.15351246297359467, -1.901036024093628, -0.14742010831832886),
+            (-0.4188455045223236, -1.7940902709960938, -0.1983223855495453),
+            (-0.19466280937194824, -1.8823869228363037, -0.18343089520931244),
+            (0.043375056236982346, -2.0279226303100586, -0.16346679627895355)
 		],
 		'heur_type': 'wave',
 		'repeat_tol': 0.4,
 	}
-
 	mppi_params = {
 		"sim": os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '3bar_ds8_multi_8_mppi_turn_prims_v2.2/best_rollout_model.pt'),
 		'strategy': 'min',
@@ -455,7 +544,7 @@ if __name__ == '__main__':
 	}
 	
 	planner_params = {
-		'mppi_idle_time': 1e10,
+		'mppi_idle_time': -1e10,#change for astar only: -1e10, for mppi: 1e10
         'mppi_idle_dist': 1.0,
 		'mppi_params': mppi_params,
 		'astar_params': astar_params,
