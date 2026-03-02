@@ -394,10 +394,22 @@ class PlannerMPPI:
 
 if __name__ == '__main__':
 	# Measurements in mm
-	start = (700, 0, 0)
-	goal = (-2700, -1200, 0)
-	obstacles = ((-250, 0, -650, 800), (-1800, -1550, -1600, -600))
-	boundary = (-3500, 1000, -1800, 800)
+	# start = (-700, 0, 0)
+	# goal = (2700, -1200, 0)
+	# obstacles = ((0,250, -650, 800), (1550,1800, -1600, -600))
+	# boundary = (-1000, 3500, -1800, 800)
+
+	start = (100, 1400, -np.pi/2)
+	goal = (1900, 400, -np.pi/2)
+	# obstacles = ((550,650, 1200,2400), (1750,1850, 600,1600))
+	obstacles = ((550,650, 300,500), (1750,1850, 1300,1500))
+	boundary = (-300, 2200, 100, 1700)
+
+	# start = (1, 1.4, -np.pi/2)
+	# goal = (1.9, 0.4, -np.pi/2)
+	# obstacles = ((1.6, 0.5), (1.6, 0.7), (1.6, 0.8), (1.6, 0.7))
+	# boundary = (-3, 2.2, 0.1, 1.7)
+
 
 	# MPPI and A* parameters (these should be configured based on your needs)
 	astar_params = {
@@ -428,6 +440,7 @@ if __name__ == '__main__':
             (-0.05866171792149544, -2.0437886714935303, -0.1928362399339676)
 		],
 		'heur_type': 'wave',
+		'repeat_tol': 0.4,
 	}
 
 	mppi_params = {
@@ -436,7 +449,7 @@ if __name__ == '__main__':
 		'device': 'cuda',
 		'cost_weights': (1.0, 0.0, 0.0),
 		'ctrl_interval': 1.0,
-		'horizon': 4.0,
+		'horizon': 2.0,
 		'n_samples': 200,
 		'use_motion_prim_heuristic': False,
 	}

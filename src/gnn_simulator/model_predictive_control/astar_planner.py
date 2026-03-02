@@ -272,7 +272,7 @@ class TensegrityAStarPlanner(torch.nn.Module):
                  tol=1.0,
                  goal=None,
                  rot_tol=2 * np.pi,
-                 repeat_tol=0.01,
+                 repeat_tol=0.1,
                  single_push=False,
                  stochastic=True,
                  heur_type="dist",
@@ -384,7 +384,7 @@ class TensegrityAStarPlanner(torch.nn.Module):
             heur_type=self.heur_type,
             boundary=self.boundary,
             grid_step=self.grid_step,
-            wave_h=self.wave_h,
+            precomputed_heuristic=self.wave_h,
         )
         path, tmp_movements = astar_w_mp_timeout(kwargs, 3)
         # print(path[1])

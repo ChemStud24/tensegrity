@@ -309,6 +309,25 @@ class Tracker:
             self.data_cfg['init_endcap_pos'][str(u)] = self.G.nodes[u]['pos_list'][0].tolist()
             self.data_cfg['init_endcap_pos'][str(v)] = self.G.nodes[v]['pos_list'][0].tolist()
 
+        # --- DEBUG: print robot location in world frame after initialization ---
+        H = np.array(self.data_cfg['cam_extr'])  # camera → world
+        rod_centers_world = []
+        print("\n[DEBUG] Robot pose after initialization (world frame, meters):")
+        for color, (u, v) in self.data_cfg['color_to_rod'].items():
+            p_u_cam = np.array(self.G.nodes[u]['pos_list'][0])
+            p_v_cam = np.array(self.G.nodes[v]['pos_list'][0])
+            p_u_world = (H @ np.append(p_u_cam, 1.0))[:3]
+            p_v_world = (H @ np.append(p_v_cam, 1.0))[:3]
+            rod_center_world = (p_u_world + p_v_world) / 2.0
+            rod_centers_world.append(rod_center_world)
+            print(f"  Rod '{color}':  endcap[{u}] = ({p_u_world[0]*1000:.1f}, {p_u_world[1]*1000:.1f}, {p_u_world[2]*1000:.1f}) mm"
+                  f"  |  endcap[{v}] = ({p_v_world[0]*1000:.1f}, {p_v_world[1]*1000:.1f}, {p_v_world[2]*1000:.1f}) mm"
+                  f"  |  center = ({rod_center_world[0]*1000:.1f}, {rod_center_world[1]*1000:.1f}, {rod_center_world[2]*1000:.1f}) mm")
+        com_world = np.mean(rod_centers_world, axis=0)
+        print(f"  Overall COM   = ({com_world[0]*1000:.1f}, {com_world[1]*1000:.1f}, {com_world[2]*1000:.1f}) mm")
+        print(f"  Overall COM (x, y only) = ({com_world[0]*1000:.1f}, {com_world[1]*1000:.1f}) mm\n")
+        # ----------------------------------------------------------------------
+
         if self.cfg.visualize:
             pcd = self.get_3d_vis()
             frame = o3d.geometry.TriangleMesh().create_coordinate_frame(size=0.1)

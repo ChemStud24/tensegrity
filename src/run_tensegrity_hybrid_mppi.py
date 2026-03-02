@@ -95,7 +95,7 @@ class TensegrityRobot:
         self.RANGE024 = 100
         self.RANGE135 = 100
         self.max_cable_length = 260 
-        self.min_cable_length = 100
+        self.min_cable_length = 120
         self.max_speed = 70
         self.tol = 0.15
         self.low_tol = 0.15
@@ -364,25 +364,25 @@ class TensegrityRobot:
 
     def read(self):
         arduino_info_in = [False] * self.num_arduino
-        while not all(arduino_info_in):
-            try:
-                data, addr = self.sock_receive.recvfrom(255)
-            except socket.timeout:
-                # Timeout - no data received, continue
-                return
+        # while not all(arduino_info_in):
+        try:
+            data, addr = self.sock_receive.recvfrom(255)
+        except socket.timeout:
+            # Timeout - no data received, continue
+            return
 
-            received_data = data.decode("utf-8")
-            sensor_values = received_data.split()
-            sensor_array = [float(value) for value in sensor_values]
-            arduino_id = int(sensor_array[0])
-            if self.addresses[arduino_id] is None:
-                self.addresses[arduino_id] = addr
+        received_data = data.decode("utf-8")
+        sensor_values = received_data.split()
+        sensor_array = [float(value) for value in sensor_values]
+        arduino_id = int(sensor_array[0])
+        if self.addresses[arduino_id] is None:
+            self.addresses[arduino_id] = addr
 
-            if len(sensor_array) == 13:
-                self.which_Arduino = int(sensor_array[0])
-                arduino_info_in[self.which_Arduino] = True
-                if sensor_array[1] == 0.2 or sensor_array[2] == 0.2 or sensor_array[3] == 0.2:
-                    print("MPR121 or I2C of Arduino " + str(self.which_Arduino) + " wrongly initialized, please reboot Arduino")
+        if len(sensor_array) == 13:
+            self.which_Arduino = int(sensor_array[0])
+            arduino_info_in[self.which_Arduino] = True
+            if sensor_array[1] == 0.2 or sensor_array[2] == 0.2 or sensor_array[3] == 0.2:
+                print("MPR121 or I2C of Arduino " + str(self.which_Arduino) + " wrongly initialized, please reboot Arduino")
 
             # if int(sensor_array[0]) == 0:
             #     self.cap[4] = sensor_array[1]
@@ -426,31 +426,50 @@ class TensegrityRobot:
                 for counts in self.encoder_counts
             ]
 
-            if 0.2 not in self.cap:
-                for i in range(len(self.cap)):
-                    self.length[i] = (self.cap[i] - self.b[i]) / self.m[i]
+            #add control code here
+            if not 0.2 in self.cap: #Default capacitance value of MPR121
+                for i in range(len(self.cap)) :
+                    self.length[i] = (self.cap[i] - self.b[i]) / self.m[i] #mm 
+                #check if motor reached the target
                 for i in range(self.num_motors):
                     if i < 3:
-                        self.pos[i] = (self.length[i] - self.min_length) / self.RANGE135
+                        self.pos[i] = (self.length[i] - self.min_length) / self.RANGE135# calculate the current position of the motor
                     else:
-                        self.pos[i] = (self.length[i] - self.min_length) / self.RANGE024
+                        self.pos[i] = (self.length[i] - self.min_length) / self.RANGE024# calculate the current position of the motor   
+            # #read imu data
+            # if(sensor_array[0] == 0) :
+            #     self.imu[1] = self.quat2vec(sensor_array[1:5])
 
-            self.accelerometer[self.which_Arduino][0] = sensor_array[7]
-            self.accelerometer[self.which_Arduino][1] = sensor_array[8]
-            self.accelerometer[self.which_Arduino][2] = sensor_array[9]
-            self.gyroscope[self.which_Arduino][0] = sensor_array[10]
-            self.gyroscope[self.which_Arduino][1] = sensor_array[11]
-            self.gyroscope[self.which_Arduino][2] = sensor_array[12]
+            # if(sensor_array[0] == 2) :
+            #     self.imu[0] = self.quat2vec(sensor_array[1:5])
+
+            #if(sensor_array[0] == 3) : If 3 IMU's used
+            #   self.imu[3] = self.quat2vec(sensor_array[1:5])
+
+            self.accelerometer[self.which_Arduino][0] = sensor_array[7] # ax
+            self.accelerometer[self.which_Arduino][1] = sensor_array[8] # ay
+            self.accelerometer[self.which_Arduino][2] = sensor_array[9] # az
+            self.gyroscope[self.which_Arduino][0] = sensor_array[10]    # gx
+            self.gyroscope[self.which_Arduino][1] = sensor_array[11]    # gy
+            self.gyroscope[self.which_Arduino][2] = sensor_array[12]    # gz
+
         else:
-            if None in self.addresses:
+            if (None in self.addresses) :
                 for i in range(len(self.addresses)):
-                    if self.addresses[i] is None:
-                        print("Arduino " + str(i) + " wrongly initialized, please reboot Arduino")
-                    else:
-                        self.send_command(self.stop_msg, self.addresses[i], 0)
-            else:
-                for i in range(len(self.addresses)):
-                    self.send_command(self.stop_msg, self.addresses[i], 0)
+                    if(self.addresses[i] == None) : 
+                        print('Arduino '+str(i)+' wrongly initialized, please reboot Arduino')
+                    else:     
+                        self.send_command(self.stop_msg, self.addresses[i],0)
+
+            else :
+                print('+')
+                for i in range(len(self.addresses)) :
+                    self.send_command(self.stop_msg, self.addresses[i],0)
+            
+        # except :
+        #     print('There has been an error')
+        #     print('Received data:', received_data)
+
 
     def compute_command(self):
         # MPPI mode: stream motor speeds directly from the received plan.
@@ -487,14 +506,14 @@ class TensegrityRobot:
                 command_msg[i + self.offset] = str(self.speed[i])
         else:
             # A* / primitive mode: PID towards current gait targets (same as A* runner).
-            if self.prim_start_time is None:
-                self.prim_start_time = time.time()
-            else:
-                elapsed = time.time() - self.prim_start_time
-                if elapsed > self.max_prim_time:
-                    print("elapsed", elapsed, "max_prim_time", self.max_prim_time)
-                    self.prim_start_time = None
-                    self.done = [True] * self.num_motors
+            # if self.prim_start_time is None:
+            #     self.prim_start_time = time.time()
+            # else:
+            #     elapsed = time.time() - self.prim_start_time
+            #     if elapsed > self.max_prim_time:
+            #         print("elapsed", elapsed, "max_prim_time", self.max_prim_time)
+            #         self.prim_start_time = None
+            #         self.done = [True] * self.num_motors
                         
             command_msg = self.stop_msg.split()
             for i in range(self.num_motors):
