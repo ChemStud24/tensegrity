@@ -94,8 +94,8 @@ class TensegrityRobot:
         self.encoder_length = [0] * self.num_motors
         self.RANGE024 = 100
         self.RANGE135 = 100
-        self.max_cable_length = 260 
-        self.min_cable_length = 120
+        self.max_cable_length = 240 
+        self.min_cable_length = 100
         self.max_speed = 70
         self.tol = 0.15
         self.low_tol = 0.15
