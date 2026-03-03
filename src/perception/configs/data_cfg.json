@@ -76,7 +76,7 @@
     "im_h": 720,
     "depth_scale": 1000,
     "num_rods": 3,
-    "rod_length": 0.36,
+    "rod_length": 0.33,
     "rod_diameter": 0.02,
     "rod_scale": 1,
     "depth_trunc": 3,

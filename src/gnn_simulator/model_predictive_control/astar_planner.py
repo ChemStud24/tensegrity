@@ -135,6 +135,9 @@ def astar(start,
           grid_step=0.01,
           robot_dims=(2.95, 1.5),
           precomputed_heuristic=None):
+    print(f"start`: {start}, goal: {goal},obstacles: {obstacles}, repeat_tol: {repeat_tol}")
+    print(f"gaits: {gaits}")
+    # quit()
     if heur_type == "wave":
         h = fill_grid(goal[:2], boundary, grid_step, obstacles=obstacles) if precomputed_heuristic is None else precomputed_heuristic
     elif heur_type == "motion_prim":
@@ -155,7 +158,7 @@ def astar(start,
         current = node[1]
 
         if (coll_det(current, obstacles, boundary=boundary, robot_dims=robot_dims)
-                or (len(closed_list) > 0 and is_point_within_distance(current[:2], closed_list, repeat_tol))):
+                or (len(closed_list) > 0 and is_point_within_distance_r2(current[:2], closed_list, repeat_tol))):
             closed_list.append(current[:2])
             continue
 
@@ -177,6 +180,7 @@ def astar(start,
                 movements.append(move)
                 current = prev
             path.append(start)
+            print(f"Path found: {path[::-1]}, movements: {movements[::-1]}")
             return path[::-1], movements[::-1], h
 
         if single_push:

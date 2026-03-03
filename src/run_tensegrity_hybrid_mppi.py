@@ -537,6 +537,7 @@ class TensegrityRobot:
                     self.speed[i] = self.command[i] * self.max_speed * self.flip[i]
                     command_msg[i + self.offset] = str(self.speed[i])
             # print([round(p, 4) for p in self.pos], [round(e, 4) for e in self.error], [round(s, 4) for s in self.states[self.state]])
+            print(f"[DEBUG] prim={self.states} state={self.states[self.state]}   pos={self.pos}  done={list(self.done)}")
 
             if all(self.done):
                 self.state += 1
