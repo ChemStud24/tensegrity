@@ -41,9 +41,9 @@ if __name__ == '__main__':
 	# test cases
 
 	# this is the base unit of the quasistatic rolling gait when 0,2,5 are the bottom nodes
-	states = np.array([[1, 1, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0], [0, 1, 1, 0, 0.8, 0], [1, 1, 1, 1, 1, 1]])
+	states = np.array([[1, 1, 1, 1, 1, 1], [1, 1, 0., 1, 0.1, 0.], [0, 1, 1, 0, 1, 0.1], [1, 1, 1, 1, 1, 1]])
 	# if 0,2,5 are the bottom nodes
-	bottom_nodes = (1,2,4)
+	bottom_nodes = (0,3,4)
 	# it should print out the exact same gait: [[0.0, 1.0, 1.0, 0.0, 1.0, 0.1],[1.0, 0.1, 1.0, 1.0, 0.1, 1.0]]
 	print(transform_gait(states,bottom_nodes))
 

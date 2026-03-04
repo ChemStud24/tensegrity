@@ -90,9 +90,10 @@ class PlannerMPPI:
 		# Store mppi_params for later access
 		self.mppi_params = planner_params['mppi_params']
 		# Make a copy of astar_params to avoid modifying the original
-		astar_params_scaled = copy.deepcopy(planner_params['astar_params'])
-		# astar_params_scaled['gait_deltas'] = [(g[0] * 10.0, g[1] * 10.0, g[2]) for g in planner_params['astar_params']['gait_deltas']]
-		self.astar_params = astar_params_scaled
+		# astar_params_scaled = copy.deepcopy(planner_params['astar_params'])
+		# # astar_params_scaled['gait_deltas'] = [(g[0] * 10.0, g[1] * 10.0, g[2]) for g in planner_params['astar_params']['gait_deltas']]
+		# astar_params_scaled['gait_deltas'] = [(g[1] * -1.0, g[0], g[2]) for g in planner_params['astar_params']['gait_deltas']]
+		# self.astar_params = astar_params_scaled
 
 		# Convert obstacles from 2-tuple (center) to 4-tuple (bounding box) format if needed
 		# converted_obstacles = self._convert_obstacles(obstacles, obstacle_size)
@@ -361,6 +362,8 @@ class PlannerMPPI:
 			)
 
 		# Expect 3 poses (one per rod). If fewer are present, pad with zeros; if more, truncate.
+		# print(f"Received pose message with {msg.poses} poses")
+		# quit()
 		poses = list(msg.poses) if msg.poses else []
 		pose_arrays = [pose_to_array(p) for p in poses]
 		concatenated_pose = np.vstack(pose_arrays)  # Should be 21D (3 * 7)
@@ -423,11 +426,12 @@ if __name__ == '__main__':
 	# boundary = (-1000, 3500, -1800, 800)
 
 	start = (100, 1400, -np.pi/2)
-	goal = (1900, 400, -np.pi/2)
+	goal = (1900, 500, -np.pi/2)
 	# obstacles = ((550,650, 1200,2400), (1750,1850, 600,1600))
-	obstacles = ((550,650, 300,500), (1750,1850, 1300,1500))
-	# boundary = (-300, 2200, 100, 1700)
+	# obstacles = ((550,650, 300,500), (1750,1850, 1300,1500))
+	obstacles = []
 	boundary = (-300, 2200, 100, 1700)
+	# boundary = (-300, 2200, 100, 1700)
 
 	# start = (1, 1.4, -np.pi/2)
 	# goal = (1.9, 0.4, -np.pi/2)
@@ -525,6 +529,20 @@ if __name__ == '__main__':
 	# 	'heur_type': 'wave',
 	# 	'repeat_tol': 0.4,
 	# }
+	gait_deltas = [
+			(-0.37157151103019714, -1.1484227180480957, -0.454834908246994),
+            (0.6893242597579956, 0.6269674897193909, 0.2180231213569641),
+            (-0.1630459725856781, -1.6645100116729736, -0.2102857530117035),
+            (-0.027910035103559494, -1.7374625205993652, -0.2437712699174881),
+            (0.2542741298675537, -1.8830678462982178, -0.21396899223327637),
+            (-0.2743910253047943, -1.642714023590088, -0.1737537384033203),
+            (-0.08029751479625702, -1.8038218021392822, -0.16179166734218597),
+            (0.15351246297359467, -1.901036024093628, -0.14742010831832886),
+            (-0.4188455045223236, -1.7940902709960938, -0.1983223855495453),
+            (-0.19466280937194824, -1.8823869228363037, -0.18343089520931244),
+            (0.043375056236982346, -2.0279226303100586, -0.16346679627895355)
+		]
+	gait_deltas = [(g[1] * -1.0, g[0], g[2]) for g in gait_deltas]
 
 	astar_params = {
 		'gaits': [
@@ -540,19 +558,7 @@ if __name__ == '__main__':
 			('roll', 140, 120),
 			('roll', 140, 140)
 		],
-		'gait_deltas': [
-			(-0.37157151103019714, -1.1484227180480957, -0.454834908246994),
-            (0.6893242597579956, 0.6269674897193909, 0.2180231213569641),
-            (-0.1630459725856781, -1.6645100116729736, -0.2102857530117035),
-            (-0.027910035103559494, -1.7374625205993652, -0.2437712699174881),
-            (0.2542741298675537, -1.8830678462982178, -0.21396899223327637),
-            (-0.2743910253047943, -1.642714023590088, -0.1737537384033203),
-            (-0.08029751479625702, -1.8038218021392822, -0.16179166734218597),
-            (0.15351246297359467, -1.901036024093628, -0.14742010831832886),
-            (-0.4188455045223236, -1.7940902709960938, -0.1983223855495453),
-            (-0.19466280937194824, -1.8823869228363037, -0.18343089520931244),
-            (0.043375056236982346, -2.0279226303100586, -0.16346679627895355)
-		],
+		'gait_deltas': gait_deltas,
 		'heur_type': 'wave',
 		'repeat_tol': 0.4,
 	}
