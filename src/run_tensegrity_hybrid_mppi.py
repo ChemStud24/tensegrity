@@ -243,7 +243,8 @@ class TensegrityRobot:
 
         #Patrick's Prims
         roll = np.array([[1, 1, 1, 1, 1, 1], [1, 1, 0., 1, 0.1, 0.], [0, 1, 1, 0, 1, 0.1], [1, 1, 1, 1, 1, 1]])
-        ccw = np.array([[1, 1, 1, 0, 1, 1], [1, 0, 1, 0, 1, 1], [0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]])#new tensegrity
+        #ccw = np.array([[1, 1, 1, 0, 1, 1], [1, 0, 1, 0, 1, 1], [0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]])#new tensegrity
+        ccw = np.array([[1, 1, 1, 1, 1, 1],[1, 1, 0, 1, 1, 1], [1, 1, 0, 0, 1, 1], [0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]]) #based off observed video
         cw = np.array([[1, 1, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0], [0, 1, 1, 0, 0.8, 0], [1, 1, 1, 1, 1, 1]]) 
         self.all_gaits = {"roll": roll, "ccw": ccw, "cw": cw, "rest": rest}
         # self.states = np.vstack([roll])
@@ -388,7 +389,13 @@ class TensegrityRobot:
             arduino_info_in[self.which_Arduino] = True
             if sensor_array[1] == 0.2 or sensor_array[2] == 0.2 or sensor_array[3] == 0.2:
                 print("MPR121 or I2C of Arduino " + str(self.which_Arduino) + " wrongly initialized, please reboot Arduino")
-
+                print("\nStopping motors")
+                self.keep_going = False
+                for i in range(len(self.addresses)):
+                    if self.addresses[i] is not None:
+                        self.send_command(self.stop_msg, self.addresses[i], 0)
+                quit()
+                
             # if int(sensor_array[0]) == 0:
             #     self.cap[4] = sensor_array[1]
             #     self.cap[2] = sensor_array[2]

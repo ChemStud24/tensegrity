@@ -550,7 +550,7 @@ if __name__ == '__main__':
 	}
 	
 	planner_params = {
-		'mppi_idle_time': 1e10,#change for astar only: -1e10, for mppi: 1e10
+		'mppi_idle_time': -1e10,#change for astar only: -1e10, for mppi: 1e10
         'mppi_idle_dist': 1.0,
 		'mppi_params': mppi_params,
 		'astar_params': astar_params,
