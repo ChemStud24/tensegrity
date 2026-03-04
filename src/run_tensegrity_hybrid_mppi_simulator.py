@@ -555,6 +555,9 @@ class TensegrityRobot:
 
     def get_pose_endcaps(self):
         """Fetch endcaps via perception service, returning (COM, principal_axis, endcaps)."""
+        # Skip service call when perception services were mocked (ImportError fallback)
+        if not hasattr(GetPose, "_request_class"):
+            return None
         service_name = "get_pose"
         try:
             request = GetPoseRequest()

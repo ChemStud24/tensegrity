@@ -21,7 +21,8 @@ class TensegrityMPPIPlanner(torch.nn.Module):
                  device: str = 'cpu',
                  u_bounds: tuple = (-1., 1.),
                  gamma: float = 1.0,
-                 rest_len_bounds: tuple = (1.0, 1.9),
+                 rest_len_bounds: tuple = (0.3, 2.0),
+                 cable_len_bounds: tuple = (1.0, 2.2),
                  goal: tuple | None = None,
                  obstacles: tuple = (),
                  boundary: tuple = (),
@@ -72,6 +73,7 @@ class TensegrityMPPIPlanner(torch.nn.Module):
 
         self.ctrl_min, self.ctrl_max = u_bounds
         self.rest_min, self.rest_max = rest_len_bounds
+        self.cable_len_min, self.cable_len_max = cable_len_bounds
         self.n_ctrls = len(self.sim.robot.actuated_cables)
         self.prev_ctrls = torch.zeros(
             (1, self.n_ctrls, self.horizon // self.ctrl_interval),
@@ -479,10 +481,26 @@ class TensegrityMPPIPlanner(torch.nn.Module):
 
         return min_actions, min_act_states, batch_states
 
-    def compute_ctrl_lims(self, rest_lens, motor_speeds):
-        rest_lens = self.map(rest_lens)
-        upper = (rest_lens >= self.rest_min).to(self.dtype).flatten()
-        lower = -(rest_lens <= self.rest_max).to(self.dtype).flatten()
+    def compute_ctrl_lims(self, rest_lens, motor_speeds, curr_state):
+        end_pts = self.compute_end_pts(curr_state).transpose(0, 2)
+        cable_lens = []
+        for i, c in enumerate(self.sim.robot.actuated_cables.values()):
+            idx0, idx1 = c.end_pts[0][2], c.end_pts[1][2]
+            end_pt0, end_pt1 = end_pts[int(idx0)].unsqueeze(0), end_pts[int(idx1)].unsqueeze(0)
+            length = (end_pt1 - end_pt0).norm(dim=1, keepdim=True)
+            cable_lens.append(length)
+
+        cable_lens = torch.vstack(cable_lens).flatten()
+        upper = (cable_lens >= self.cable_len_min).to(self.dtype).flatten()
+        lower = -(cable_lens <= self.cable_len_max).to(self.dtype).flatten()
+
+        # rest_lens = self.map(rest_lens)
+        # upper_rest = (rest_lens >= self.rest_min).to(self.dtype).flatten()
+        # lower_rest = -(rest_lens <= self.rest_max).to(self.dtype).flatten()
+
+        # upper = upper_cable * upper_rest
+        # lower = lower_cable * lower_rest
+
         return lower, upper
 
     def compute_ctrl_lims2(self, rest_lens, motor_speeds):
@@ -514,7 +532,7 @@ class TensegrityMPPIPlanner(torch.nn.Module):
         return lower.flatten(), upper.flatten()
 
     def mppi_simple(self, curr_state, curr_rest_lens, curr_motor_speeds, nsamples):
-        lower, upper = self.compute_ctrl_lims(curr_rest_lens, curr_motor_speeds)
+        lower, upper = self.compute_ctrl_lims(curr_rest_lens, curr_motor_speeds, curr_state)
         # lower = -ones(6, ref_tensor=curr_state)
         # upper = ones(6, ref_tensor=curr_state)
         #

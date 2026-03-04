@@ -159,6 +159,7 @@ class BenchmarkOrchestrator:
         self.active_processes.clear()
         self.drain_threads.clear()
         self.monitor_thread = None
+        self.stderr_buffers = {}  # name -> list of lines for error capture
 
         # Launch processes sequentially
         for spec in self.process_specs:
@@ -190,18 +191,19 @@ class BenchmarkOrchestrator:
                 )
                 self.monitor_thread.start()
             else:
+                self.stderr_buffers[spec.name] = []
                 t = threading.Thread(
                     target=self._drain_thread,
-                    args=(proc.stderr, spec.name),
+                    args=(proc.stderr, spec.name, True),
                     daemon=True,
                 )
                 t.start()
                 self.drain_threads.append(t)
 
-            # Drain stdout for all processes
+            # Drain stdout for all processes (no stderr buffer)
             t = threading.Thread(
                 target=self._drain_thread,
-                args=(proc.stdout, f'{spec.name}-stdout'),
+                args=(proc.stdout, f'{spec.name}-stdout', False),
                 daemon=True,
             )
             t.start()
@@ -214,10 +216,14 @@ class BenchmarkOrchestrator:
             # Verify process is still alive
             if proc.poll() is not None:
                 stderr_out = ''
-                try:
-                    stderr_out = proc.stderr.read().decode('utf-8', errors='replace')[-500:]
-                except Exception:
-                    pass
+                buf = self.stderr_buffers.get(spec.name, [])
+                if buf:
+                    stderr_out = ''.join(buf)[-1000:].strip()
+                if not stderr_out:
+                    try:
+                        stderr_out = proc.stderr.read().decode('utf-8', errors='replace')[-500:]
+                    except Exception:
+                        pass
                 self.terminate_all_processes()
                 return TrialResult(
                     trial_number=trial_number,
@@ -288,12 +294,16 @@ class BenchmarkOrchestrator:
         except Exception:
             pass
 
-    def _drain_thread(self, stream, label):
+    def _drain_thread(self, stream, label, buffer_stderr=False):
         """Drain a subprocess stream to prevent buffer blocking."""
+        buf = self.stderr_buffers.get(label.replace('-stdout', ''), None) if buffer_stderr else None
         try:
             for line in iter(stream.readline, b''):
+                decoded = line.decode('utf-8', errors='replace')
+                if buf is not None:
+                    buf.append(decoded)
                 if self.args.verbose:
-                    sys.stderr.write(f'[{label}] {line.decode("utf-8", errors="replace")}')
+                    sys.stderr.write(f'[{label}] {decoded}')
         except Exception:
             pass
 

@@ -39,9 +39,9 @@ from scipy.spatial.transform import Rotation
 
 from tensegrity.msg import SensorsStamped, TensegrityStamped, PoseStateStamped
 
-from tensegrity.srv import InitTracker, InitTrackerRequest, InitTrackerResponse
-from tensegrity.srv import GetPose, GetPoseRequest, GetPoseResponse
-from tensegrity.srv import GetBarHeight, GetBarHeightRequest, GetBarHeightResponse
+from tensegrity_perception.srv import InitTracker, InitTrackerRequest, InitTrackerResponse
+from tensegrity_perception.srv import GetPose, GetPoseRequest, GetPoseResponse
+from tensegrity_perception.srv import GetBarHeight, GetBarHeightRequest, GetBarHeightResponse
 
 
 class MockTracker:

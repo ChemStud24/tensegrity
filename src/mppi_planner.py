@@ -21,6 +21,7 @@ import threading
 import json
 from collections import deque
 from geometry_msgs.msg import Point, PoseStamped
+from scipy.spatial.transform import Rotation as R
 
 try:
     from tensegrity.msg import ActionHybridMPPI, PoseStateStamped, State
@@ -58,6 +59,7 @@ class PlannerMPPI:
 		boundary = (boundary[0] / 1000, boundary[1] / 1000, boundary[2] / 1000, boundary[3] / 1000)
 		obstacles = [(obs[0] / 1000, obs[1] / 1000, obs[2] / 1000, obs[3] / 1000) for obs in obstacles]
 		grid_step = grid_step / 1000
+		# init_cable_lengths = [cable_length / 1000 for cable_length in init_cable_lengths]
 
 		self.grid_step = grid_step
 		self.tol = tol
@@ -161,7 +163,7 @@ class PlannerMPPI:
 
 	def _compute_init_rest_lens(self, init_cable_lengths, min_length=80, range_=120, tol=0.05):
 		sim = self.planner.mppi_controller.sim
-		init_cable_lengths = 10 * torch.tensor(
+		init_cable_lengths = torch.tensor(
 			init_cable_lengths,
 			dtype=sim.dtype,
 			device=sim.device
@@ -324,6 +326,20 @@ class PlannerMPPI:
 		self.pub.publish(action_msg)
 		self.logger.info(f"Published action")
 
+	def compute_end_pts(self, stacked_pose):
+		poses = [stacked_pose[i:i+1] for i in range(stacked_pose.shape[0])]
+		end_pts = []
+		for pose in poses:
+			pose = pose.reshape(1, 7)
+			q = np.hstack([pose[:, 4:], pose[:, 3:4]]).flatten()
+			rot_mat = R.from_quat(q).as_matrix()
+			unit_vector = rot_mat[:, 2:3]
+			end_pt0 = pose[:, :3] - 0.5 * unit_vector * 0.295
+			end_pt1 = pose[:, :3] + 0.5 * unit_vector * 0.295
+			end_pts.append(end_pt0)
+			end_pts.append(end_pt1)
+		return np.vstack(end_pts)
+
 	def pose_callback(self, msg):
 		"""Callback for pose messages - runs asynchronously from main callback
 		Receives PoseStateStamped message containing a Pose[] array (expected length 3),
@@ -333,9 +349,9 @@ class PlannerMPPI:
 		def pose_to_array(pose):
 			return np.array(
 				[
-					pose.position.x / 1000,
-					pose.position.y / 1000,
-					pose.position.z / 1000,
+					pose.position.x,
+					pose.position.y,
+					pose.position.z,
 					pose.orientation.w,
 					pose.orientation.x,
 					pose.orientation.y,
@@ -347,7 +363,14 @@ class PlannerMPPI:
 		# Expect 3 poses (one per rod). If fewer are present, pad with zeros; if more, truncate.
 		poses = list(msg.poses) if msg.poses else []
 		pose_arrays = [pose_to_array(p) for p in poses]
-		concatenated_pose = np.concatenate(pose_arrays, axis=0)  # Should be 21D (3 * 7)
+		concatenated_pose = np.vstack(pose_arrays)  # Should be 21D (3 * 7)
+
+		end_pts = self.compute_end_pts(concatenated_pose)
+		min_z = end_pts[:, 2].min(axis=0).item()
+		concatenated_pose[:, 2] += 0.0175 - min_z
+
+		end_pts = self.compute_end_pts(concatenated_pose)
+		concatenated_pose = concatenated_pose.flatten()
 
 		# Timestamp from header
 		timestamp = msg.header.stamp.to_sec()
@@ -436,7 +459,8 @@ if __name__ == '__main__':
 
 		return float(angle_radians)
 
-	filepath = '../calibration/new_platform_transformation_table.pkl'
+	_script_dir = os.path.dirname(os.path.abspath(__file__))
+	filepath = os.path.join(os.path.dirname(_script_dir), 'calibration', 'new_platform_transformation_table.pkl')
 	with open(filepath,'rb') as f:
 		action_dict = pickle.load(f)
 	
@@ -532,8 +556,10 @@ if __name__ == '__main__':
 		'heur_type': 'wave',
 		'repeat_tol': 0.4,
 	}
+	_repo_root = os.path.dirname(_script_dir)
+	_model_path = os.path.join(_repo_root, '..', 'data_sets', 'tensegrity_real_datasets', 'new_platform_models', '3bar_ds8_multi_8_mppi_turn_prims_v2.2', 'best_rollout_model.pt')
 	mppi_params = {
-		"sim": os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '3bar_ds8_multi_8_mppi_turn_prims_v2.2/best_rollout_model.pt'),
+		"sim": _model_path,
 		'strategy': 'min',
 		'device': 'cuda',
 		'cost_weights': (1.0, 0.0, 0.0),
@@ -544,7 +570,7 @@ if __name__ == '__main__':
 	}
 	
 	planner_params = {
-		'mppi_idle_time': -1e10,#change for astar only: -1e10, for mppi: 1e10
+		'mppi_idle_time': 1e10,#change for astar only: -1e10, for mppi: 1e10
         'mppi_idle_dist': 1.0,
 		'mppi_params': mppi_params,
 		'astar_params': astar_params,
