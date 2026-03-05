@@ -568,9 +568,9 @@ if __name__ == '__main__':
 		'strategy': 'min',
 		'device': 'cuda',
 		'cost_weights': (1.0, 0.0, 0.0),
-		'ctrl_interval': 1.0,
+		'ctrl_interval': 0.5,
 		'horizon': 2.0,
-		'n_samples': 200,
+		'n_samples': 100,
 		'use_motion_prim_heuristic': False,
 	}
 	

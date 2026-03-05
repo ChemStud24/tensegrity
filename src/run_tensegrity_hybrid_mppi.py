@@ -327,11 +327,10 @@ class TensegrityRobot:
             motor.speed = float(self.speed[motor_id])
             motor.done = bool(self.done[motor_id]) if self.done is not None else False
             motor.encoder_counts = int(self.encoder_counts[motor_id])
-            motor.encoder_counts = int(self.encoder_counts[motor_id])
-            if(motor.id % 2 == 1):
+            '''if(motor.id % 2 == 1):
                 motor.encoder_length = 180 + self.encoder_length[motor_id]# NEW
             else:
-                motor.encoder_length = 180 - self.encoder_length[motor_id]
+                motor.encoder_length = 180 - self.encoder_length[motor_id]'''
             motor.encoder_length = float(self.encoder_length[motor_id])
             control_msg.motors.append(motor)
 
@@ -393,8 +392,8 @@ class TensegrityRobot:
                 self.keep_going = False
                 for i in range(len(self.addresses)):
                     if self.addresses[i] is not None:
-                        self.send_command(self.stop_msg, self.addresses[i], 0)
-                quit()
+                        self.send_command(self.stop_msg, self.addresses[i], 0) #testing, uncomment later
+                # quit()
                 
             # if int(sensor_array[0]) == 0:
             #     self.cap[4] = sensor_array[1]
