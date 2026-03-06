@@ -2,7 +2,9 @@ import random
 
 import torch
 
+from gnn_simulator.nn_training.datasets.tensegrity_dataset import TensegrityDataset
 from gnn_simulator.utilities import misc_utils
+from gnn_simulator.utilities.misc_utils import DEFAULT_DTYPE
 
 
 class RealMultiSimTensegrityDataset(TensegrityDataset):

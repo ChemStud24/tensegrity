@@ -389,6 +389,8 @@ class TensegrityRobotGNN(TensegrityRobot):
 
         self.template = self.get_template_graph()
         self.template_idx = self.convert_to_idx_edges(self.template)
+        self.self_collision_template = self.get_possible_self_collision_template()
+        self.self_collision_template_idx = self.convert_to_idx_edges(self.self_collision_template)
 
         self.num_nodes = len(self.node_mapping)
         self.rod_body_verts = [rod.body_verts for rod in self.rods.values()]
@@ -411,7 +413,24 @@ class TensegrityRobotGNN(TensegrityRobot):
         if self._inv_inertia is not None:
             self._inv_inertia = self._inv_inertia.to(device)
 
+        self.self_collision_template_idx = self.self_collision_template_idx.to(device)
+
         return self
+
+    def get_possible_self_collision_template(self):
+        rods = list(self.rods.values())
+
+        possible_self_collision_edges = []
+        for i in range(len(rods)):
+            housings_motors_i = [b for b in rods[i].rigid_bodies.values() if 'housing' in b.name or 'motor' in b.name]
+            for j in range(i + 1, len(rods)):
+                housings_motors_j = [b for b in rods[j].rigid_bodies.values() if 'housing' in b.name or 'motor' in b.name]
+                for housing_motor_i in housings_motors_i:
+                    for housing_motor_j in housings_motors_j:
+                        possible_self_collision_edges.append((housing_motor_i.name, housing_motor_j.name))
+                        possible_self_collision_edges.append((housing_motor_j.name, housing_motor_i.name))
+                
+        return possible_self_collision_edges
 
     def update_by_graph(self, graph):
         pos = graph.pos

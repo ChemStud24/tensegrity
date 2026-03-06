@@ -18,7 +18,6 @@ from PIL import Image
 from gnn_simulator.model_predictive_control.astar_planner import TensegrityAStarPlanner
 from gnn_simulator.model_predictive_control.hybrid_planner import HybridAStarMPPIPlanner
 from gnn_simulator.model_predictive_control.mujoco_env import MJCTensegrityEnv
-from gnn_simulator.model_predictive_control.tensegrity_mppi import TensegrityGnnMPPI, TensegrityMjcMPPI
 from gnn_simulator.mujoco_visualizer_utils.mujoco_visualizer import MuJoCoVisualizer
 from gnn_simulator.utilities import torch_quaternion
 
@@ -45,16 +44,27 @@ class TensegrityMJCEnvRunner:
         self.shift_env_robot_to_start(cfg)
 
         # Initial env robot stabilization for 5s
-        self.env.env.run_w_target_gaits([[1, 1, 1, 1, 1, 1]])
         for _ in range(1000):
             self.env.step(np.zeros((1, self.env.env.n_actuators)))
 
+        self.env.env.run_w_target_gaits([[1, 1, 1, 1, 1, 1]])
+
+        for _ in range(1000):
+            self.env.step(np.zeros((1, self.env.env.n_actuators)))
+
+        self.shift_env_robot_to_start(cfg)
+        print('SE2:', self.env.env.get_se2())
+
 
     def _init_visualizer(self, cfg):
+        vis_xml_path = cfg.get('vis_xml_path', None)
+        if vis_xml_path is None:
+            vis_xml_path = cfg['xml_path']
+
         self.vis = MuJoCoVisualizer()
-        self.vis.set_xml_path(Path(cfg['vis_xml_path']))
+        self.vis.set_xml_path(Path(vis_xml_path))
         self.vis.mjc_model.site_pos[0] = cfg['goal']
-        self.vis.set_camera("top")
+        self.vis.set_camera("camera")
         self.frames_path = Path(self.output, "frames/")
         self.vids_path = Path(self.output, "vids")
 
@@ -127,6 +137,7 @@ class TensegrityMJCEnvRunner:
         pos[:, 3:] = new_q
 
         self.env.env.mjc_data.qpos = pos.flatten()
+        self.env.forward()
 
     def step_env(self, num_step, action_args, **kwargs):
         pass
@@ -677,7 +688,7 @@ class HybridAStarMPPIRunner(TensegrityMJCEnvRunner):
             cfg['obstacles'],
             cfg['boundary'],
             cfg['goal'],
-            cfg['wave_grid_step'],
+            cfg['grid_step'],
             cfg['tol'],
             logger=self.logger,
             **cfg['other_planner_params']
@@ -739,7 +750,7 @@ class HybridAStarMPPIRunner(TensegrityMJCEnvRunner):
                 extra_data.append(e_data)
 
             poses.append({"time": self.sim_dt * step,
-                          "pos": self.env.env.mjc_data.qpos.copy().tolist(),
+                          "pose": self.env.env.mjc_data.qpos.copy().tolist(),
                           })
 
             mjc_state = np.hstack([
@@ -783,7 +794,7 @@ class HybridAStarMPPIRunner(TensegrityMJCEnvRunner):
             quat = np.array(processed_data[i]['quat']).reshape(-1, 4)
             poses.append({
                 'time': processed_data[i]['time'],
-                'pos': np.hstack([pos, quat]).flatten().tolist()
+                'pose': np.hstack([pos, quat]).flatten().tolist()
             })
 
             if (step + i + 1) % int(self.sensor_interval / self.env_dt) == 0:
@@ -805,9 +816,10 @@ class HybridAStarMPPIRunner(TensegrityMJCEnvRunner):
         step += len(processed_data)
 
         com = mjc_state.reshape(-1, 13)[:, :2].mean(axis=0).flatten()
-        angle = self.env.env.get_heading_angle()
+        heading = self.env.env.get_heading_angle()
+        print('heading', np.rad2deg(heading))
 
-        self.logger.info(f"{step} {dist_to_goal.item()} {None} {box_cost} {com} {angle}")
+        self.logger.info(f"{step} {dist_to_goal.item()} {None} {box_cost} {com} {np.rad2deg(heading)}")
 
         return poses, step, reached_goal, processed_data, extra_data
 
@@ -818,7 +830,7 @@ class HybridAStarMPPIRunner(TensegrityMJCEnvRunner):
             if i % 4 != 0:
                 continue
 
-            self.vis.mjc_data.qpos = pose['pos']
+            self.vis.mjc_data.qpos = pose['pose']
             mujoco.mj_forward(self.vis.mjc_model, self.vis.mjc_data)
             self.vis.renderer.update_scene(self.vis.mjc_data, "camera")
             self.add_goal()
@@ -851,6 +863,7 @@ class HybridAStarMPPIRunner(TensegrityMJCEnvRunner):
 
         vis_step = int(10 / self.env_dt)
         save_step = int(10 / self.env_dt)
+        save_pose_step = int(10 / self.env_dt)
         while not reached_goal and step < self.max_steps:
             plan_output = self.plan(step)
 
@@ -875,19 +888,21 @@ class HybridAStarMPPIRunner(TensegrityMJCEnvRunner):
                 frames.extend(new_frames)
 
             poses.extend(curr_poses)
-            if self.visualize and (step > vis_step or reached_goal):
+            if self.visualize and (step >= vis_step or reached_goal):
                 self.vis.save_video(Path(self.vids_path, f"{step}_vid.mp4"), frames)
                 frames = []
                 while vis_step < step:
                     vis_step += int(10 / self.env_dt)
 
-            if self.save_data and (step > save_step or reached_goal):
+            if self.save_data and (step >= save_step or reached_goal):
                 self._save_train_data(all_extra_data, all_processed_data)
                 while save_step < step:
                     save_step += int(10 / self.env_dt)
 
-            if step % int(2 / self.env_dt) == 0 or reached_goal:
+            if step >= save_pose_step or reached_goal:
                 self._save_pose_data(poses)
+                while save_pose_step <= step:
+                    save_pose_step += int(10 / self.env_dt)
 
         if self.save_data:
             self._reproduce_traj_data(all_extra_data, all_processed_data)
@@ -936,18 +951,6 @@ def combine_videos(video_dir, output_path, delete_parts=False):
                 os.remove(p)
     except Exception as e:
         print(f"An error occurred: {e}")
-
-
-def generate_vid(results_dir, xml, camera='camera', fps=50, dt=0.01):
-    data = json.load(Path(results_dir, 'poses.json').open('r'))
-
-    viz = MuJoCoVisualizer()
-    viz.set_xml_path(xml)
-    viz.set_camera(camera)
-    viz.data = data[::4]
-    viz.render_fps = fps
-
-    viz.visualize(Path(results_dir, 'combined.mp4'), dt=dt)
 
 
 def run_mppi(cfg):

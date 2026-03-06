@@ -1,0 +1,49 @@
+{
+  "sim_config": "gnn_simulator/simulators/configs/new_3_bar_15_cables_5d_gnn_sim_tight_corridor_config.json",
+  "num_steps_fwd": 1,
+  "num_hist": 1,
+  "num_ctrls_hist": 20,
+  "batch_size": 128,
+  "save_rollout_poses": true,
+  "trainable_params": [
+  ],
+  "optimizer_params": {
+    "lr": 1e-5,
+    "weight_decay": 0.01
+  },
+  "data_root": "../data_sets/tensegrity_real_datasets/",
+  "train_data_paths": [
+    "3bar_new_platform_tight_corridor/dataset_8/traj_0/",
+    "3bar_new_platform_tight_corridor/dataset_8/traj_1/",
+    "3bar_new_platform_tight_corridor/dataset_8/traj_3/",
+    "3bar_new_platform_tight_corridor/dataset_8/traj_4/",
+    "3bar_new_platform_tight_corridor/dataset_8/traj_6/",
+    "3bar_new_platform_tight_corridor/dataset_8/traj_7/",
+    "3bar_new_platform_tight_corridor/dataset_8/traj_9/",
+    "3bar_new_platform_tight_corridor/dataset_8/traj_10/",
+    "3bar_new_platform_tight_corridor/dataset_8/traj_12/",
+    "3bar_new_platform_tight_corridor/dataset_8/traj_13/",
+    "3bar_new_platform_tight_corridor/dataset_8/traj_15/",
+    "3bar_new_platform_tight_corridor/dataset_8/traj_16/",
+    "3bar_new_platform_tight_corridor/dataset_8/traj_18/",
+    "3bar_new_platform_tight_corridor/dataset_8/traj_19/",
+    "3bar_new_platform_tight_corridor/dataset_8/traj_21/",
+    "3bar_new_platform_tight_corridor/dataset_8/traj_22/",
+    "3bar_new_platform_tight_corridor/dataset_8/traj_24/",
+    "3bar_new_platform_tight_corridor/dataset_8/traj_25/"
+  ],
+  "val_data_paths": [
+    "3bar_new_platform_tight_corridor/dataset_8/traj_2/",
+    "3bar_new_platform_tight_corridor/dataset_8/traj_5/",
+    "3bar_new_platform_tight_corridor/dataset_8/traj_8/",
+    "3bar_new_platform_tight_corridor/dataset_8/traj_11/",
+    "3bar_new_platform_tight_corridor/dataset_8/traj_14/",
+    "3bar_new_platform_tight_corridor/dataset_8/traj_17/",
+    "3bar_new_platform_tight_corridor/dataset_8/traj_20/",
+    "3bar_new_platform_tight_corridor/dataset_8/traj_23/",
+    "3bar_new_platform_tight_corridor/dataset_8/traj_26/"
+  ],
+  "load_sim": false,
+  "load_sim_path": "../../tensegrity/data_sets/tensegrity_real_datasets/new_platform_models/tight_corridor_v0_iter0/best_rollout_model.pt",
+  "output_path": "../../tensegrity/data_sets/tensegrity_real_datasets/new_platform_models/tight_corridor_v0_iter0/"
+}

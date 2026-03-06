@@ -380,6 +380,55 @@ class TensegrityMuJoCoSimulator(AbstractMuJoCoSimulator):
 
 class ThreeBarTensegrityMuJoCoSimulator(TensegrityMuJoCoSimulator):
 
+    def run_stabilization(self, num_steps, global_steps=0):
+        self.forward()
+
+        curr_step = global_steps + 1
+
+        extra_data = []
+        processed_data = [{
+            "time": round(self.dt * (curr_step - 1), 4),
+            "end_pts": [
+                self.mjc_data.sensor(f"pos_{s}").data.tolist()
+                for s in self.end_pts
+            ],
+            "sites": {
+                s: self.mjc_data.sensor(f"pos_{s}").data.tolist()
+                for c in self.cable_sites for s in c
+            },
+            "pos": self.mjc_data.qpos.reshape(-1, 7)[:, :3].flatten().tolist(),
+            "quat": self.mjc_data.qpos.reshape(-1, 7)[:, 3:].flatten().tolist(),
+            "linvel": self.mjc_data.qvel.reshape(-1, 6)[:, :3].flatten().tolist(),
+            "angvel": self.mjc_data.qvel.reshape(-1, 6)[:, 3:].flatten().tolist(),
+        }]
+        for n in range(num_steps):
+            self.forward()
+            extra_data.append({
+                "time": round(self.dt * (curr_step - 1), 4),
+                "rest_lengths": self.mjc_model.tendon_lengthspring[:self.n_actuators, 0].copy().tolist(),
+                "motor_speeds": [c.motor_state.omega_t[0].copy().item() for c in self.cable_motors],
+                "controls": [0.0 for _ in range(self.n_actuators)]
+            })
+
+            self.sim_step(np.zeros((1, self.n_actuators)))
+            processed_data.append({
+                "time": round(self.dt * curr_step, 4),
+                "end_pts": [
+                    self.mjc_data.sensor(f"pos_{s}").data.tolist()
+                    for s in self.end_pts
+                ],
+                "sites": {
+                    s: self.mjc_data.sensor(f"pos_{s}").data.tolist()
+                    for c in self.cable_sites for s in c
+                },
+                "pos": self.mjc_data.qpos.reshape(-1, 7)[:, :3].flatten().tolist(),
+                "quat": self.mjc_data.qpos.reshape(-1, 7)[:, 3:].flatten().tolist(),
+                "linvel": self.mjc_data.qvel.reshape(-1, 6)[:, :3].flatten().tolist(),
+                "angvel": self.mjc_data.qvel.reshape(-1, 6)[:, 3:].flatten().tolist(),
+            })
+            curr_step += 1
+        return processed_data, extra_data
+
     def run_primitive(self, prim_type, left_range=None, right_range=None):
         prim_gaits = {
             'cw': [[1., 1., 0., 0., 0., 0.], [0., 1., 0., 0., 0., 0.], [0., 1., 1., 0., 0.8, 0.]],
@@ -426,7 +475,6 @@ class ThreeBarTensegrityMuJoCoSimulator(TensegrityMuJoCoSimulator):
         data, extra_info = self.run_w_target_gaits(target_gaits)
         return data, extra_info
 
-
     def run_w_target_gaits(self, target_gaits, save_path=None, max_time_per_gait=10):
         symmetry_mapping = {
             (0, 2, 5): [0, 1, 2, 3, 4, 5], (0, 3, 5): [0, 1, 2, 3, 4, 5],
@@ -440,7 +488,7 @@ class ThreeBarTensegrityMuJoCoSimulator(TensegrityMuJoCoSimulator):
             save_path.mkdir(exist_ok=True)
 
         self.forward()
-        data = [{
+        processed_data = [{
             "time": 0.0,
             "end_pts": [
                 self.mjc_data.sensor(f"pos_{s}").data.tolist()
@@ -485,7 +533,47 @@ class ThreeBarTensegrityMuJoCoSimulator(TensegrityMuJoCoSimulator):
             elif target_gait == [1., 1., 1., 1., 1., 1.]:
                 order = [0, 1, 2, 3, 4, 5]
             else:
-                raise Exception(f"Ground endcaps {ground_endcap_idx} not in symmetry mapping")
+                print(f"Ground endcaps {ground_endcap_idx} not in symmetry mapping, letting it settle")
+                for _ in range(300):
+                    global_steps += 1
+                    extra_data.append({
+                        "time": round(self.dt * (global_steps - 1), 4),
+                        "rest_lengths": self.mjc_model.tendon_lengthspring[:self.n_actuators, 0].copy().tolist(),
+                        "motor_speeds": [c.motor_state.omega_t[0].copy().item() for c in self.cable_motors],
+                        "controls": [0.0 for _ in range(self.n_actuators)]
+                    })
+
+                    self.sim_step(np.zeros((1, self.n_actuators)))
+                    self.forward()
+
+                    processed_data.append({
+                        "time": round(self.dt * global_steps, 4),
+                        "end_pts": [
+                            self.mjc_data.sensor(f"pos_{s}").data.tolist()
+                            for s in self.end_pts
+                        ],
+                        "sites": {
+                            s: self.mjc_data.sensor(f"pos_{s}").data.tolist()
+                            for c in self.cable_sites for s in c
+                        },
+                        "pos": self.mjc_data.qpos.reshape(-1, 7)[:, :3].flatten().tolist(),
+                        "quat": self.mjc_data.qpos.reshape(-1, 7)[:, 3:].flatten().tolist(),
+                        "linvel": self.mjc_data.qvel.reshape(-1, 6)[:, :3].flatten().tolist(),
+                        "angvel": self.mjc_data.qvel.reshape(-1, 6)[:, 3:].flatten().tolist(),
+                        "rest_lengths": self.mjc_model.tendon_lengthspring[:self.n_actuators, 0].copy().tolist(),
+                        "motor_speeds": [c.motor_state.omega_t[0].copy() for c in self.cable_motors],
+                    })
+
+                    if self.visualize and (global_steps % num_steps_per_frame == 0):
+                        frame = self.render_frame()
+                        frames.append(frame)
+                step += 300
+                ground_endcap_idx = self.detect_ground_endcaps()
+                try:
+                    order = symmetry_mapping[ground_endcap_idx]
+                except KeyError as e:
+                    print(e)
+                    break
 
             target_gait = [target_gait[o] for o in order]
 
@@ -500,7 +588,6 @@ class ThreeBarTensegrityMuJoCoSimulator(TensegrityMuJoCoSimulator):
                     'I': self.pids[0].k_i,
                     'D': self.pids[0].k_d,
                     'max_speed': int(self.cable_motors[0].speed * 100),
-
                 }
             })
 
@@ -547,7 +634,7 @@ class ThreeBarTensegrityMuJoCoSimulator(TensegrityMuJoCoSimulator):
                 self.sim_step(np.array(controls).reshape(1, -1))
                 self.forward()
 
-                data.append({
+                processed_data.append({
                     "time": round(self.dt * global_steps, 4),
                     "end_pts": [
                         self.mjc_data.sensor(f"pos_{s}").data.tolist()
@@ -571,7 +658,7 @@ class ThreeBarTensegrityMuJoCoSimulator(TensegrityMuJoCoSimulator):
             num_steps.append(step)
             key_frame_ids.append(global_steps)
 
-        return data[:-1], extra_data
+        return processed_data[:-1], extra_data
 
     def get_heading_angle(self):
         end_pts = self.get_endpts()
@@ -583,7 +670,7 @@ class ThreeBarTensegrityMuJoCoSimulator(TensegrityMuJoCoSimulator):
 
         return angle
 
-    def align_prin(self, new_prin, new_com):
+    def align_prin(self, new_prin, new_com, delta_z=0):
         import torch
         from gnn_simulator.utilities import torch_quaternion
 
@@ -620,7 +707,7 @@ class ThreeBarTensegrityMuJoCoSimulator(TensegrityMuJoCoSimulator):
 
         new_pos = torch_quaternion.rotate_vec_quat(rot_quat, pos - curr_com)
         new_pos[:, :2] += new_com
-        new_pos[:, 2] += curr_com[:, 2]
+        new_pos[:, 2] += curr_com[:, 2] + delta_z
         new_quat = torch_quaternion.quat_prod(rot_quat, quat)
 
         self.mjc_data.qpos = torch.hstack([new_pos, new_quat]).flatten().numpy()
@@ -677,7 +764,106 @@ class SixBarTensegrityMuJoCoSimulator(TensegrityMuJoCoSimulator):
         }
 
 
-def gen_3bar_data(output_dir: Path, xml: Path):
+def gen_3bar_data_random_prims(output_dir: Path, xml: Path, num_trajs: int, traj_len: int):
+    output_dir.parent.mkdir(exist_ok=True)
+    output_dir.mkdir(exist_ok=True)
+
+    shutil.copy(xml, output_dir / xml.name)
+    dummy_sim = ThreeBarTensegrityMuJoCoSimulator(xml, attach_type='real_attach')
+
+    metadata = {
+        'motor_max_omega': [c.max_omega.item() for c in dummy_sim.cable_motors],
+        'motor_pct_max_omega': [c.speed.item() for c in dummy_sim.cable_motors]
+    }
+    with (output_dir / 'metadata.json').open('w') as fp:
+        json.dump(metadata, fp)
+    del dummy_sim
+
+    prim_gaits = ['cw', 'roll', 'roll', 'roll', 'roll', 'ccw']
+
+    for j in range(num_trajs):
+        traj_prims = [np.random.choice(prim_gaits) for _ in range(traj_len)]
+
+        sim = ThreeBarTensegrityMuJoCoSimulator(xml, attach_type='real_attach')
+        out = Path(output_dir, f"traj_{j}")
+        out.mkdir(exist_ok=True)
+        print(out.name)
+
+        for _ in range(j):
+            sim.flip_to_next_support_tri()
+
+        # if j in [0, 1, 4]:
+        #     x, z = 8.0, 2.0
+        # else:
+        #     x, z = 0.0, 1.0
+        angle = np.pi / 2 + np.random.normal(0, 2 * np.pi / 180)
+        x, y, z = 0, 0, 0
+        print(x, y, angle)
+
+        sim.align_prin(
+            np.array([0, 1, 0.]).reshape(1, 3, 1),
+            np.array([x, y]).reshape(1, 2, 1),  # com x, com y
+            z
+        )
+
+        # qpos = sim.mjc_data.qpos.copy().reshape(-1, 7, 1)
+        # pos = torch.from_numpy(qpos[:, :3])
+        # quat = torch.from_numpy(qpos[:, 3:])
+        # angle = torch.tensor(10 * torch.pi / 360)
+        # rot_q = torch.tensor(
+        #     [torch.cos(angle), 0, torch.sin(angle), 0], dtype=torch.float64
+        # ).reshape(-1, 4, 1)
+        #
+        # new_pos = torch_quaternion.rotate_vec_quat(rot_q, pos)
+        # new_pos[:, 2] += 1.7633 / 2 + 0.1
+        # new_quat = torch_quaternion.quat_prod(rot_q, quat)
+        # new_qpos = torch.hstack((new_pos, new_quat)).flatten().numpy()
+        #
+        # sim.mjc_data.qpos = new_qpos
+
+        sim.run_w_target_gaits([[1., 1., 1., 1., 1., 1.]])
+        for _ in range(1000):
+            sim.sim_step(controls=np.zeros((1, 6)))
+        sim.mjc_data.qvel = np.zeros_like(sim.mjc_data.qvel)
+
+        all_data, all_extra = [], []
+        for prim in traj_prims:
+            data, extra_data = sim.run_primitive(prim)
+            all_data.extend(data)
+            all_extra.extend(extra_data)
+
+        with Path(out, "processed_data.json").open("w") as fp:
+            json.dump(all_data, fp)
+
+        with Path(out, "extra_state_data.json").open("w") as fp:
+            json.dump(all_extra, fp)
+
+        poses = []
+        frames = []
+        for n, d in enumerate(all_data):
+            pos = np.array(d['pos'], dtype=np.float64).reshape(-1, 3)
+            quat = np.array(d['quat'], dtype=np.float64).reshape(-1, 4)
+            pose = np.hstack([pos, quat]).flatten()
+            sim.mjc_data.qpos = pose
+            sim.forward()
+
+            poses.append({
+                'time': d['time'],
+                'pose': pose.tolist()
+            })
+
+            if n % 4 == 0:
+                frame = sim.render_frame()
+                frames.append(frame)
+
+        with Path(out, "poses.json").open("w") as fp:
+            json.dump(poses, fp)
+
+        sim.save_video(Path(out, 'gt_vid.mp4'), frames)
+        del sim
+
+
+def gen_3bar_data_same_prim(output_dir: Path, xml: Path):
     output_dir.parent.mkdir(exist_ok=True)
     output_dir.mkdir(exist_ok=True)
 
@@ -718,29 +904,19 @@ def gen_3bar_data(output_dir: Path, xml: Path):
             range_ = 1.0
             tol = 0.1
 
-        # 20-30 trajectories, of length 15 sampled primitives
-        # for
-
-        traj1 = ['ccw', 'cw', 'cw', 'roll']
-        traj2 = ['roll', 'ccw', 'ccw', 'ccw']
-        traj20 = [...]
-
         for j in range(20):
             sim = ThreeBarTensegrityMuJoCoSimulator(xml, attach_type='real_attach')
             out = Path(output_dir, f"{prim_type}_{j}")
             out.mkdir(exist_ok=True)
             print(out.name)
 
-            # print(sim.get_endpts())
-
             for _ in range(j):
                 sim.flip_to_next_support_tri()
-            # print(sim.get_endpts())
 
-            # for pid in sim.pids:
-            #     pid.min_length = min_length
-            #     pid.RANGE = range_
-            #     pid.tol = tol
+            for pid in sim.pids:
+                pid.min_length = min_length
+                pid.RANGE = range_
+                pid.tol = tol
 
             sim.run_w_target_gaits([[1., 1., 1., 1., 1., 1.]])
 
@@ -750,8 +926,7 @@ def gen_3bar_data(output_dir: Path, xml: Path):
             # sim.align_prin(np.array([1.0, 0., 0.]).reshape(1, 3, 1), np.array([0., 0., 0.]).reshape(1, 3, 1))
             sim.mjc_data.qvel = np.zeros_like(sim.mjc_data.qvel)
 
-            # all_gaits = 10 * prim_gaits[prim_type]
-            all_gaits = [gait for _ in range(traj_length) for gait in prim_gaits[sample(prim_gaits.keys())]]
+            all_gaits = 10 * prim_gaits[prim_type]
             all_data, all_extra_data = sim.run_w_target_gaits(all_gaits)
 
             with Path(out, "processed_data.json").open("w") as fp:
@@ -1275,7 +1450,7 @@ def random_ctrls(sim,
     del vis
 
 
-def rerun(base_base_path, xml_path, save_new_data=False):
+def rerun(base_base_path, xml_path, save_new_data=False, new_output_path=None, visualize=False):
     for base_path in base_base_path.iterdir():
         if ('roll' not in base_path.name
                 and 'ccw' not in base_path.name
@@ -1283,16 +1458,22 @@ def rerun(base_base_path, xml_path, save_new_data=False):
                 and 'pdrop' not in base_path.name
                 and 'pthrow' not in base_path.name
                 and 'random' not in base_path.name
-                and 'mppi' not in base_path.name):
+                and 'mppi' not in base_path.name
+                and 'traj' not in base_path.name):
             continue
         print()
         print(base_path.name)
 
         gt_data = json.load(Path(base_path, f"processed_data.json").open('r'))
         gt_extra_data = json.load(Path(base_path, f"extra_state_data.json").open('r'))
+
+        # gt_data = full_gt_data[i * n : (i + 1) * n]
+        # gt_extra_data = full_gt_extra_data[i * n : (i + 1) * n]
+
+        print("Num steps", len(gt_data))
         # xml = Path("xml_models/6bar_new_platform.xml")
         # env_copy = SixBarTensegrityMuJoCoSimulator(xml_path, "six_bar_surface", False)
-        env_copy = ThreeBarTensegrityMuJoCoSimulator(xml_path, attach_type='real_attach')
+        env_copy = ThreeBarTensegrityMuJoCoSimulator(xml_path, attach_type='real_attach', visualize=False)
         controls = [d['controls'] for d in gt_extra_data[:-1]]
 
         init_pos_arr = np.array(gt_data[0]['pos'], dtype=np.float64).reshape(-1, 3)
@@ -1300,17 +1481,12 @@ def rerun(base_base_path, xml_path, save_new_data=False):
         init_linvel_arr = np.array(gt_data[0]['linvel'], dtype=np.float64).reshape(-1, 3)
         init_angvel_arr = np.array(gt_data[0]['angvel'], dtype=np.float64).reshape(-1, 3)
 
-        end_pts = [np.array(d['end_pts'], dtype=np.float64) for d in gt_data]
+        # init_linvel_arr = np.zeros_like(init_pos_arr)
+        # init_angvel_arr = np.zeros_like(init_pos_arr)
 
         env_copy.mjc_data.qpos = np.hstack([init_pos_arr, init_quat_arr]).flatten()
         env_copy.mjc_data.qvel = np.hstack([init_linvel_arr, init_angvel_arr]).flatten()
 
-        # init_rest = gt_extra_data[w]['rest_lengths']
-        # init_mspeeds = gt_extra_data[w]['motor_speeds']
-
-        # for j, cable in enumerate(env_copy.cable_motors):
-        #     cable.motor_state.omega_t[:] = deepcopy(gt_extra_data[0]['motor_speeds'][j])
-        #
         env_copy.mjc_model.tendon_lengthspring[:env_copy.n_actuators, 0] = deepcopy(gt_extra_data[0]['rest_lengths'])
         env_copy.mjc_model.tendon_lengthspring[:env_copy.n_actuators, 1] = deepcopy(gt_extra_data[0]['rest_lengths'])
 
@@ -1322,8 +1498,8 @@ def rerun(base_base_path, xml_path, save_new_data=False):
             "end_pts": env_copy.get_endpts().tolist(),
             "sites": {s: env_copy.mjc_data.sensor(f"pos_{s}").data.flatten().tolist()
                       for sp in env_copy.cable_sites for s in sp},
-            "pos": gt_data[0]['pos'],
-            "quat": gt_data[0]['quat'],
+            "pos": init_pos_arr.flatten().tolist(),
+            "quat": init_quat_arr.flatten().tolist(),
             "linvel": gt_data[0]['linvel'],
             "angvel": gt_data[0]['angvel']
         }]
@@ -1358,20 +1534,21 @@ def rerun(base_base_path, xml_path, save_new_data=False):
             processed_data.append(p_data)
             extra_data.append(e_data)
 
-        endpts_error = max([max([max([abs(a - b) for a, b in zip(p0['end_pts'][k], p1['end_pts'][k])]) for k in range(6)])
-                   for p0, p1 in zip(gt_data, processed_data)])
+        endpts_error = max(
+            [max([max([abs(a - b) for a, b in zip(p0['end_pts'][k], p1['end_pts'][k])]) for k in range(6)])
+             for p0, p1 in zip(gt_data, processed_data)])
         pos_error = max([max([abs(a - b) for a, b in zip(p0['pos'], p1['pos'])]) for p0, p1 in
-                          zip(gt_data, processed_data)])
+                         zip(gt_data, processed_data)])
         quat_error = max([max([abs(a - b) for a, b in zip(p0['quat'], p1['quat'])]) for p0, p1 in
-                           zip(gt_data, processed_data)])
+                          zip(gt_data, processed_data)])
         linvel_error = max([max([abs(a - b) for a, b in zip(p0['linvel'], p1['linvel'])]) for p0, p1 in
-                             zip(gt_data, processed_data)])
+                            zip(gt_data, processed_data)])
         angvel_error = max([max([abs(a - b) for a, b in zip(p0['angvel'], p1['angvel'])]) for p0, p1 in
-                             zip(gt_data, processed_data)])
+                            zip(gt_data, processed_data)])
         rest_lens_error = max([max([abs(a - b) for a, b in zip(p0['rest_lengths'], p1['rest_lengths'])]) for p0, p1 in
-                   zip(gt_extra_data, extra_data)])
-        ctrls_error = max([max([abs(a - b) for a, b in zip(p0['controls'], p1['controls'])]) for p0, p1 in
                                zip(gt_extra_data, extra_data)])
+        ctrls_error = max([max([abs(a - b) for a, b in zip(p0['controls'], p1['controls'])]) for p0, p1 in
+                           zip(gt_extra_data, extra_data)])
 
         max_error = max([endpts_error, pos_error, quat_error, linvel_error, angvel_error, rest_lens_error, ctrls_error])
 
@@ -1384,11 +1561,36 @@ def rerun(base_base_path, xml_path, save_new_data=False):
         print('controls', ctrls_error)
 
         if save_new_data:
-            with (base_path / f'processed_data.json').open('w') as fp:
+            if new_output_path is None:
+                new_output_path = base_base_path
+            new_output_path.mkdir(parents=True, exist_ok=True)
+            new_base_path = Path(new_output_path, base_path.name)
+            new_base_path.mkdir(parents=True, exist_ok=True)
+            with Path(new_base_path, 'processed_data.json').open('w') as fp:
                 json.dump(processed_data, fp)
 
-            with (base_path / f'extra_state_data.json').open('w') as fp:
+            with Path(new_base_path, f'extra_state_data.json').open('w') as fp:
                 json.dump(extra_data, fp)
+
+            if visualize:
+                pose = [
+                    {
+                        'time': d['time'],
+                        'pose': np.hstack([
+                            np.array(d['pos']).reshape(-1, 3),
+                            np.array(d['quat']).reshape(-1, 4)
+                        ]).flatten().tolist()
+                    } for d in processed_data
+                ]
+
+                with Path(new_base_path, f'poses.json').open('w') as fp:
+                    json.dump(pose, fp)
+
+                visualizer = MuJoCoVisualizer()
+                visualizer.set_xml_path(xml_path)
+                visualizer.set_camera('camera')
+                visualizer.data = pose
+                visualizer.visualize(Path(new_base_path, 'gt_vid.mp4'), 0.01)
 
     # frames = []
     # for i in range(poses.shape[0]):

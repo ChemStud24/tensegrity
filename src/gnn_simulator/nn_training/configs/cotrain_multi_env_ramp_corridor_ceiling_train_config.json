@@ -1,0 +1,118 @@
+{
+  "sim_configs": [
+    "gnn_simulator/simulators/configs/new_3_bar_15_cables_5d_gnn_sim_5deg_ramp_config.json",
+    "gnn_simulator/simulators/configs/new_3_bar_15_cables_5d_gnn_sim_tight_corridor_config.json",
+    "gnn_simulator/simulators/configs/new_3_bar_15_cables_5d_gnn_sim_ceiling_config.json"
+  ],
+  "num_steps_fwd": 1,
+  "num_hist": 1,
+  "num_ctrls_hist": 20,
+  "batch_size": 128,
+  "save_rollout_poses": true,
+  "trainable_params": [
+  ],
+  "optimizer_params": {
+    "lr": 1e-5,
+    "weight_decay": 0.01
+  },
+  "data_root": "../data_sets/tensegrity_real_datasets/",
+  "train_data_groups": [
+    {
+      "env_names": ["flat_0", "flat_1", "slope_10_degs"],
+      "data_paths": [
+        "3bar_new_platform_5degs_slope/dataset_8/lower_traj_0/",
+        "3bar_new_platform_5degs_slope/dataset_8/lower_traj_1/",
+        "3bar_new_platform_5degs_slope/dataset_8/lower_traj_2/",
+        "3bar_new_platform_5degs_slope/dataset_8/lower_traj_3/",
+        "3bar_new_platform_5degs_slope/dataset_8/middle_traj_0/",
+        "3bar_new_platform_5degs_slope/dataset_8/middle_traj_1/",
+        "3bar_new_platform_5degs_slope/dataset_8/middle_traj_2/",
+        "3bar_new_platform_5degs_slope/dataset_8/middle_traj_3/",
+        "3bar_new_platform_5degs_slope/dataset_8/upper_traj_0/",
+        "3bar_new_platform_5degs_slope/dataset_8/upper_traj_1/",
+        "3bar_new_platform_5degs_slope/dataset_8/upper_traj_2/",
+        "3bar_new_platform_5degs_slope/dataset_8/upper_traj_3/",
+        "new_platform_models/multi_env_v0_iter0/mppi_turn_prims_v0_ds_8/ramp_0",
+        "new_platform_models/multi_env_v0_iter0/mppi_turn_prims_v0_ds_8/ramp_1",
+        "new_platform_models/multi_env_v0_iter1/mppi_turn_prims_v0_ds_8/ramp_0",
+        "new_platform_models/multi_env_v0_iter1/mppi_turn_prims_v0_ds_8/ramp_1"
+      ]
+    },
+    {
+      "env_names": ["ground", "left_wall", "right_wall", "top_wall", "bottom_wall"],
+      "data_paths": [
+        "3bar_new_platform_tight_corridor/dataset_8/traj_0/",
+        "3bar_new_platform_tight_corridor/dataset_8/traj_1/",
+        "3bar_new_platform_tight_corridor/dataset_8/traj_3/",
+        "3bar_new_platform_tight_corridor/dataset_8/traj_7/",
+        "3bar_new_platform_tight_corridor/dataset_8/traj_10/",
+        "3bar_new_platform_tight_corridor/dataset_8/traj_12/",
+        "3bar_new_platform_tight_corridor/dataset_8/traj_15/",
+        "3bar_new_platform_tight_corridor/dataset_8/traj_18/",
+        "3bar_new_platform_tight_corridor/dataset_8/traj_21/",
+        "3bar_new_platform_tight_corridor/dataset_8/traj_22/",
+        "3bar_new_platform_tight_corridor/dataset_8/traj_24/",
+        "3bar_new_platform_tight_corridor/dataset_8/traj_25/",
+        "new_platform_models/multi_env_v0_iter0/mppi_turn_prims_v0_ds_8/tight_corridor_0",
+        "new_platform_models/multi_env_v0_iter0/mppi_turn_prims_v0_ds_8/tight_corridor_1",
+        "new_platform_models/multi_env_v0_iter1/mppi_turn_prims_v0_ds_8/tight_corridor_0",
+        "new_platform_models/multi_env_v0_iter1/mppi_turn_prims_v0_ds_8/tight_corridor_1"
+      ]
+    },
+    {
+      "env_names": ["floor", "ceiling"],
+      "data_paths": [
+        "3bar_new_platform_ceiling/dataset_8/traj_0/",
+        "3bar_new_platform_ceiling/dataset_8/traj_1/",
+        "3bar_new_platform_ceiling/dataset_8/traj_3/",
+        "3bar_new_platform_ceiling/dataset_8/traj_4/",
+        "3bar_new_platform_ceiling/dataset_8/traj_5/",
+        "new_platform_models/multi_env_v0_iter0/mppi_turn_prims_v0_ds_8/ceiling_0",
+        "new_platform_models/multi_env_v0_iter0/mppi_turn_prims_v0_ds_8/ceiling_2",
+        "new_platform_models/multi_env_v0_iter1/mppi_turn_prims_v0_ds_8/ceiling_0",
+        "new_platform_models/multi_env_v0_iter1/mppi_turn_prims_v0_ds_8/ceiling_1"
+      ]
+    }
+  ],
+  "val_data_groups": [
+    {
+      "env_names": ["flat_0", "flat_1", "slope_10_degs"],
+      "data_paths": [
+        "3bar_new_platform_5degs_slope/dataset_8/lower_traj_6/",
+        "3bar_new_platform_5degs_slope/dataset_8/lower_traj_7/",
+        "3bar_new_platform_5degs_slope/dataset_8/middle_traj_6/",
+        "3bar_new_platform_5degs_slope/dataset_8/middle_traj_7/",
+        "3bar_new_platform_5degs_slope/dataset_8/upper_traj_6/",
+        "3bar_new_platform_5degs_slope/dataset_8/upper_traj_7/",
+        "new_platform_models/multi_env_v0_iter0/mppi_turn_prims_v0_ds_8/ramp_2",
+        "new_platform_models/multi_env_v0_iter1/mppi_turn_prims_v0_ds_8/ramp_2"
+      ]
+    },
+    {
+      "env_names": ["ground", "left_wall", "right_wall", "top_wall", "bottom_wall"],
+      "data_paths": [
+        "3bar_new_platform_tight_corridor/dataset_8/traj_2/",
+        "3bar_new_platform_tight_corridor/dataset_8/traj_5/",
+        "3bar_new_platform_tight_corridor/dataset_8/traj_11/",
+        "3bar_new_platform_tight_corridor/dataset_8/traj_14/",
+        "3bar_new_platform_tight_corridor/dataset_8/traj_20/",
+        "3bar_new_platform_tight_corridor/dataset_8/traj_26/",
+        "new_platform_models/multi_env_v0_iter0/mppi_turn_prims_v0_ds_8/tight_corridor_2",
+        "new_platform_models/multi_env_v0_iter1/mppi_turn_prims_v0_ds_8/tight_corridor_2"
+      ]
+    },
+    {
+      "env_names": ["floor", "ceiling"],
+      "data_paths": [
+        "3bar_new_platform_ceiling/dataset_8/traj_6/",
+        "3bar_new_platform_ceiling/dataset_8/traj_7/",
+        "3bar_new_platform_ceiling/dataset_8/traj_8/",
+        "new_platform_models/multi_env_v0_iter0/mppi_turn_prims_v0_ds_8/ceiling_1",
+        "new_platform_models/multi_env_v0_iter1/mppi_turn_prims_v0_ds_8/ceiling_2"
+      ]
+    }
+  ],
+  "load_sim": false,
+  "load_sim_path": "../../tensegrity/data_sets/tensegrity_real_datasets/new_platform_models/multi_env_v0_iter2/best_rollout_model.pt",
+  "output_path": "../../tensegrity/data_sets/tensegrity_real_datasets/new_platform_models/multi_env_v0_iter2/"
+}

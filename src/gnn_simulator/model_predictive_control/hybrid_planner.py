@@ -19,8 +19,12 @@ class HybridAStarMPPIPlanner(torch.nn.Module):
                  mppi_params,
                  logger,
                  mppi_idle_time=1e10,
-                 mppi_idle_dist=2.):
+                 mppi_idle_dist=2.,
+                 planner_type='mppi_turn_prims'):
         super().__init__()
+
+        assert planner_type in ['mppi_only', 'astar_only', 'mppi_astar', 'mppi_turn_prims']
+        self.planner_type = planner_type
 
         self.mppi_idle_time = mppi_idle_time
         self.mppi_idle_dist = mppi_idle_dist
@@ -84,11 +88,28 @@ class HybridAStarMPPIPlanner(torch.nn.Module):
     def plan(self, prev_n_pose_time_tups, rest_lens, motor_speeds):
         curr_pose, curr_timestamp = prev_n_pose_time_tups[-1]
         com = curr_pose.reshape(-1, 7)[:, :2].mean(axis=0, keepdims=True)
-
-        curr_dir = -self.mppi_controller.get_curr_dir(curr_pose)
+        curr_dir = self.mppi_controller.get_curr_dir(curr_pose)
+        rev_dir = -self.mppi_controller.get_curr_dir(curr_pose)
         goal_dir = self.mppi_controller.get_goal_dir(curr_pose)
-        angle = self.mppi_controller.rel_2d_angle(goal_dir, curr_dir).cpu().item()
-        print(com.flatten(), curr_dir.flatten().cpu().numpy(), goal_dir.flatten().cpu().numpy(), angle)
+        curr_angle = self.mppi_controller.rel_2d_angle(curr_dir, goal_dir).cpu().item()
+        rev_angle = self.mppi_controller.rel_2d_angle(rev_dir, goal_dir).cpu().item()
+        heading = self.mppi_controller.rel_2d_angle(curr_dir.cpu().clone(), torch.tensor([[0.0, 1.0]])).cpu().item()
+        print("COM:", com.flatten(), "Angle:", np.rad2deg(curr_angle), "Reverse Angle:", np.rad2deg(rev_angle),
+              "Heading:", np.rad2deg(heading))
+        print("Curr Dir:", curr_dir.flatten().cpu().numpy(), "Goal Dir:", goal_dir.flatten().cpu().numpy())
+
+        if self.planner_type == 'mppi_only':
+            return self._plan_mppi_only(prev_n_pose_time_tups, rest_lens, motor_speeds)
+        elif self.planner_type == 'astar_only':
+            return self._plan_astar_only(prev_n_pose_time_tups, rest_lens, motor_speeds)
+        elif self.planner_type == 'mppi_astar':
+            return self._plan_mppi_astar(prev_n_pose_time_tups, rest_lens, motor_speeds, com)
+        else:
+            return self._plan_mppi_turn_prims(
+                prev_n_pose_time_tups, rest_lens, motor_speeds, com, curr_angle, rev_angle)
+
+    def _plan_mppi_astar(self, prev_n_pose_time_tups, rest_lens, motor_speeds, com):
+        curr_pose, curr_timestamp = prev_n_pose_time_tups[-1]
 
         if self.prev_mode == 'astar':
             self.idle_timestamp = curr_timestamp
@@ -105,7 +126,6 @@ class HybridAStarMPPIPlanner(torch.nn.Module):
             self.idle_timestamp = curr_timestamp
             self.idle_com = com
 
-        d_goal = np.linalg.norm(np.array(self.astar_planner.goal[:2]).reshape(1, 2) - com).item()
         if (d >= self.mppi_idle_dist or idle_time <= self.mppi_idle_time) and self.prev_primitive[0] != 'ccw':
             actions, states, batch_states = self.mppi_controller.plan(
                 prev_n_pose_time_tups, rest_lens, motor_speeds)
@@ -127,24 +147,8 @@ class HybridAStarMPPIPlanner(torch.nn.Module):
 
             return 'astar', gait, path
 
-    def plan1(self, prev_n_pose_time_tups, rest_lens, motor_speeds):
-        curr_pose, curr_timestamp = prev_n_pose_time_tups[-1]
-        com = curr_pose.reshape(-1, 7)[:, :2].mean(axis=0, keepdims=True)
-        curr_dir = self.mppi_controller.get_curr_dir(curr_pose)
-        rev_dir = -self.mppi_controller.get_curr_dir(curr_pose)
-        goal_dir = self.mppi_controller.get_goal_dir(curr_pose)
-        curr_angle = self.mppi_controller.rel_2d_angle(curr_dir, goal_dir).cpu().item()
-        rev_angle = self.mppi_controller.rel_2d_angle(rev_dir, goal_dir).cpu().item()
-        heading = self.mppi_controller.rel_2d_angle(curr_dir.cpu().clone(), torch.tensor([[0.0, 1.0]])).cpu().item()
-        print("COM:", com.flatten(), "Angle:", np.rad2deg(curr_angle), "Reverse Angle:", np.rad2deg(rev_angle), "Heading:", np.rad2deg(heading))
-        print("Curr Dir:", curr_dir.flatten().cpu().numpy(), "Goal Dir:", goal_dir.flatten().cpu().numpy())
-
-        # if True:
+    def _plan_mppi_turn_prims(self, prev_n_pose_time_tups, rest_lens, motor_speeds, com, curr_angle, rev_angle):
         goal = np.array(self.astar_planner.goal[:2]).reshape(1, 2)
-        # if (-np.pi / 2 <= angle <= np.pi / 6
-        #         or 5 * np.pi / 6 <= angle <= np.pi
-        #         or -np.pi <= angle <= -5 * np.pi / 6
-        #         or np.linalg.norm(goal - com) < 1.0):
         mppi_bandwidth = np.pi / 2
         if (np.linalg.norm(goal - com) < 1.0 
             or -mppi_bandwidth / 2 <= curr_angle <= mppi_bandwidth / 2 
@@ -166,3 +170,19 @@ class HybridAStarMPPIPlanner(torch.nn.Module):
             print('ccw')
             return 'astar', gait, path
 
+    def _plan_mppi_only(self, prev_n_pose_time_tups, rest_lens, motor_speeds):
+        actions, states, batch_states = self.mppi_controller.plan(
+            prev_n_pose_time_tups, rest_lens, motor_speeds)
+        actions = actions.cpu().clone().numpy()
+        self.prev_mode = 'mppi'
+
+        return 'mppi', actions, (states, batch_states)
+
+    def _plan_astar_only(self, prev_n_pose_time_tups, rest_lens, motor_speeds):
+        gait, path = self.astar_planner.plan(
+            prev_n_pose_time_tups, rest_lens, motor_speeds)
+        self.prev_primitive = gait
+
+        self.logger.info(f'Run primitive {gait}.')
+
+        return 'astar', gait, path

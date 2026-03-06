@@ -87,7 +87,7 @@ class TensegrityGNNTrainingEngine(torch.nn.Module):
         self.simulator = self.get_dummy_simulator()
         self.num_steps_fwd = self.config.get('num_steps_fwd', 1)
         self.num_hist = self.config.get('num_hist', 1)
-        self.save_rollout_vids = self.config.get('save_rollout_vids', False)
+        self.save_rollout_poses = self.config.get('save_rollout_poses', False)
         self.use_gt_act_lens = self.config.get('use_gt_act_lens', False)
 
         self.batch_size_per_update = self.config.get('batch_size_per_update', 128)
@@ -99,9 +99,13 @@ class TensegrityGNNTrainingEngine(torch.nn.Module):
 
         self.load_sim = self.config.get('load_sim', False)
         self.load_sim_path = self.config.get('load_sim_path', None)
+        self.save_eval_rollouts = self.config.get('save_eval_rollouts', True)
 
         self.output_dir = self.config['output_path']
         Path(self.output_dir).mkdir(exist_ok=True)
+
+        if self.save_eval_rollouts:
+            Path(self.output_dir, 'eval_rollouts').mkdir(exist_ok=True)
 
         self.logger = logger
 
@@ -1895,6 +1899,18 @@ class TensegrityMultiSimGNNTrainingEngine(TensegrityGNNTrainingEngine):
             total_com_loss += com_loss
             total_angle_loss += angle_loss
 
+            if self.save_eval_rollouts:
+                fname = f'{data_dict["names"][i]}_{self.num_steps_fwd}_{self.epoch_num}_rollout.json'
+                pose_dict = [
+                    {
+                        'time': k * self.dt,
+                        'pose': s.reshape(-1, 13, 1)[:, :7].flatten().numpy().tolist()
+                    }
+                    for k, s in enumerate(all_states)
+                ]
+                with open(Path(self.output_dir, 'eval_rollouts', fname), 'w') as f:
+                    json.dump(pose_dict, f)
+
             self.logger.info(f'{loss}, {com_loss}, {angle_loss}')
 
         total_loss /= len(states) if len(states) > 0 else 1
@@ -2007,8 +2023,7 @@ class TensegrityMultiSimMultiStepGNNTrainingEngine(TensegrityMultiSimGNNTraining
                 gt_pos, gt_quat = self.endpts2pos(end_pts[:, :3], end_pts[:, 3:])
                 # gt_pose = torch.hstack([gt_pos, gt_quat])
                 gt_nodes_pos = self.simulator.data_processor.pose2node(
-                    gt_pos, gt_quat, gt_end_pts.shape[0],
-                    augment_grnd=False
+                    gt_pos, gt_quat, gt_end_pts.shape[0]
                 )
                 gt_node_vel = (gt_nodes_pos - prev_gt_pos) / dt
                 gt_node_dv = gt_node_vel - prev_gt_vel

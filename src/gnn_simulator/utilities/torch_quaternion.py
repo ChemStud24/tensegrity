@@ -5,101 +5,6 @@ import torch
 from gnn_simulator.utilities.tensor_utils import zeros
 
 
-@DeprecationWarning
-class TorchQuaternion:
-
-    def __init__(self, w, x, y, z, dtype=torch.float):
-        self.tensor = torch.tensor([w, x, y, z], dtype=dtype)
-
-    @classmethod
-    def init_from_vec(cls, w, vec, dtype=torch.float64):
-        return cls(w, vec[0], vec[1], vec[2], dtype)
-
-    @classmethod
-    def as_quat(cls, v, dtype=torch.float64):
-        if isinstance(v, TorchQuaternion):
-            return v
-        elif isinstance(v, float) or isinstance(v, int):
-            return cls(v, 0, 0, 0, dtype)
-        else:
-            return cls.init_from_vec(0, v, dtype)
-
-    def norm(self):
-        return self.tensor.norm()
-
-    def as_mat(self):
-        w, x, y, z = self.tensor
-        mat = torch.tensor([[w, -x, -y, -z],
-                            [x, w, -z, y],
-                            [y, z, w, -x],
-                            [z, -y, x, w]], dtype=self.tensor.dtype)
-        return mat
-
-    def as_rotation_mat(self):
-        w, x, y, z = self.tensor / self.tensor.norm()
-
-        # First row of the rotation matrix
-        r00 = 2 * (w * w + x * x) - 1
-        r01 = 2 * (x * y - w * z)
-        r02 = 2 * (x * z + w * y)
-
-        # Second row of the rotation matrix
-        r10 = 2 * (x * y + w * z)
-        r11 = 2 * (w * w + y * y) - 1
-        r12 = 2 * (y * z - w * x)
-
-        # Third row of the rotation matrix
-        r20 = 2 * (x * z - w * y)
-        r21 = 2 * (y * z + w * x)
-        r22 = 2 * (w * w + z * z) - 1
-
-        # 3x3 rotation matrix
-        rot_matrix = torch.tensor([[r00, r01, r02],
-                                   [r10, r11, r12],
-                                   [r20, r21, r22]],
-                                  dtype=self.tensor.dtype)
-
-        return rot_matrix
-
-    def copy(self):
-        return copy.deepcopy(self)
-
-    def __add__(self, other):
-        new_tensor = self.tensor + other.tensor
-        return TorchQuaternion.init_from_vec(new_tensor[0], new_tensor[1:], self.tensor.dtype)
-
-    def __mul__(self, other):
-        if isinstance(other, int) or isinstance(other, float) or \
-                (isinstance(other, torch.Tensor) and other.squeeze().shape[0] == 1):
-            new_tensor = self.tensor * other
-        else:
-            mat = self.as_mat()
-            new_tensor = torch.matmul(mat, other.tensor.unsqueeze(1)).squeeze()
-
-        return TorchQuaternion.init_from_vec(new_tensor[0], new_tensor[1:], self.tensor.dtype)
-
-    def __truediv__(self, other):
-        new_tensor = self.tensor / other
-        return TorchQuaternion.init_from_vec(new_tensor[0], new_tensor[1:], self.tensor.dtype)
-
-
-def torch_quat_exp(q: TorchQuaternion):
-    if q.norm() == 0:
-        return TorchQuaternion(1, 0, 0, 0, q.tensor.dtype)
-
-    w = q.tensor[0]
-    v = q.tensor[1:]
-
-    v_norm = torch.linalg.norm(v)
-
-    new_w = torch.exp(w) * torch.cos(v_norm)
-    new_v = torch.exp(w) * torch.sin(v_norm) * v / v_norm
-
-    exp_q = TorchQuaternion.init_from_vec(new_w, new_v, q.tensor.dtype)
-
-    return exp_q
-
-
 def quat_add(q1: torch.Tensor, q2: torch.Tensor) -> torch.Tensor:
     return q1 + q2
 
@@ -163,8 +68,7 @@ def quat_pow(q: torch.Tensor, pow) -> torch.Tensor:
 
 
 def inverse_unit_quat(q):
-    inv_q = q.clone()
-    inv_q[:, 1:, :] *= -1
+    inv_q = torch.hstack([q[:, :1], -q[:, 1:]])
 
     return inv_q
 
@@ -295,6 +199,11 @@ def rotate_vec_quat(q, vec):
 
     rot_vec = quat_prod(quat_prod(q, vec_q), q_conj)
     return rot_vec[:, 1:, :]
+
+
+def inv_rot_vec_quat(q, vec):
+    inv_q = inverse_unit_quat(q)
+    return rotate_vec_quat(inv_q, vec)
 
 
 def quat_as_rot_mat(quat):

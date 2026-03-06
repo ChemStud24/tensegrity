@@ -1,5 +1,7 @@
+import json
 from logging import Logger
 from pathlib import Path
+from termios import N_SLIP
 import numpy as np
 
 import torch.nn
@@ -22,7 +24,6 @@ class TensegrityMPPIPlanner(torch.nn.Module):
                  u_bounds: tuple = (-1., 1.),
                  gamma: float = 1.0,
                  rest_len_bounds: tuple = (0.3, 2.0),
-                 cable_len_bounds: tuple = (1.0, 2.2),
                  goal: tuple | None = None,
                  obstacles: tuple = (),
                  boundary: tuple = (),
@@ -32,7 +33,10 @@ class TensegrityMPPIPlanner(torch.nn.Module):
                  grid_step=0.1,
                  tol: float = 0.5,
                  min_vel_dt=0.04,
-                 use_motion_prim_heuristic: bool = False):
+                 use_motion_prim_heuristic: bool = False,
+                 torch_compile=False,
+                 sim_config=None,
+                 ceiling=False):
         super().__init__()
         self.logger = logger
 
@@ -43,6 +47,19 @@ class TensegrityMPPIPlanner(torch.nn.Module):
             self.sim = sim
         self.sim.reset()
 
+        if sim_config:
+            print(sim_config)
+            if isinstance(sim_config, str) or isinstance(sim_config, Path):
+                sim_config = json.load(open(sim_config, 'r'))
+            self.sim.all_env_planar_objs = self.sim._build_env_objs(sim_config['environment'])
+            self.sim.curr_env_planar_objs = [obj for obj in self.sim.all_env_planar_objs]
+            # env_mapping = {e.name: e for e in self.sim.all_env_planar_objs}
+            # self.sim.curr_env_planar_objs = [env_mapping[k] for k in sim_config['environment'].keys()]
+            self.sim.to(device)
+
+        if torch_compile:
+            self.sim.run_compile()
+
         self.dt = self.sim.data_processor.dt.item()
 
         self.min_vel_dt = min_vel_dt
@@ -51,6 +68,8 @@ class TensegrityMPPIPlanner(torch.nn.Module):
         self.ctrl_interval = round(ctrl_interval / self.dt)
         self.dtype = self.sim.dtype
         self.device = device
+
+        self.has_ceiling = ceiling
 
         self.goal = None
         self.set_goals([np.array(goal)])
@@ -73,7 +92,6 @@ class TensegrityMPPIPlanner(torch.nn.Module):
 
         self.ctrl_min, self.ctrl_max = u_bounds
         self.rest_min, self.rest_max = rest_len_bounds
-        self.cable_len_min, self.cable_len_max = cable_len_bounds
         self.n_ctrls = len(self.sim.robot.actuated_cables)
         self.prev_ctrls = torch.zeros(
             (1, self.n_ctrls, self.horizon // self.ctrl_interval),
@@ -232,7 +250,16 @@ class TensegrityMPPIPlanner(torch.nn.Module):
 
         dist_cost[~in_grid] = (com[~in_grid, :2, 0] - self.goal[:, :2]).norm(dim=1)
 
-        obs_cost = torch.zeros_like(dist_cost)
+        if self.has_ceiling:
+            end_pts = self.compute_end_pts(curr_state).reshape(-1, 6, 3)
+            # under_ceiling_x = torch.logical_and(end_pts[..., 0] > 3.5, end_pts[..., 0] < 4.25) # floating ceiling
+            under_ceiling_x = torch.logical_and(end_pts[..., 0] > 16, end_pts[..., 0] < 20) # 3d obs course
+            under_ceiling_y = torch.logical_and(end_pts[..., 1] > 0.0, end_pts[..., 1] < 0.75)
+            under_ceiling = torch.logical_and(under_ceiling_x, under_ceiling_y)
+            z = (end_pts[..., 2] * under_ceiling)
+            obs_cost = (10 / (2.25 - z).clamp_min(1e-5)).sum(dim=1) - (6 * 10 / 2.25)
+        else:
+            obs_cost = torch.zeros_like(dist_cost)
 
         return dist_cost, obs_cost
 
@@ -463,13 +490,20 @@ class TensegrityMPPIPlanner(torch.nn.Module):
 
         curr_state = self.sim.get_curr_state()
 
+        com = curr_state.reshape(-1, 13)[:, :3].mean(dim=0)
+        under_ceiling_x = torch.logical_and(com[0] > 16,  com[0] < 20)
+        under_ceiling_y = torch.logical_and(com[1] > -0.5, com[1] < 1.5)
+        under_ceiling = torch.logical_and(under_ceiling_x, under_ceiling_y)
+
+        n_samples = 500 if under_ceiling.any() else self.n_samples
+
         mode = 'simple'
         if mode == 'simple':
-            mppi_func, nsamples = self.mppi_simple, self.n_samples
+            mppi_func, nsamples = self.mppi_simple, n_samples
         elif mode == 'perturb':
-            mppi_func, nsamples = self.mppi_perturb, self.n_samples
+            mppi_func, nsamples = self.mppi_perturb, n_samples
         elif mode == 'target_lengths':
-            mppi_func, nsamples = self.mppi_target_lengths, self.n_samples
+            mppi_func, nsamples = self.mppi_target_lengths, n_samples
 
         min_actions, min_act_states, batch_states = mppi_func(
             curr_state,
@@ -532,7 +566,7 @@ class TensegrityMPPIPlanner(torch.nn.Module):
         return lower.flatten(), upper.flatten()
 
     def mppi_simple(self, curr_state, curr_rest_lens, curr_motor_speeds, nsamples):
-        lower, upper = self.compute_ctrl_lims(curr_rest_lens, curr_motor_speeds, curr_state)
+        lower, upper = self.compute_ctrl_lims(curr_rest_lens, curr_motor_speeds)
         # lower = -ones(6, ref_tensor=curr_state)
         # upper = ones(6, ref_tensor=curr_state)
         #

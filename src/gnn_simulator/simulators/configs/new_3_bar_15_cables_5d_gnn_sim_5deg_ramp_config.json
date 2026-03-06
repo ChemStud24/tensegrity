@@ -10,6 +10,26 @@
   "nmessage_passing_steps": 4,
   "nmlp_layers": 2,
   "mlp_hidden_dim": 512,
+  "environment": {
+    "flat_0": {
+      "type": "StaticRectPlane",
+      "pos": [-30.0, 0.0, 0.0],
+      "rot_mat": [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+      "half_lens": [20.0, 20.0]
+    },
+    "flat_1": {
+      "type": "StaticRectPlane",
+      "pos": [30.0, 0.0, 1.7633],
+      "rot_mat": [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+      "half_lens": [20.0, 20.0]
+    },
+    "slope_10_degs": {
+      "type": "StaticRectPlane",
+      "pos": [0.0, 0.0, 0.88165],
+      "rot_mat": [[0.99619469, 0.0, -0.08715574], [0.0, 1.0, 0.0], [0.08715574, 0.0, 0.99619469]],
+      "half_lens": [10.0382, 20.0]
+    }
+  },
   "tensegrity_cfg": {
     "name": "3bar",
     "rods": [
@@ -107,7 +127,7 @@
           0,
           0
         ],
-	    "rod_split_length": 0.98,
+	"rod_split_length": 0.98,
         "rod_radius": 0.0159,
         "rod_mass": 6.5,
         "sphere_radius": 0.175,

@@ -25,7 +25,7 @@
 
     <default>
         <geom conaffinity="1" condim="6" contype="1" rgba="0.75 0.75 0.75 1" size="0.014" solref="-5000 -50"
-              density="1000" friction="2.0 0.0 0.0"/>
+              density="1000" friction="1.8 0.0 0.0"/>
         <site type="sphere" size="0.02"/>
         <tendon width="0.005" rgba="1 1 1 0.5" damping="1000" stiffness="100000" springlength="1.5"/>
         <general ctrlrange="-100 0" dyntype="filter" gainprm="15000 0 0" biastype="none" dynprm="1 0 0" biasprm="0 0 0"/>
@@ -62,8 +62,14 @@
         <camera name="camera" pos="0 -7 40.693" xyaxes="1.000 -0.018 0.000 0.017 0.965 0.262"/>
         <camera name="top" pos="0.392 -0.869 53.543" xyaxes="1.000 -0.000 0.000 0.000 1.000 0.017"/>
 
+        <geom name="floating_block"
+              pos="4 0 4"
+              size="0.25  20   2.5"
+              rgba="0.9 0.9 0.9 1"
+              type="box"/>
+
         <!-- ======= RODS ======= -->
-<!--        <site name="goal" pos="$GOAL" rgba="0 1 0 1" size="0.5"/>-->
+<!--        <site name="goal" pos="0 0 2" rgba="0 1 0 1" size="0.1"/>-->
         <body name="r01">
             <geom name="r01"
                   fromto="0.79654769  0.96650233  0.25381944 -0.88635809 -0.89566054  1.80387671"

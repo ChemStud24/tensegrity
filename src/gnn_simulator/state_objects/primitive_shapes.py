@@ -272,6 +272,12 @@ class RectPrism(RigidBody):
                          linear_vel.reshape(-1, 3, 1),
                          ang_vel.reshape(-1, 3, 1),
                          sites)
+
+    def to(self, device):
+        super(RectPrism, self).to(device)
+        self.half_lens = self.half_lens.to(device)
+
+        return self
     
     @staticmethod
     def rot_mat_to_quat(rot_mat):
@@ -362,7 +368,7 @@ class StaticPrism(RectPrism):
                  name: str,
                  center: torch.Tensor,
                  rot_mat: torch.Tensor,
-                 half_lens: Tuple[torch.Tensor],
+                 half_lens: Tuple[torch.Tensor, torch.Tensor, torch.Tensor],
                  dtype=DEFAULT_DTYPE):
         mass = torch.tensor(torch.inf, dtype=dtype).reshape(1, 1, 1)
         lin_vel, ang_vel = torch.zeros_like(center), torch.zeros_like(center)
@@ -375,14 +381,29 @@ class StaticPrism(RectPrism):
                          mass,
                          rot_mat,
                          [])
+    
+    def repeat_state(self, batch_size):
+        self.reset_batch_size()
+
+        self.pos = self.pos.repeat(batch_size, 1, 1)
+        self.quat = self.quat.repeat(batch_size, 1, 1)
+        self.linear_vel = self.linear_vel.repeat(batch_size, 1, 1)
+        self.ang_vel = self.ang_vel.repeat(batch_size, 1, 1)
+
+    def reset_batch_size(self):
+        self.pos = self.pos[:1]
+        self.quat = self.quat[:1]
+        self.linear_vel = self.linear_vel[:1]
+        self.ang_vel = self.ang_vel[:1]
 
 
 class StaticRectPlane(RigidBody):
+
     def __init__(self,
                  name: str,
                  center: torch.Tensor,
                  rot_mat: torch.Tensor,
-                 half_lens: Tuple[torch.Tensor],
+                 half_lens: Tuple[torch.Tensor, torch.Tensor],
                  dtype=DEFAULT_DTYPE):
         """
         :param name: name of the plane
@@ -396,15 +417,30 @@ class StaticRectPlane(RigidBody):
         quat = RectPrism.rot_mat_to_quat(rot_mat)
         linear_vel = torch.zeros_like(center)
         ang_vel = torch.zeros_like(center)
-        sites = []
 
+        self.x_axis = rot_mat[..., :1].reshape(1, 3, 1)
+        self.y_axis = rot_mat[..., 1:2].reshape(1, 3, 1)
+        self.z_axis = rot_mat[..., 2:].reshape(1, 3, 1)
+        self.half_lens = half_lens
+
+        super().__init__(name, mass, I_body, center, quat, linear_vel, ang_vel, [])
+
+    def to(self, device):
+        super().to(device)
+        self.x_axis = self.x_axis.to(device)
+        self.y_axis = self.y_axis.to(device)
+        self.z_axis = self.z_axis.to(device)
+        self.half_lens = tuple(h.to(device) for h in self.half_lens)
+
+        return self
+
+    def update_state(self, pos, linear_vel, quat, ang_vel):
+        super().update_state(pos, linear_vel, quat, ang_vel)
+        rot_mat = self.rot_mat
         self.x_axis = rot_mat[..., :1]
         self.y_axis = rot_mat[..., 1:2]
         self.z_axis = rot_mat[..., 2:]
-        self.half_lens = half_lens
-
-        super().__init__(name, mass, I_body, center, quat, linear_vel, ang_vel, sites)
-
+        
     def sdf(self, pt):
         """
         Compute signed distance from point(s) to the finite rectangular plane.
@@ -445,22 +481,11 @@ class StaticRectPlane(RigidBody):
 
         return sdf
 
-
-
-
-class FlatGround(RigidBody):
-
-    def __init__(self, ground_z=0.0, sys_precision=DEFAULT_DTYPE):
-        self.shape = "ground"
-
-        mass = torch.tensor(torch.inf, dtype=sys_precision).reshape(1, 1, 1)
-        I_body = torch.diag(torch.tensor([torch.inf, torch.inf, torch.inf], dtype=sys_precision)).reshape(1, 3, 3)
-        pos = torch.tensor([0, 0, ground_z], dtype=sys_precision).reshape(1, -1, 1)
-        quat = torch.tensor([1, 0, 0, 0], dtype=sys_precision).reshape(1, -1, 1)
-        linear_vel = torch.tensor([0, 0, 0], dtype=sys_precision).reshape(1, -1, 1)
-        ang_vel = torch.tensor([0, 0, 0], dtype=sys_precision).reshape(1, -1, 1)
-
-        super().__init__("ground", mass, I_body, pos, quat, linear_vel, ang_vel, [])
+    def get_normal(self, pt):
+        """
+        Get normal vectors at surface points on the rectangular plane.
+        """
+        return self.z_axis.repeat(pt.shape[0], 1, 1)
 
     def repeat_state(self, batch_size):
         self.reset_batch_size()
@@ -475,3 +500,20 @@ class FlatGround(RigidBody):
         self.quat = self.quat[:1]
         self.linear_vel = self.linear_vel[:1]
         self.ang_vel = self.ang_vel[:1]
+
+
+class FlatGround(StaticRectPlane):
+
+    def __init__(self, 
+                 name: str = "ground",
+                 center: torch.Tensor | None = None,
+                 rot_mat: torch.Tensor | None = None,
+                 half_lens: Tuple[torch.Tensor, torch.Tensor] | None = None,
+                 dtype=DEFAULT_DTYPE):
+        if center is None:
+            center = torch.zeros((1, 3, 1), dtype=dtype)
+        if rot_mat is None:
+            rot_mat = torch.eye(3, dtype=dtype).unsqueeze(0)
+        if half_lens is None:
+            half_lens = (torch.tensor(100., dtype=dtype), torch.tensor(100., dtype=dtype))
+        super().__init__(name, center, rot_mat, half_lens, dtype)

@@ -64,7 +64,7 @@ def wave_heuristic_dict_to_arr(goal, boundary, obstacles, grid_step, device='cpu
 
     for i in np.arange(boundary[0], boundary[1] + grid_step[0], grid_step[0]):
         for j in np.arange(boundary[2], boundary[3] + grid_step[1], grid_step[1]):
-            i, j = snap_to_grid((i, j), grid_step=grid_step[:2])
+            i, j = snap_to_grid((i, j), grid_step=grid_step)
             idx_x = round((i - boundary[0]) / grid_step[0])
             idx_y = round(-(j - boundary[3]) / grid_step[1])
             h_val_arr[idx_x, idx_y] = h_val[(i, j)]
@@ -117,12 +117,12 @@ def wave_heuristic_dict_to_arr_se2(goal, gaits, boundary, obstacles, stepsizes, 
         obstacles,
     )
 
-    # _, h_val_gpu = util_heuristic.goal_rooted_motion_prim_gpu(
-    #     goal,
-    #     boundary,
-    #     gaits,
-    #     obstacles,
-    # )
+    _, h_val = util_heuristic.goal_rooted_motion_prim_gpu(
+        goal,
+        boundary,
+        gaits,
+        obstacles,
+    )
 
     size_x = int((boundary[1] - boundary[0]) / stepsizes[0]) + 1
     size_y = int((boundary[3] - boundary[2]) / stepsizes[1]) + 1

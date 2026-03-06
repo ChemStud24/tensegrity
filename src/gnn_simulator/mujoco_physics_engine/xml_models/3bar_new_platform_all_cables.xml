@@ -25,7 +25,7 @@
 
     <default>
         <geom conaffinity="1" condim="6" contype="1" rgba="0.75 0.75 0.75 1" size="0.014" solref="-5000 -50"
-              density="1000" friction="1.2 0.0 0.0"/>
+              density="1000" friction="1.8 0.0 0.0"/>
         <site type="sphere" size="0.02"/>
         <tendon width="0.005" rgba="1 1 1 0.5" damping="1000" stiffness="100000" springlength="1.5"/>
         <general ctrlrange="-100 0" dyntype="filter" gainprm="15000 0 0" biastype="none" dynprm="1 0 0" biasprm="0 0 0"/>
@@ -86,7 +86,7 @@
                   mass="15.1"/>
             <geom name="h01"
                   fromto="0.36298552 0.48675868 0.65315623 -0.45279592 -0.41591689  1.40453992"
-                  size="0.165"
+                  size="0.075"
                   type="cylinder"
                   rgba="0.1 0.1 0.1 1"
                   mass="90"/>
@@ -140,7 +140,7 @@
                   mass="15.1"/>
             <geom name="h23"
                   fromto="-0.57630315 0.58253536  0.36125885 0.10437572 -0.64053769  0.65395081"
-                  size="0.165"
+                  size="0.075"
                   type="cylinder"
                   rgba="0.1 0.1 0.1 1"
                   mass="90"/>
@@ -196,7 +196,7 @@
                   mass="15.1"/>
             <geom name="h45"
                   fromto="-0.30955233  0.62836941  1.25920034 -0.85128772 -0.5172444  0.5966358"
-                  size="0.165"
+                  size="0.075"
                   type="cylinder"
                   rgba="0.1 0.1 0.1 1"
                   mass="90"/>

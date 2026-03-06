@@ -798,6 +798,7 @@ class MultiSimMultiStepTensegrityGNNSimulator(TensegrityMultiSimGNNSimulator):
             self.data_processor.precompute_and_cache_batch_sizes([batch_size])
 
         graph_feats, raw_feats = self.data_processor(state, **kwargs)
+
         combined_graph_feats = {
             **graph_feats._asdict(),
             **{k: v for raw_feat in raw_feats for k, v in raw_feat._asdict().items()},
@@ -964,7 +965,7 @@ class MultiSimMultiStepRecurrentTensegrityGNNSimulator(MultiSimMultiStepTensegri
             self.run_compile()
 
     def run_compile(self):
-        self.data_processor.compile(fullgraph=True)
+        self.data_processor.compile_forward(fullgraph=True)
         self._encode_process_decode.compile(fullgraph=True)
 
     def reset(self, **kwargs):
@@ -1023,7 +1024,7 @@ class MultiSimMultiStepMotorTensegrityGNNSimulator(MultiSimMultiStepTensegrityGN
                  num_sims: int = 10,
                  num_ctrls_hist: int = 20,
                  cache_batch_sizes: List[int] | None = None,
-                 torch_compile: bool = False):
+                 torch_compile: bool = True):
         assert n_out % 3 == 0
         self.num_out_steps = n_out // 3
         self.num_ctrls_hist = num_ctrls_hist
@@ -1053,8 +1054,9 @@ class MultiSimMultiStepMotorTensegrityGNNSimulator(MultiSimMultiStepTensegrityGN
             self.run_compile()
 
     def run_compile(self):
-        self.data_processor.compile(fullgraph=True)
+        self.data_processor.compile(fullgraph=False, dynamic=True)
         self._encode_process_decode.compile(fullgraph=True)
+        print('Compiled MultiSimMultiStepMotorTensegrityGNNSimulator')
 
     def reset(self, **kwargs):
         super().reset(**kwargs)
@@ -1062,8 +1064,8 @@ class MultiSimMultiStepMotorTensegrityGNNSimulator(MultiSimMultiStepTensegrityGN
         self.node_hidden_state = kwargs.get('node_hidden_state', None)
 
     def _build_gnn(self, **kwargs):
-        # return RecurrentMotorEncodeProcessDecode(
-        return MotorEncodeProcessDecode(
+        return RecurrentMotorEncodeProcessDecode(
+        # return MotorEncodeProcessDecode(
             node_types=kwargs['node_types'],
             edge_types=kwargs['edge_types'],
             n_out=kwargs['n_out'],
@@ -1077,11 +1079,14 @@ class MultiSimMultiStepMotorTensegrityGNNSimulator(MultiSimMultiStepTensegrityGN
     def _get_data_processor(self):
         self.data_processor_kwargs['rest_lens_or_ctrls'] = 'ctrls'
         self.data_processor_kwargs['num_ctrls_hist'] = self.num_ctrls_hist
-        return FastTensegrityGraphDataProcessor(**self.data_processor_kwargs)
+        # return FastTensegrityGraphDataProcessor(**self.data_processor_kwargs)
+        from gnn_simulator.gnn_physics.data_processors.fast_tensegrity_graph_data_processor import GroundOnlyTensegrityGraphDataProcessor
+        return GroundOnlyTensegrityGraphDataProcessor(**self.data_processor_kwargs)
 
     def generate_graph(self, state, **kwargs):
         graph = super().generate_graph(state, **kwargs)
         graph = self.add_hidden_state(graph)
+
         return graph
 
     def process_gnn(self, graph, **kwargs):

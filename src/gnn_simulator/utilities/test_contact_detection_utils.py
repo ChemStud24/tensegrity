@@ -70,46 +70,70 @@ class TestSphereSphereSignedDistance(unittest.TestCase):
         """Test two separated spheres."""
         sphere1 = self.create_sphere(torch.tensor([[0.0, 0.0, 0.0]], dtype=self.dtype), 1.0)
         sphere2 = self.create_sphere(torch.tensor([[5.0, 0.0, 0.0]], dtype=self.dtype), 1.0)
-        
-        p1, p2, dist = sphere_sphere_signed_distance(sphere1, sphere2)
-        
+
+        p1, p2, dist, n1, n2 = sphere_sphere_signed_distance(sphere1, sphere2)
+
         # Check output shapes
         self.assertEqual(p1.shape, (1, 3, 1))
         self.assertEqual(p2.shape, (1, 3, 1))
         self.assertEqual(dist.shape, (1, 1))
-        
+        self.assertEqual(n1.shape, (1, 3, 1))
+        self.assertEqual(n2.shape, (1, 3, 1))
+
         # Distance should be positive (separated)
         self.assertGreater(dist.item(), 0)
         # Expected distance: 5 - 1 - 1 = 3
         self.assertAlmostEqual(dist.item(), 3.0, places=5)
-        
+
         # Points should be on surfaces
         dist_p1 = torch.linalg.norm(p1 - sphere1.pos, dim=1).item()
         dist_p2 = torch.linalg.norm(p2 - sphere2.pos, dim=1).item()
         self.assertAlmostEqual(dist_p1, 1.0, places=5)
         self.assertAlmostEqual(dist_p2, 1.0, places=5)
+
+        # Check normals match get_normal
+        expected_n1 = sphere1.get_normal(p1)
+        expected_n2 = sphere2.get_normal(p2)
+        torch.testing.assert_close(n1, expected_n1, rtol=1e-5, atol=1e-5)
+        torch.testing.assert_close(n2, expected_n2, rtol=1e-5, atol=1e-5)
+
+        # Check normals are unit vectors
+        self.assertAlmostEqual(torch.linalg.norm(n1, dim=1).item(), 1.0, places=5)
+        self.assertAlmostEqual(torch.linalg.norm(n2, dim=1).item(), 1.0, places=5)
     
     def test_touching_spheres(self):
         """Test two touching spheres."""
         sphere1 = self.create_sphere(torch.tensor([[0.0, 0.0, 0.0]], dtype=self.dtype), 1.0)
         sphere2 = self.create_sphere(torch.tensor([[2.0, 0.0, 0.0]], dtype=self.dtype), 1.0)
-        
-        p1, p2, dist = sphere_sphere_signed_distance(sphere1, sphere2)
-        
+
+        p1, p2, dist, n1, n2 = sphere_sphere_signed_distance(sphere1, sphere2)
+
         # Distance should be approximately zero (touching)
         self.assertAlmostEqual(dist.item(), 0.0, places=4)
+
+        # Check normals match get_normal
+        expected_n1 = sphere1.get_normal(p1)
+        expected_n2 = sphere2.get_normal(p2)
+        torch.testing.assert_close(n1, expected_n1, rtol=1e-4, atol=1e-4)
+        torch.testing.assert_close(n2, expected_n2, rtol=1e-4, atol=1e-4)
     
     def test_penetrating_spheres(self):
         """Test two penetrating spheres."""
         sphere1 = self.create_sphere(torch.tensor([[0.0, 0.0, 0.0]], dtype=self.dtype), 1.0)
         sphere2 = self.create_sphere(torch.tensor([[1.0, 0.0, 0.0]], dtype=self.dtype), 1.0)
-        
-        p1, p2, dist = sphere_sphere_signed_distance(sphere1, sphere2)
-        
+
+        p1, p2, dist, n1, n2 = sphere_sphere_signed_distance(sphere1, sphere2)
+
         # Distance should be negative (penetrating)
         self.assertLess(dist.item(), 0)
         # Expected distance: 1 - 1 - 1 = -1
         self.assertAlmostEqual(dist.item(), -1.0, places=5)
+
+        # Check normals match get_normal
+        expected_n1 = sphere1.get_normal(p1)
+        expected_n2 = sphere2.get_normal(p2)
+        torch.testing.assert_close(n1, expected_n1, rtol=1e-5, atol=1e-5)
+        torch.testing.assert_close(n2, expected_n2, rtol=1e-5, atol=1e-5)
     
     def test_batched_spheres(self):
         """Test batched sphere inputs."""
@@ -128,20 +152,28 @@ class TestSphereSphereSignedDistance(unittest.TestCase):
         # The radius will be broadcast to all batches
         radius1 = 1.0
         radius2 = 1.0
-        
+
         sphere1 = self.create_sphere(centers1, radius1)
         sphere2 = self.create_sphere(centers2, radius2)
-        
-        p1, p2, dist = sphere_sphere_signed_distance(sphere1, sphere2)
-        
+
+        p1, p2, dist, n1, n2 = sphere_sphere_signed_distance(sphere1, sphere2)
+
         # Check output shapes
         self.assertEqual(p1.shape, (batch_size, 3, 1))
         self.assertEqual(p2.shape, (batch_size, 3, 1))
         self.assertEqual(dist.shape, (batch_size, 1))
-        
+        self.assertEqual(n1.shape, (batch_size, 3, 1))
+        self.assertEqual(n2.shape, (batch_size, 3, 1))
+
         # Check expected distances
         expected_dists = torch.tensor([3.0, 0.0, -1.0], dtype=self.dtype)
         torch.testing.assert_close(dist.squeeze(-1), expected_dists, rtol=1e-5, atol=1e-5)
+
+        # Check normals match get_normal for all batches
+        expected_n1 = sphere1.get_normal(p1)
+        expected_n2 = sphere2.get_normal(p2)
+        torch.testing.assert_close(n1, expected_n1, rtol=1e-5, atol=1e-5)
+        torch.testing.assert_close(n2, expected_n2, rtol=1e-5, atol=1e-5)
 
 
 class TestSphereCylinderSignedDistance(unittest.TestCase):
@@ -217,16 +249,24 @@ class TestSphereCylinderSignedDistance(unittest.TestCase):
             torch.tensor([[0.0, 0.0, 1.0]], dtype=self.dtype),
             0.5
         )
-        
-        p1, p2, dist = sphere_cylinder_signed_distance(sphere, cylinder)
-        
+
+        p1, p2, dist, n1, n2 = sphere_cylinder_signed_distance(sphere, cylinder)
+
         # Check output shapes
         self.assertEqual(p1.shape, (1, 3, 1))
         self.assertEqual(p2.shape, (1, 3, 1))
         self.assertEqual(dist.shape, (1, 1))
-        
+        self.assertEqual(n1.shape, (1, 3, 1))
+        self.assertEqual(n2.shape, (1, 3, 1))
+
         # Distance should be positive
         self.assertGreater(dist.item(), 0)
+
+        # Check normals match get_normal
+        expected_n1 = sphere.get_normal(p1)
+        expected_n2 = cylinder.get_normal(p2)
+        torch.testing.assert_close(n1, expected_n1, rtol=1e-5, atol=1e-5)
+        torch.testing.assert_close(n2, expected_n2, rtol=1e-5, atol=1e-5)
     
     def test_sphere_on_cylinder_axis(self):
         """Test sphere centered on cylinder axis."""
@@ -236,16 +276,24 @@ class TestSphereCylinderSignedDistance(unittest.TestCase):
             torch.tensor([[0.0, 0.0, 1.0]], dtype=self.dtype),
             0.5
         )
-        
-        p1, p2, dist = sphere_cylinder_signed_distance(sphere, cylinder)
-        
+
+        p1, p2, dist, n1, n2 = sphere_cylinder_signed_distance(sphere, cylinder)
+
         # Check output shapes
         self.assertEqual(p1.shape, (1, 3, 1))
         self.assertEqual(p2.shape, (1, 3, 1))
         self.assertEqual(dist.shape, (1, 1))
-        
+        self.assertEqual(n1.shape, (1, 3, 1))
+        self.assertEqual(n2.shape, (1, 3, 1))
+
         # Distance should be negative (penetrating)
         self.assertLess(dist.item(), 0)
+
+        # Check normals match get_normal
+        expected_n1 = sphere.get_normal(p1)
+        expected_n2 = cylinder.get_normal(p2)
+        torch.testing.assert_close(n1, expected_n1, rtol=1e-5, atol=1e-5)
+        torch.testing.assert_close(n2, expected_n2, rtol=1e-5, atol=1e-5)
     
     def test_sphere_perpendicular_to_cylinder(self):
         """Test sphere positioned perpendicular to cylinder axis."""
@@ -255,19 +303,27 @@ class TestSphereCylinderSignedDistance(unittest.TestCase):
             torch.tensor([[0.0, 0.0, 1.0]], dtype=self.dtype),
             0.5
         )
-        
-        p1, p2, dist = sphere_cylinder_signed_distance(sphere, cylinder)
-        
+
+        p1, p2, dist, n1, n2 = sphere_cylinder_signed_distance(sphere, cylinder)
+
         # Check output shapes
         self.assertEqual(p1.shape, (1, 3, 1))
         self.assertEqual(p2.shape, (1, 3, 1))
         self.assertEqual(dist.shape, (1, 1))
-        
+        self.assertEqual(n1.shape, (1, 3, 1))
+        self.assertEqual(n2.shape, (1, 3, 1))
+
         # Distance should be positive (separated)
         self.assertGreater(dist.item(), 0)
         # Expected: distance from sphere center to cylinder surface - sphere radius
         # = (2.0 - 0.5) - 0.5 = 1.0
         self.assertAlmostEqual(dist.item(), 1.0, places=4)
+
+        # Check normals match get_normal
+        expected_n1 = sphere.get_normal(p1)
+        expected_n2 = cylinder.get_normal(p2)
+        torch.testing.assert_close(n1, expected_n1, rtol=1e-5, atol=1e-5)
+        torch.testing.assert_close(n2, expected_n2, rtol=1e-5, atol=1e-5)
 
 
 class TestCylinderCylinderSignedDistance(unittest.TestCase):
@@ -319,18 +375,26 @@ class TestCylinderCylinderSignedDistance(unittest.TestCase):
             torch.tensor([[2.0, 0.0, 1.0]], dtype=self.dtype),
             0.5
         )
-        
-        p1, p2, dist = cylinder_cylinder_signed_distance(cylinder1, cylinder2)
-        
+
+        p1, p2, dist, n1, n2 = cylinder_cylinder_signed_distance(cylinder1, cylinder2)
+
         # Check output shapes
         self.assertEqual(p1.shape, (1, 3, 1))
         self.assertEqual(p2.shape, (1, 3, 1))
         self.assertEqual(dist.shape, (1, 1))
-        
+        self.assertEqual(n1.shape, (1, 3, 1))
+        self.assertEqual(n2.shape, (1, 3, 1))
+
         # Distance should be positive (separated)
         self.assertGreater(dist.item(), 0)
         # Expected: 2.0 - 0.5 - 0.5 = 1.0
         self.assertAlmostEqual(dist.item(), 1.0, places=4)
+
+        # Check normals match get_normal
+        expected_n1 = cylinder1.get_normal(p1)
+        expected_n2 = cylinder2.get_normal(p2)
+        torch.testing.assert_close(n1, expected_n1, rtol=1e-5, atol=1e-5)
+        torch.testing.assert_close(n2, expected_n2, rtol=1e-5, atol=1e-5)
     
     def test_perpendicular_cylinders(self):
         """Test two perpendicular cylinders."""
@@ -344,16 +408,24 @@ class TestCylinderCylinderSignedDistance(unittest.TestCase):
             torch.tensor([[0.0, 1.0, 0.0]], dtype=self.dtype),
             0.5
         )
-        
-        p1, p2, dist = cylinder_cylinder_signed_distance(cylinder1, cylinder2)
-        
+
+        p1, p2, dist, n1, n2 = cylinder_cylinder_signed_distance(cylinder1, cylinder2)
+
         # Check output shapes
         self.assertEqual(p1.shape, (1, 3, 1))
         self.assertEqual(p2.shape, (1, 3, 1))
         self.assertEqual(dist.shape, (1, 1))
-        
+        self.assertEqual(n1.shape, (1, 3, 1))
+        self.assertEqual(n2.shape, (1, 3, 1))
+
         # Distance should be negative (penetrating at origin)
         self.assertLess(dist.item(), 0)
+
+        # Check normals match get_normal
+        expected_n1 = cylinder1.get_normal(p1)
+        expected_n2 = cylinder2.get_normal(p2)
+        torch.testing.assert_close(n1, expected_n1, rtol=1e-5, atol=1e-5)
+        torch.testing.assert_close(n2, expected_n2, rtol=1e-5, atol=1e-5)
 
 
 class TestSphereStaticPrismSignedDistance(unittest.TestCase):
@@ -429,16 +501,24 @@ class TestSphereStaticPrismSignedDistance(unittest.TestCase):
              torch.tensor([[1.0]], dtype=self.dtype),
              torch.tensor([[1.0]], dtype=self.dtype))
         )
-        
-        p1, p2, dist = sphere_static_prism_signed_distance(sphere, prism)
-        
+
+        p1, p2, dist, n1, n2 = sphere_static_prism_signed_distance(sphere, prism)
+
         # Check output shapes
         self.assertEqual(p1.shape, (1, 3, 1))
         self.assertEqual(p2.shape, (1, 3, 1))
         self.assertEqual(dist.shape, (1, 1))
-        
+        self.assertEqual(n1.shape, (1, 3, 1))
+        self.assertEqual(n2.shape, (1, 3, 1))
+
         # Distance should be positive (separated)
         self.assertGreater(dist.item(), 0)
+
+        # Check normals match get_normal
+        expected_n1 = sphere.get_normal(p1)
+        expected_n2 = prism.get_normal(p2)
+        torch.testing.assert_close(n1, expected_n1, rtol=1e-5, atol=1e-5)
+        torch.testing.assert_close(n2, expected_n2, rtol=1e-5, atol=1e-5)
     
     def test_sphere_inside_prism(self):
         """Test sphere inside prism."""
@@ -451,16 +531,24 @@ class TestSphereStaticPrismSignedDistance(unittest.TestCase):
              torch.tensor([[1.0]], dtype=self.dtype),
              torch.tensor([[1.0]], dtype=self.dtype))
         )
-        
-        p1, p2, dist = sphere_static_prism_signed_distance(sphere, prism)
-        
+
+        p1, p2, dist, n1, n2 = sphere_static_prism_signed_distance(sphere, prism)
+
         # Check output shapes
         self.assertEqual(p1.shape, (1, 3, 1))
         self.assertEqual(p2.shape, (1, 3, 1))
         self.assertEqual(dist.shape, (1, 1))
-        
+        self.assertEqual(n1.shape, (1, 3, 1))
+        self.assertEqual(n2.shape, (1, 3, 1))
+
         # Distance should be negative (penetrating)
         self.assertLess(dist.item(), 0)
+
+        # Check normals match get_normal
+        expected_n1 = sphere.get_normal(p1)
+        expected_n2 = prism.get_normal(p2)
+        torch.testing.assert_close(n1, expected_n1, rtol=1e-5, atol=1e-5)
+        torch.testing.assert_close(n2, expected_n2, rtol=1e-5, atol=1e-5)
     
     def test_sphere_on_prism_surface(self):
         """Test sphere touching prism surface."""
@@ -473,16 +561,24 @@ class TestSphereStaticPrismSignedDistance(unittest.TestCase):
              torch.tensor([[1.0]], dtype=self.dtype),
              torch.tensor([[1.0]], dtype=self.dtype))
         )
-        
-        p1, p2, dist = sphere_static_prism_signed_distance(sphere, prism)
-        
+
+        p1, p2, dist, n1, n2 = sphere_static_prism_signed_distance(sphere, prism)
+
         # Check output shapes
         self.assertEqual(p1.shape, (1, 3, 1))
         self.assertEqual(p2.shape, (1, 3, 1))
         self.assertEqual(dist.shape, (1, 1))
-        
+        self.assertEqual(n1.shape, (1, 3, 1))
+        self.assertEqual(n2.shape, (1, 3, 1))
+
         # Distance should be approximately zero (touching)
         self.assertAlmostEqual(dist.item(), 0.0, places=3)
+
+        # Check normals match get_normal
+        expected_n1 = sphere.get_normal(p1)
+        expected_n2 = prism.get_normal(p2)
+        torch.testing.assert_close(n1, expected_n1, rtol=1e-3, atol=1e-3)
+        torch.testing.assert_close(n2, expected_n2, rtol=1e-3, atol=1e-3)
 
 
 class TestCylinderStaticPrismSignedDistance(unittest.TestCase):
@@ -567,16 +663,24 @@ class TestCylinderStaticPrismSignedDistance(unittest.TestCase):
              torch.tensor([[1.0]], dtype=self.dtype),
              torch.tensor([[1.0]], dtype=self.dtype))
         )
-        
-        p1, p2, dist = cylinder_static_prism_signed_distance(cylinder, prism)
-        
+
+        p1, p2, dist, n1, n2 = cylinder_static_prism_signed_distance(cylinder, prism)
+
         # Check output shapes
         self.assertEqual(p1.shape, (1, 3, 1))
         self.assertEqual(p2.shape, (1, 3, 1))
         self.assertEqual(dist.shape, (1, 1))
-        
+        self.assertEqual(n1.shape, (1, 3, 1))
+        self.assertEqual(n2.shape, (1, 3, 1))
+
         # Distance should be negative (penetrating)
         self.assertLess(dist.item(), 0)
+
+        # Check normals match get_normal
+        expected_n1 = cylinder.get_normal(p1)
+        expected_n2 = prism.get_normal(p2)
+        torch.testing.assert_close(n1, expected_n1, rtol=1e-5, atol=1e-5)
+        torch.testing.assert_close(n2, expected_n2, rtol=1e-5, atol=1e-5)
     
     def test_cylinder_perpendicular_to_prism(self):
         """Test cylinder perpendicular to prism."""
@@ -593,16 +697,24 @@ class TestCylinderStaticPrismSignedDistance(unittest.TestCase):
              torch.tensor([[1.0]], dtype=self.dtype),
              torch.tensor([[1.0]], dtype=self.dtype))
         )
-        
-        p1, p2, dist = cylinder_static_prism_signed_distance(cylinder, prism)
-        
+
+        p1, p2, dist, n1, n2 = cylinder_static_prism_signed_distance(cylinder, prism)
+
         # Check output shapes
         self.assertEqual(p1.shape, (1, 3, 1))
         self.assertEqual(p2.shape, (1, 3, 1))
         self.assertEqual(dist.shape, (1, 1))
-        
+        self.assertEqual(n1.shape, (1, 3, 1))
+        self.assertEqual(n2.shape, (1, 3, 1))
+
         # Distance should be positive (separated)
         self.assertGreater(dist.item(), 0)
+
+        # Check normals match get_normal
+        expected_n1 = cylinder.get_normal(p1)
+        expected_n2 = prism.get_normal(p2)
+        torch.testing.assert_close(n1, expected_n1, rtol=1e-5, atol=1e-5)
+        torch.testing.assert_close(n2, expected_n2, rtol=1e-5, atol=1e-5)
     
     def test_cylinder_prism_with_custom_sampling(self):
         """Test cylinder-prism with custom sampling parameters."""
@@ -619,28 +731,44 @@ class TestCylinderStaticPrismSignedDistance(unittest.TestCase):
              torch.tensor([[1.0]], dtype=self.dtype),
              torch.tensor([[1.0]], dtype=self.dtype))
         )
-        
+
         # Test with custom sampling parameters
-        p1, p2, dist = cylinder_static_prism_signed_distance(cylinder, prism, num_axis_samples=10, num_circ_samples=12)
-        
+        p1, p2, dist, n1, n2 = cylinder_static_prism_signed_distance(cylinder, prism, num_axis_samples=10, num_circ_samples=12)
+
         # Check output shapes
         self.assertEqual(p1.shape, (1, 3, 1))
         self.assertEqual(p2.shape, (1, 3, 1))
         self.assertEqual(dist.shape, (1, 1))
-        
+        self.assertEqual(n1.shape, (1, 3, 1))
+        self.assertEqual(n2.shape, (1, 3, 1))
+
         # Distance should be positive (separated)
         self.assertGreater(dist.item(), 0)
-        
+
+        # Check normals match get_normal
+        expected_n1 = cylinder.get_normal(p1)
+        expected_n2 = prism.get_normal(p2)
+        torch.testing.assert_close(n1, expected_n1, rtol=1e-5, atol=1e-5)
+        torch.testing.assert_close(n2, expected_n2, rtol=1e-5, atol=1e-5)
+
         # Test with default parameters (should also work)
-        p1_default, p2_default, dist_default = cylinder_static_prism_signed_distance(cylinder, prism)
-        
+        p1_default, p2_default, dist_default, n1_default, n2_default = cylinder_static_prism_signed_distance(cylinder, prism)
+
         # Check output shapes
         self.assertEqual(p1_default.shape, (1, 3, 1))
         self.assertEqual(p2_default.shape, (1, 3, 1))
         self.assertEqual(dist_default.shape, (1, 1))
-        
+        self.assertEqual(n1_default.shape, (1, 3, 1))
+        self.assertEqual(n2_default.shape, (1, 3, 1))
+
         # Both should give positive distances (may differ slightly due to sampling)
         self.assertGreater(dist_default.item(), 0)
+
+        # Check normals for default parameters
+        expected_n1_default = cylinder.get_normal(p1_default)
+        expected_n2_default = prism.get_normal(p2_default)
+        torch.testing.assert_close(n1_default, expected_n1_default, rtol=1e-5, atol=1e-5)
+        torch.testing.assert_close(n2_default, expected_n2_default, rtol=1e-5, atol=1e-5)
 
 
 class TestSphereStaticRectPlaneSignedDistance(unittest.TestCase):
@@ -713,17 +841,27 @@ class TestSphereStaticRectPlaneSignedDistance(unittest.TestCase):
              torch.tensor([[2.0]], dtype=self.dtype))
         )
 
-        p1, p2, dist = sphere_static_rect_plane_signed_distance(sphere, plane)
+        p1, p2, dist, n1, n2 = sphere_static_rect_plane_signed_distance(sphere, plane)
 
         # Check output shapes
         self.assertEqual(p1.shape, (1, 3, 1))
         self.assertEqual(p2.shape, (1, 3, 1))
         self.assertEqual(dist.shape, (1, 1))
+        self.assertEqual(n1.shape, (1, 3, 1))
+        self.assertEqual(n2.shape, (1, 3, 1))
 
         # Distance should be positive (separated, on +z side)
         self.assertGreater(dist.item(), 0)
         # Expected: 3.0 - 0.5 = 2.5
         self.assertAlmostEqual(dist.item(), 2.5, places=4)
+
+        # Check normals match get_normal
+        expected_n1 = sphere.get_normal(p1)
+        torch.testing.assert_close(n1, expected_n1, rtol=1e-5, atol=1e-5)
+
+        # For plane, the normal should be the z_axis (pointing up since sphere is above)
+        # Note: plane.get_normal returns the same normal for all points
+        self.assertAlmostEqual(torch.linalg.norm(n2, dim=1).item(), 1.0, places=5)
 
     def test_sphere_below_plane(self):
         """Test sphere below a horizontal plane (negative z side)."""
@@ -736,15 +874,22 @@ class TestSphereStaticRectPlaneSignedDistance(unittest.TestCase):
              torch.tensor([[2.0]], dtype=self.dtype))
         )
 
-        p1, p2, dist = sphere_static_rect_plane_signed_distance(sphere, plane)
+        p1, p2, dist, n1, n2 = sphere_static_rect_plane_signed_distance(sphere, plane)
 
         # Check output shapes
         self.assertEqual(p1.shape, (1, 3, 1))
         self.assertEqual(p2.shape, (1, 3, 1))
         self.assertEqual(dist.shape, (1, 1))
+        self.assertEqual(n1.shape, (1, 3, 1))
+        self.assertEqual(n2.shape, (1, 3, 1))
 
         # Distance should be negative (on -z side: sign=-1, so -3.0 - 0.5 = -3.5)
         self.assertLess(dist.item(), 0)
+
+        # Check normals
+        expected_n1 = sphere.get_normal(p1)
+        torch.testing.assert_close(n1, expected_n1, rtol=1e-5, atol=1e-5)
+        self.assertAlmostEqual(torch.linalg.norm(n2, dim=1).item(), 1.0, places=5)
 
     def test_sphere_touching_plane(self):
         """Test sphere touching the plane surface."""
@@ -757,15 +902,22 @@ class TestSphereStaticRectPlaneSignedDistance(unittest.TestCase):
              torch.tensor([[2.0]], dtype=self.dtype))
         )
 
-        p1, p2, dist = sphere_static_rect_plane_signed_distance(sphere, plane)
+        p1, p2, dist, n1, n2 = sphere_static_rect_plane_signed_distance(sphere, plane)
 
         # Check output shapes
         self.assertEqual(p1.shape, (1, 3, 1))
         self.assertEqual(p2.shape, (1, 3, 1))
         self.assertEqual(dist.shape, (1, 1))
+        self.assertEqual(n1.shape, (1, 3, 1))
+        self.assertEqual(n2.shape, (1, 3, 1))
 
         # Distance should be approximately zero (touching)
         self.assertAlmostEqual(dist.item(), 0.0, places=4)
+
+        # Check normals
+        expected_n1 = sphere.get_normal(p1)
+        torch.testing.assert_close(n1, expected_n1, rtol=1e-4, atol=1e-4)
+        self.assertAlmostEqual(torch.linalg.norm(n2, dim=1).item(), 1.0, places=5)
 
     def test_sphere_off_edge_of_plane(self):
         """Test sphere positioned outside the plane's rectangular bounds."""
@@ -778,15 +930,22 @@ class TestSphereStaticRectPlaneSignedDistance(unittest.TestCase):
              torch.tensor([[1.0]], dtype=self.dtype))
         )
 
-        p1, p2, dist = sphere_static_rect_plane_signed_distance(sphere, plane)
+        p1, p2, dist, n1, n2 = sphere_static_rect_plane_signed_distance(sphere, plane)
 
         # Check output shapes
         self.assertEqual(p1.shape, (1, 3, 1))
         self.assertEqual(p2.shape, (1, 3, 1))
         self.assertEqual(dist.shape, (1, 1))
+        self.assertEqual(n1.shape, (1, 3, 1))
+        self.assertEqual(n2.shape, (1, 3, 1))
 
         # Sphere is far from the finite plane - distance should be positive
         self.assertGreater(dist.item(), 0)
+
+        # Check normals
+        expected_n1 = sphere.get_normal(p1)
+        torch.testing.assert_close(n1, expected_n1, rtol=1e-5, atol=1e-5)
+        self.assertAlmostEqual(torch.linalg.norm(n2, dim=1).item(), 1.0, places=5)
 
     def test_sphere_centered_on_plane(self):
         """Test sphere whose center is exactly on the plane surface."""
@@ -799,15 +958,21 @@ class TestSphereStaticRectPlaneSignedDistance(unittest.TestCase):
              torch.tensor([[2.0]], dtype=self.dtype))
         )
 
-        p1, p2, dist = sphere_static_rect_plane_signed_distance(sphere, plane)
+        p1, p2, dist, n1, n2 = sphere_static_rect_plane_signed_distance(sphere, plane)
 
         # Check output shapes
         self.assertEqual(p1.shape, (1, 3, 1))
         self.assertEqual(p2.shape, (1, 3, 1))
         self.assertEqual(dist.shape, (1, 1))
+        self.assertEqual(n1.shape, (1, 3, 1))
+        self.assertEqual(n2.shape, (1, 3, 1))
 
         # Sphere center is on the plane: signed_distance = sign(0)*0 - 0.5 = -0.5
         self.assertAlmostEqual(dist.item(), -0.5, places=4)
+
+        # In this degenerate case (sphere center on plane), the normal direction is undefined
+        # and may be zero. Just check that the shapes are correct.
+        # Note: sign(0) can be 0, which makes the normal zero in this edge case
 
     def test_rotated_plane(self):
         """Test sphere above a rotated plane (plane normal along x-axis)."""
@@ -825,17 +990,24 @@ class TestSphereStaticRectPlaneSignedDistance(unittest.TestCase):
              torch.tensor([[2.0]], dtype=self.dtype))
         )
 
-        p1, p2, dist = sphere_static_rect_plane_signed_distance(sphere, plane)
+        p1, p2, dist, n1, n2 = sphere_static_rect_plane_signed_distance(sphere, plane)
 
         # Check output shapes
         self.assertEqual(p1.shape, (1, 3, 1))
         self.assertEqual(p2.shape, (1, 3, 1))
         self.assertEqual(dist.shape, (1, 1))
+        self.assertEqual(n1.shape, (1, 3, 1))
+        self.assertEqual(n2.shape, (1, 3, 1))
 
         # Sphere is on the positive normal side of the rotated plane
         # Distance should be positive: 3.0 - 0.5 = 2.5
         self.assertGreater(dist.item(), 0)
         self.assertAlmostEqual(dist.item(), 2.5, places=4)
+
+        # Check normals
+        expected_n1 = sphere.get_normal(p1)
+        torch.testing.assert_close(n1, expected_n1, rtol=1e-5, atol=1e-5)
+        self.assertAlmostEqual(torch.linalg.norm(n2, dim=1).item(), 1.0, places=5)
 
 
 class TestGetDistFn(unittest.TestCase):
@@ -940,12 +1112,20 @@ class TestGetDistFn(unittest.TestCase):
         )
 
         fn = get_dist_fn(self.sphere, sphere2)
-        p1, p2, dist = fn(self.sphere, sphere2)
+        p1, p2, dist, n1, n2 = fn(self.sphere, sphere2)
 
         self.assertEqual(p1.shape, (1, 3, 1))
         self.assertEqual(p2.shape, (1, 3, 1))
         self.assertEqual(dist.shape, (1, 1))
+        self.assertEqual(n1.shape, (1, 3, 1))
+        self.assertEqual(n2.shape, (1, 3, 1))
         self.assertAlmostEqual(dist.item(), 3.0, places=4)
+
+        # Check normals match get_normal
+        expected_n1 = self.sphere.get_normal(p1)
+        expected_n2 = sphere2.get_normal(p2)
+        torch.testing.assert_close(n1, expected_n1, rtol=1e-5, atol=1e-5)
+        torch.testing.assert_close(n2, expected_n2, rtol=1e-5, atol=1e-5)
 
 
 class TestEdgeCases(unittest.TestCase):
@@ -986,33 +1166,48 @@ class TestEdgeCases(unittest.TestCase):
         """Test two spheres at the same location."""
         sphere1 = self.create_sphere(torch.tensor([[0.0, 0.0, 0.0]], dtype=self.dtype), 1.0)
         sphere2 = self.create_sphere(torch.tensor([[0.0, 0.0, 0.0]], dtype=self.dtype), 1.0)
-        
-        p1, p2, dist = sphere_sphere_signed_distance(sphere1, sphere2)
-        
+
+        p1, p2, dist, n1, n2 = sphere_sphere_signed_distance(sphere1, sphere2)
+
         # Check output shapes
         self.assertEqual(p1.shape, (1, 3, 1))
         self.assertEqual(p2.shape, (1, 3, 1))
         self.assertEqual(dist.shape, (1, 1))
-        
+        self.assertEqual(n1.shape, (1, 3, 1))
+        self.assertEqual(n2.shape, (1, 3, 1))
+
         # Distance should be negative (fully penetrating)
         self.assertLess(dist.item(), 0)
         # Expected: 0 - 1 - 1 = -2
         self.assertAlmostEqual(dist.item(), -2.0, places=5)
+
+        # In this degenerate case (coincident centers), the normal direction is undefined
+        # The unit_vec becomes 0/eps which approaches zero. Just check shapes are correct.
     
     def test_very_small_spheres(self):
         """Test with very small radii."""
         sphere1 = self.create_sphere(torch.tensor([[0.0, 0.0, 0.0]], dtype=self.dtype), 0.001)
         sphere2 = self.create_sphere(torch.tensor([[0.01, 0.0, 0.0]], dtype=self.dtype), 0.001)
-        
-        p1, p2, dist = sphere_sphere_signed_distance(sphere1, sphere2)
-        
+
+        p1, p2, dist, n1, n2 = sphere_sphere_signed_distance(sphere1, sphere2)
+
         # Check output shapes
         self.assertEqual(p1.shape, (1, 3, 1))
         self.assertEqual(p2.shape, (1, 3, 1))
         self.assertEqual(dist.shape, (1, 1))
-        
+        self.assertEqual(n1.shape, (1, 3, 1))
+        self.assertEqual(n2.shape, (1, 3, 1))
+
         # Should still work without numerical issues
         self.assertIsInstance(dist.item(), float)
+
+        # Check normals match get_normal and are unit vectors
+        expected_n1 = sphere1.get_normal(p1)
+        expected_n2 = sphere2.get_normal(p2)
+        torch.testing.assert_close(n1, expected_n1, rtol=1e-5, atol=1e-5)
+        torch.testing.assert_close(n2, expected_n2, rtol=1e-5, atol=1e-5)
+        self.assertAlmostEqual(torch.linalg.norm(n1, dim=1).item(), 1.0, places=5)
+        self.assertAlmostEqual(torch.linalg.norm(n2, dim=1).item(), 1.0, places=5)
 
 
 if __name__ == '__main__':

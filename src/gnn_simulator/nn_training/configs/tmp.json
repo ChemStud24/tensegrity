@@ -1,29 +1,83 @@
 {
-  "sim_config": "simulators/configs/6_bar_new_platform_tensegrity_gnn_sim_config.json",
+  "sim_configs": [
+    "gnn_simulator/simulators/configs/new_3_bar_15_cables_5d_gnn_sim_5deg_ramp_config.json",
+    "gnn_simulator/simulators/configs/new_3_bar_15_cables_5d_gnn_sim_tight_corridor_config.json",
+    "gnn_simulator/simulators/configs/new_3_bar_15_cables_5d_gnn_sim_ceiling_config.json"
+  ],
   "num_steps_fwd": 1,
   "num_hist": 1,
-  "num_ctrls_hist": 4,
+  "num_ctrls_hist": 20,
   "batch_size": 128,
+  "save_rollout_poses": true,
   "trainable_params": [
   ],
   "optimizer_params": {
     "lr": 1e-5,
     "weight_decay": 0.01
   },
-  "train_data_paths": [
-    "../../tensegrity/data_sets/tensegrity_real_datasets/6bar_newplat_data_v4/mppi_run_14/",
-    "../../tensegrity/data_sets/tensegrity_real_datasets/6bar_newplat_data_v4/mppi_run_15/",
-    "../../tensegrity/data_sets/tensegrity_real_datasets/6bar_newplat_data_v4/random_ctrl_10/",
-    "../../tensegrity/data_sets/tensegrity_real_datasets/6bar_newplat_data_v4/random_ctrl_11/",
-    "../../tensegrity/data_sets/tensegrity_real_datasets/6bar_newplat_data_v4/pthrow_1/",
-    "../../tensegrity/data_sets/tensegrity_real_datasets/6bar_newplat_data_v4/pthrow_2/"
+  "data_root": "../data_sets/tensegrity_real_datasets/",
+  "train_data_groups": [
+    {
+      "env_names": ["flat_0", "flat_1", "slope_10_degs"],
+      "data_paths": [
+        "new_platform_models/multi_env_v0_iter2/mppi_turn_prims_v0_ds_8/ramp_1"
+      ]
+    },
+    {
+      "env_names": ["ground", "left_wall", "right_wall", "top_wall", "bottom_wall"],
+      "data_paths": [
+        "new_platform_models/multi_env_v0_iter2/mppi_turn_prims_v0_ds_8/tight_corridor_1"
+      ]
+    },
+    {
+      "env_names": ["floor", "ceiling"],
+      "data_paths": [
+        "new_platform_models/multi_env_v0_iter2/mppi_turn_prims_v0_ds_8/ceiling_1"
+      ]
+    }
   ],
-  "val_data_paths": [
-    "../../tensegrity/data_sets/tensegrity_real_datasets/6bar_newplat_data_v4/random_ctrl_15/",
-    "../../tensegrity/data_sets/tensegrity_real_datasets/6bar_newplat_data_v4/pdrop_3/",
-    "../../tensegrity/data_sets/tensegrity_real_datasets/6bar_newplat_data_v4/pthrow_3/"
+  "val_data_groups": [
+    {
+      "env_names": ["flat_0", "flat_1", "slope_10_degs"],
+      "data_paths": [
+        "3bar_new_platform_5degs_slope/dataset_8/lower_traj_6/",
+        "3bar_new_platform_5degs_slope/dataset_8/lower_traj_7/",
+        "3bar_new_platform_5degs_slope/dataset_8/middle_traj_6/",
+        "3bar_new_platform_5degs_slope/dataset_8/middle_traj_7/",
+        "3bar_new_platform_5degs_slope/dataset_8/upper_traj_6/",
+        "3bar_new_platform_5degs_slope/dataset_8/upper_traj_7/",
+        "new_platform_models/multi_env_v0_iter0/mppi_turn_prims_v0_ds_8/ramp_2",
+        "new_platform_models/multi_env_v0_iter1/mppi_turn_prims_v0_ds_8/ramp_2",
+        "new_platform_models/multi_env_v0_iter2/mppi_turn_prims_v0_ds_8/ramp_2"
+      ]
+    },
+    {
+      "env_names": ["ground", "left_wall", "right_wall", "top_wall", "bottom_wall"],
+      "data_paths": [
+        "3bar_new_platform_tight_corridor/dataset_8/traj_2/",
+        "3bar_new_platform_tight_corridor/dataset_8/traj_5/",
+        "3bar_new_platform_tight_corridor/dataset_8/traj_11/",
+        "3bar_new_platform_tight_corridor/dataset_8/traj_14/",
+        "3bar_new_platform_tight_corridor/dataset_8/traj_20/",
+        "3bar_new_platform_tight_corridor/dataset_8/traj_26/",
+        "new_platform_models/multi_env_v0_iter0/mppi_turn_prims_v0_ds_8/tight_corridor_2",
+        "new_platform_models/multi_env_v0_iter1/mppi_turn_prims_v0_ds_8/tight_corridor_2",
+        "new_platform_models/multi_env_v0_iter2/mppi_turn_prims_v0_ds_8/tight_corridor_2"
+      ]
+    },
+    {
+      "env_names": ["floor", "ceiling"],
+      "data_paths": [
+        "3bar_new_platform_ceiling/dataset_8/traj_6/",
+        "3bar_new_platform_ceiling/dataset_8/traj_7/",
+        "3bar_new_platform_ceiling/dataset_8/traj_8/",
+        "new_platform_models/multi_env_v0_iter0/mppi_turn_prims_v0_ds_8/ceiling_1",
+        "new_platform_models/multi_env_v0_iter1/mppi_turn_prims_v0_ds_8/ceiling_2",
+        "new_platform_models/multi_env_v0_iter2/mppi_turn_prims_v0_ds_8/ceiling_2"
+      ]
+    }
   ],
   "load_sim": false,
-  "load_sim_path": "../../tensegrity/data_sets/tensegrity_real_datasets/new_platform_models/tmp/best_rollout_model.pt",
-  "output_path": "../../tensegrity/data_sets/tensegrity_real_datasets/new_platform_models/tmp/"
+  "load_sim_path": "../../tensegrity/data_sets/tensegrity_real_datasets/new_platform_models/multi_env_v0_iter0/best_rollout_model.pt",
+  "output_path": "../../tensegrity/data_sets/tensegrity_real_datasets/new_platform_models/multi_env_v0_iter0/"
 }

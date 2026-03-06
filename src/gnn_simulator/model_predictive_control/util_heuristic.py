@@ -1,10 +1,9 @@
 import heapq
 import math
+
 import numpy as np
 import tqdm
 from scipy.spatial import KDTree
-import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
 
 
 def get_rotated_corners(x, y, w, h, theta):
@@ -19,11 +18,9 @@ def get_rotated_corners(x, y, w, h, theta):
     ]
 
     rotated_corners = []
-    cos_t = math.cos(theta)
-    sin_t = math.sin(theta)
     for corner in corners:
-        cx = corner[0] * cos_t - corner[1] * sin_t
-        cy = corner[0] * sin_t + corner[1] * cos_t
+        cx = corner[0] * np.cos(theta) - corner[1] * np.sin(theta)
+        cy = corner[0] * np.sin(theta) + corner[1] * np.cos(theta)
         rotated_corners.append((x + cx, y + cy))
 
     return rotated_corners
@@ -46,7 +43,7 @@ def get_axes(corners):
         p2 = corners[(i + 1) % len(corners)]
         edge = (p2[0] - p1[0], p2[1] - p1[1])
         axis = (-edge[1], edge[0])  # Perpendicular vector
-        length = math.sqrt(axis[0] ** 2 + axis[1] ** 2)
+        length = np.sqrt(axis[0] ** 2 + axis[1] ** 2)
         axes.append((axis[0] / length, axis[1] / length))
     return axes
 
@@ -232,20 +229,12 @@ def fill_grid(goal, boundary, grid_step=[0.1, 0.1], obstacles=()):
     obs_loc = set()
     goal = snap_to_grid(goal, grid_step)
     # h_val[goal]=0
-    gaits = [
-        [grid_step[0], 0], 
-        [0, grid_step[1]], 
-        [0, -grid_step[1]], 
-        [-grid_step[0], 0], 
-        [grid_step[0], grid_step[1]], 
-        [-grid_step[0], grid_step[1]], 
-        [grid_step[0], -grid_step[1]], 
-        [-grid_step[0], -grid_step[1]]
-    ]
+    gaits = [[grid_step[0], 0], [0, grid_step[1]], [0, -grid_step[1]], [-grid_step[0], 0], \
+             [grid_step[0], grid_step[1]], [-grid_step[0], grid_step[1]], [grid_step[0], -grid_step[1]], [-grid_step[0], -grid_step[1]]]
 
     for i in np.arange(boundary[0], boundary[1] + grid_step[0], grid_step[0]):
         for j in np.arange(boundary[2], boundary[3] + grid_step[1], grid_step[1]):
-            current = snap_to_grid((i, j), grid_step=grid_step[:2])
+            current = snap_to_grid((i, j), grid_step=grid_step)
             if simple_collision((i, j), obstacles):
                 h_val[current] = np.inf
                 obs_loc.add(current)
@@ -282,7 +271,6 @@ def fill_grid(goal, boundary, grid_step=[0.1, 0.1], obstacles=()):
             cost += penalty
 
             heapq.heappush(open_list, (node[0] + cost, neighbor))
-
     return h_val
 
 
@@ -417,8 +405,7 @@ def wave_heuristic(start, goal, grid_step=0.1, obstacles=()):
                 heapq.heappush(open_list, (f_score[neighbor], neighbor))
 
 
-def goal_rooted_motion_prim(goal, boundary, gaits, obstacles=[], robot_dims=(2.95, 1.5), 
-                            repeat_tol=0.1, max_iterations=200000):
+def goal_rooted_motion_prim(goal, boundary, gaits, obstacles=[], robot_dims=(2.95, 1.5), repeat_tol=0.07):
     # A* from goal using reverse gaits
     gaits = reverse_gait(gaits)
 
@@ -545,6 +532,7 @@ def goal_rooted_motion_prim(goal, boundary, gaits, obstacles=[], robot_dims=(2.9
     tree[goal] = {'parent': None, 'cost': 0, 'gait_idx': None}
 
     # Pre-allocate states array (avoids repeated KDTree rebuilds)
+    max_iterations = 100000
     max_states = max_iterations * len(gaits) + 1
     states_arr = np.empty((max_states, 3), dtype=np.float64)
     states_arr[0] = goal
@@ -649,16 +637,13 @@ def goal_rooted_motion_prim(goal, boundary, gaits, obstacles=[], robot_dims=(2.9
     batch_query = HeuristicQueryBatch(tree, states, kdtree)
 
     print(voxel_coverage_ratio(states, boundary, [0.1, 0.1, np.pi / 50]))
-    # obs_centers = [((obs[0] + obs[1]) / 2, (obs[2] + obs[3]) / 2) for obs in obstacles]
-    # visualize_tree(tree, goal, boundary, obs_centers)
-    # visualize_gradient_map(tree, goal, boundary, obs_centers)
 
     return tree, batch_query
 
 
 def goal_rooted_motion_prim_gpu(goal, boundary, gaits, obstacles=(),
                                 robot_dims=(2.95, 1.5), repeat_tol=0.07,
-                                device=None, max_iterations=200000):
+                                device=None):
     """GPU-accelerated goal_rooted_motion_prim using PyTorch.
 
     Same algorithm and return type as goal_rooted_motion_prim, but batches all
@@ -710,6 +695,7 @@ def goal_rooted_motion_prim_gpu(goal, boundary, gaits, obstacles=(),
         obs_t = None
 
     # pre-allocate states on GPU
+    max_iterations = 100000
     max_states = max_iterations * num_gaits + 1
     states_gpu = torch.empty((max_states, 3), dtype=torch.float64, device=device)
     states_gpu[0] = torch.tensor(goal, dtype=torch.float64, device=device)
@@ -974,227 +960,3 @@ def goal_rooted_motion_prim_gpu(goal, boundary, gaits, obstacles=(),
     print(voxel_coverage_ratio(states, boundary, [0.1, 0.1, np.pi / 50]))
 
     return tree, batch_query
-
-
-def visualize_tree(tree, goal, boundary, obstacles=[], obstacle_size=(2.0, 10.0)):
-    """Visualize the motion primitive tree with boundary, obstacles, and connections"""
-
-    x_min, x_max, y_min, y_max = boundary
-
-    fig, ax = plt.subplots(figsize=(12, 10))
-
-    # Draw boundary
-    boundary_rect = Rectangle(
-        (x_min, y_min),
-        x_max - x_min,
-        y_max - y_min,
-        fill=False,
-        edgecolor='black',
-        linewidth=2
-    )
-    ax.add_patch(boundary_rect)
-
-    # Draw obstacles
-    for obs_x, obs_y in obstacles:
-        obstacle = Rectangle(
-            (obs_x-obstacle_size[0]/2, obs_y-obstacle_size[1]/2),
-            obstacle_size[0],
-            obstacle_size[1],
-            fill=True,
-            facecolor='red',
-            edgecolor='darkred',
-            alpha=0.6
-        )
-        ax.add_patch(obstacle)
-
-    # Draw tree connections (primitives)
-    for state, info in tree.items():
-        if info['parent'] is not None:
-            parent = info['parent']
-            px, py, ptheta = parent
-            cx, cy, ctheta = state
-
-            # Draw edge from parent to child
-            ax.plot([px, cx], [py, cy], 'b-', alpha=0.3, linewidth=0.8)
-
-            # Optional: draw arrow showing direction
-            dx_arrow = cx - px
-            dy_arrow = cy - py
-            if np.sqrt(dx_arrow**2 + dy_arrow**2) > 0.01:
-                ax.arrow(px, py, dx_arrow*0.8, dy_arrow*0.8,
-                        head_width=0.03, head_length=0.02,
-                        fc='blue', ec='blue', alpha=0.2, linewidth=0.5)
-
-    # Draw tree nodes
-    states_array = np.array(list(tree.keys()))
-    ax.scatter(states_array[:, 0], states_array[:, 1],
-              c='blue', s=20, alpha=0.6, zorder=5, label='Tree Nodes')
-
-    # Draw orientation arrows for each state
-    arrow_length = 0.1
-    for state in tree.keys():
-        x, y, theta = state
-        dx = arrow_length * np.cos(theta)
-        dy = arrow_length * np.sin(theta)
-        ax.arrow(x, y, dx, dy,
-                head_width=0.04, head_length=0.03,
-                fc='green', ec='green', alpha=0.5, linewidth=1)
-
-    # Highlight goal
-    gx, gy, gtheta = goal
-    ax.scatter([gx], [gy], c='gold', s=200, marker='*',
-              edgecolors='orange', linewidths=2, zorder=10, label='Goal')
-
-    ax.set_xlim(x_min - 0.5, x_max + 0.5)
-    ax.set_ylim(y_min - 0.5, y_max + 0.5)
-    ax.set_aspect('equal')
-    ax.grid(True, alpha=0.3)
-    ax.legend()
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_title(f'Goal-Rooted Motion Primitive Tree ({len(tree)} nodes)')
-
-    # plt.tight_layout()
-    plt.savefig('tree.png')
-    # plt.show()
-
-
-def visualize_gradient_map(tree, goal, boundary, obstacles=[], obstacle_size=(2.0, 10.0), grid_resolution=1.0, search_radius=2.0):
-    """
-    Create a gradient map visualization showing averaged direction toward goal in local areas.
-
-    Parameters:
-    -----------
-    tree : dict
-        Tree structure mapping states to parent info
-    goal : tuple (x, y, theta)
-        Goal state
-    boundary : tuple (x_min, x_max, y_min, y_max)
-        Boundary of the search space
-    obstacles : list of (x, y)
-        Obstacle positions
-    obstacle_size : tuple (width, height)
-        Size of obstacles
-    grid_resolution : float
-        Resolution of the gradient grid (larger = coarser grid)
-    search_radius : float
-        Radius to search for nearby nodes to average their directions
-    """
-    x_min, x_max, y_min, y_max = boundary
-
-    fig, ax = plt.subplots(figsize=(14, 12))
-
-    # Create grid for gradient field
-    x_grid = np.arange(x_min, x_max, grid_resolution)
-    y_grid = np.arange(y_min, y_max, grid_resolution)
-    X, Y = np.meshgrid(x_grid, y_grid)
-
-    # Initialize gradient field
-    U = np.zeros_like(X)  # x-component of direction
-    V = np.zeros_like(Y)  # y-component of direction
-
-    # Build KDTree for fast nearest neighbor lookup
-    states_array = np.array(list(tree.keys()))
-    kdtree = KDTree(states_array[:, :2])
-
-    # For each grid point, find all nearby nodes and average their parent directions
-    for i in range(X.shape[0]):
-        for j in range(X.shape[1]):
-            point = [X[i, j], Y[i, j]]
-
-            # Find all nodes within search_radius
-            indices = kdtree.query_ball_point(point, r=search_radius)
-
-            if len(indices) == 0:
-                # No nodes nearby, try to find the nearest one
-                _, idx = kdtree.query(point, k=1)
-                indices = [idx]
-
-            # Collect direction vectors from all nearby nodes
-            direction_vectors = []
-            for idx in indices:
-                nearest_state = tuple(states_array[idx])
-                parent = tree[nearest_state]['parent']
-
-                if parent is not None:
-                    # Direction vector from current node to its parent (toward goal)
-                    px, py, _ = parent
-                    nx, ny, _ = nearest_state
-
-                    dx = px - nx
-                    dy = py - ny
-
-                    magnitude = np.sqrt(dx**2 + dy**2)
-                    if magnitude > 0:
-                        # Normalize and add to list
-                        direction_vectors.append((dx / magnitude, dy / magnitude))
-
-            # Average all direction vectors in this local area
-            if len(direction_vectors) > 0:
-                avg_dx = np.mean([d[0] for d in direction_vectors])
-                avg_dy = np.mean([d[1] for d in direction_vectors])
-
-                # Normalize the averaged vector
-                avg_magnitude = np.sqrt(avg_dx**2 + avg_dy**2)
-                if avg_magnitude > 0:
-                    U[i, j] = avg_dx / avg_magnitude
-                    V[i, j] = avg_dy / avg_magnitude
-            else:
-                U[i, j] = 0
-                V[i, j] = 0
-
-    # Draw boundary
-    boundary_rect = Rectangle(
-        (x_min, y_min),
-        x_max - x_min,
-        y_max - y_min,
-        fill=False,
-        edgecolor='black',
-        linewidth=2
-    )
-    ax.add_patch(boundary_rect)
-
-    # Draw obstacles
-    for obs_x, obs_y in obstacles:
-        obstacle = Rectangle(
-            (obs_x-obstacle_size[0]/2, obs_y-obstacle_size[1]/2),
-            obstacle_size[0],
-            obstacle_size[1],
-            fill=True,
-            facecolor='red',
-            edgecolor='darkred',
-            alpha=0.8,
-            zorder=5
-        )
-        ax.add_patch(obstacle)
-
-    # Create color map based on magnitude (for visualization)
-    magnitude_field = np.sqrt(U**2 + V**2)
-
-    # Plot gradient field as color map
-    im = ax.imshow(magnitude_field, extent=[x_min, x_max, y_min, y_max],
-                   origin='lower', cmap='viridis', alpha=0.6, zorder=1)
-    plt.colorbar(im, ax=ax, label='Direction Magnitude')
-
-    # Plot vector field (quiver plot) - show all arrows since grid is coarser
-    ax.quiver(X, Y, U, V,
-              color='black', alpha=0.8, scale=25, width=0.004, zorder=3,
-              headwidth=4, headlength=5)
-
-    # Highlight goal
-    gx, gy, gtheta = goal
-    ax.scatter([gx], [gy], c='gold', s=300, marker='*',
-              edgecolors='orange', linewidths=3, zorder=10, label='Goal')
-
-    ax.set_xlim(x_min, x_max)
-    ax.set_ylim(y_min, y_max)
-    ax.set_aspect('equal')
-    ax.grid(True, alpha=0.3, zorder=0)
-    ax.legend()
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_title(f'Gradient Map: Averaged Direction Toward Goal ({len(tree)} nodes)')
-
-    # plt.tight_layout()
-    plt.savefig('gradient_map.png')
-    # plt.show()

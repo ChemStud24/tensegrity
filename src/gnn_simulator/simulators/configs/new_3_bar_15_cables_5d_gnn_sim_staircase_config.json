@@ -10,6 +10,44 @@
   "nmessage_passing_steps": 4,
   "nmlp_layers": 2,
   "mlp_hidden_dim": 512,
+  "environment": {
+    "step_0": {
+      "type": "StaticPrism",
+      "pos": [-8.0, 0.0, 0.2],
+      "rot_mat": [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+      "half_lens": [2, 30, 0.2]
+    },
+    "step_1": {
+      "type": "StaticPrism",
+      "pos": [-4.0, 0.0, 0.4],
+      "rot_mat": [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+      "half_lens": [2, 30, 0.4]
+    },
+    "step_3": {
+      "type": "StaticPrism",
+      "pos": [0.0, 0.0, 0.6],
+      "rot_mat": [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+      "half_lens": [2, 30, 0.6]
+    },
+    "step_4": {
+      "type": "StaticPrism",
+      "pos": [4.0, 0.0, 0.8],
+      "rot_mat": [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+      "half_lens": [2, 30, 0.8]
+    },
+    "step_5": {
+      "type": "StaticPrism",
+      "pos": [18.0, 0.0, 1.0],
+      "rot_mat": [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+      "half_lens": [12, 30, 1.0]
+    },
+    "ground": {
+      "type": "StaticRectPlane",
+      "pos": [0.0, 0.0, 0.0],
+      "rot_mat": [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+      "half_lens": [30.0, 30.0]
+    }
+  },
   "tensegrity_cfg": {
     "name": "3bar",
     "rods": [
@@ -107,7 +145,7 @@
           0,
           0
         ],
-	    "rod_split_length": 0.98,
+	"rod_split_length": 0.98,
         "rod_radius": 0.0159,
         "rod_mass": 6.5,
         "sphere_radius": 0.175,

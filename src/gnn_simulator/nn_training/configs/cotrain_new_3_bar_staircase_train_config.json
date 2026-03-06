@@ -1,0 +1,49 @@
+{
+  "sim_config": "gnn_simulator/simulators/configs/new_3_bar_15_cables_5d_gnn_sim_staircase_config.json",
+  "num_steps_fwd": 1,
+  "num_hist": 1,
+  "num_ctrls_hist": 20,
+  "batch_size": 128,
+  "save_rollout_poses": true,
+  "trainable_params": [
+  ],
+  "optimizer_params": {
+    "lr": 1e-5,
+    "weight_decay": 0.01
+  },
+  "data_root": "../data_sets/tensegrity_real_datasets/",
+  "train_data_paths": [
+    "3bar_new_platform_staircase_5steps/dataset_8/lower_traj_0/",
+    "3bar_new_platform_staircase_5steps/dataset_8/lower_traj_1/",
+    "3bar_new_platform_staircase_5steps/dataset_8/lower_traj_2/",
+    "3bar_new_platform_staircase_5steps/dataset_8/lower_traj_3/",
+    "3bar_new_platform_staircase_5steps/dataset_8/lower_traj_4/",
+    "3bar_new_platform_staircase_5steps/dataset_8/lower_traj_5/",
+    "3bar_new_platform_staircase_5steps/dataset_8/middle_traj_0/",
+    "3bar_new_platform_staircase_5steps/dataset_8/middle_traj_1/",
+    "3bar_new_platform_staircase_5steps/dataset_8/middle_traj_2/",
+    "3bar_new_platform_staircase_5steps/dataset_8/middle_traj_3/",
+    "3bar_new_platform_staircase_5steps/dataset_8/middle_traj_4/",
+    "3bar_new_platform_staircase_5steps/dataset_8/middle_traj_5/",
+    "3bar_new_platform_staircase_5steps/dataset_8/upper_traj_0/",
+    "3bar_new_platform_staircase_5steps/dataset_8/upper_traj_1/",
+    "3bar_new_platform_staircase_5steps/dataset_8/upper_traj_2/",
+    "3bar_new_platform_staircase_5steps/dataset_8/upper_traj_3/",
+    "3bar_new_platform_staircase_5steps/dataset_8/upper_traj_4/",
+    "3bar_new_platform_staircase_5steps/dataset_8/upper_traj_5/"
+  ],
+  "val_data_paths": [
+    "3bar_new_platform_staircase_5steps/dataset_8/lower_traj_6/",
+    "3bar_new_platform_staircase_5steps/dataset_8/lower_traj_7/",
+    "3bar_new_platform_staircase_5steps/dataset_8/lower_traj_8/",
+    "3bar_new_platform_staircase_5steps/dataset_8/middle_traj_6/",
+    "3bar_new_platform_staircase_5steps/dataset_8/middle_traj_7/",
+    "3bar_new_platform_staircase_5steps/dataset_8/middle_traj_8/",
+    "3bar_new_platform_staircase_5steps/dataset_8/upper_traj_6/",
+    "3bar_new_platform_staircase_5steps/dataset_8/upper_traj_7/",
+    "3bar_new_platform_staircase_5steps/dataset_8/upper_traj_8/"
+  ],
+  "load_sim": false,
+  "load_sim_path": "../../tensegrity/data_sets/tensegrity_real_datasets/new_platform_models/staircase_v0_iter0/best_rollout_model.pt",
+  "output_path": "../../tensegrity/data_sets/tensegrity_real_datasets/new_platform_models/staircase_v0_iter0/"
+}

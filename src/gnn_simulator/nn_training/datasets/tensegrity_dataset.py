@@ -201,3 +201,25 @@ class TensegrityMultiSimMotorDataset(TensegrityDataset):
         )
 
         return processed_data
+
+
+class PlanarEnvGroupDataset(TensegrityMultiSimMotorDataset):
+    """Dataset for one environment group; adds a constant env_group_id to every item."""
+
+    def __init__(self,
+                 raw_data_dict,
+                 num_steps_fwd=1,
+                 dt=0.01,
+                 num_ctrls_hist=1,
+                 env_group_id: int = 0):
+        self._env_group_id = env_group_id
+        super().__init__(raw_data_dict,
+                         num_steps_fwd=num_steps_fwd,
+                         dt=dt,
+                         num_ctrls_hist=num_ctrls_hist)
+
+    def _process_raw_data(self, raw_data_dict):
+        processed_data = super()._process_raw_data(raw_data_dict)
+        for item in processed_data:
+            item['env_group_id'] = torch.tensor([[self._env_group_id]], dtype=torch.long)
+        return processed_data

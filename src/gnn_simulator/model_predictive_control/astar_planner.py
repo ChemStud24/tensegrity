@@ -19,7 +19,7 @@ from gnn_simulator.utilities import torch_quaternion
 # But for this purpose it is fine
 # Plus I can't figure out how to handle this without looping thorugh all the points which would ruin the whole point of using a kd-tree
 
-def is_point_within_distance_r2(point, closed_list, distance):
+def is_point_within_distance(point, closed_list, distance):
     """
     Check if a point is within a certain distance of any point in the dictionary.
 
@@ -39,62 +39,7 @@ def is_point_within_distance_r2(point, closed_list, distance):
     tree = KDTree(closed_list)
 
     # Query the KDTree
-    indices = tree.query_ball_point(point[:2], distance)
-
-    return len(indices) > 0
-
-
-def is_point_within_distance_se2(point, closed_list, distance, angle_distance_factor=0.05):
-    """
-    Check if a point is within a certain distance of any point in the closed list.
-
-    The function handles SE(2) space (x, y, theta) by automatically scaling the
-    angle dimension based on the distance parameter. The angle_scale is computed as:
-    angle_scale = distance / (pi * angle_distance_factor)
-
-    This means that at the boundary distance, an angular difference of
-    (pi * angle_distance_factor) radians will contribute approximately 'distance'
-    to the metric.
-
-    Parameters:
-    - point: tuple (x, y, theta) representing the query point.
-    - closed_list: list of tuples [(x1, y1, theta1), (x2, y2, theta2), ...].
-    - distance: float, the maximum distance to check.
-    - angle_distance_factor: float, controls angular sensitivity.
-                            Default 0.1 means pi/10 radians (~18 degrees) at distance d
-                            contributes roughly d to the metric.
-                            Smaller values make angle differences matter more.
-
-    Returns:
-    - bool: True if the point is within the distance of any closed_list point, False otherwise.
-    """
-    if not closed_list:
-        return False
-
-    # Automatically compute angle_scale based on distance
-    # This makes angle differences proportionally meaningful
-    angle_scale = distance / (np.pi * angle_distance_factor)
-
-    # Convert to numpy arrays for easier manipulation
-    closed_array = np.array(closed_list)
-    query_point = np.array(point)
-
-    # Normalize all angles to [-pi, pi] to handle wraparound better
-    closed_array[:, 2] = np.arctan2(np.sin(closed_array[:, 2]), np.cos(closed_array[:, 2]))
-    query_point[2] = np.arctan2(np.sin(query_point[2]), np.cos(query_point[2]))
-
-    # Scale the angle dimension
-    scaled_closed = closed_array.copy()
-    scaled_closed[:, 2] *= angle_scale
-
-    scaled_query = query_point.copy()
-    scaled_query[2] *= angle_scale
-
-    # Build KDTree with scaled coordinates
-    tree = KDTree(scaled_closed)
-
-    # Query the KDTree
-    indices = tree.query_ball_point(scaled_query, distance)
+    indices = tree.query_ball_point(point, distance)
 
     return len(indices) > 0
 
@@ -113,9 +58,12 @@ def norm_angle(new_angle):
     return (new_angle + np.pi) % (2 * np.pi) - np.pi
 
 def heuristic(a, b, obstacles, heur_type, grid_step, k=0, grid=[]):
-    approx = snap_to_grid(a[:2], grid_step)
-    if heur_type == "wave" and approx in grid:
+    if heur_type == "wave":
+        approx = snap_to_grid(a[:2], grid_step)
+        if approx in grid:
             return grid[approx]
+        else:
+            return np.inf
     else:
         return dist_heuristic(a[:2], b[:2], obstacles, k)
 
@@ -134,16 +82,11 @@ def astar(start,
           boundary=(-1, 1, -1, 1),
           grid_step=0.01,
           robot_dims=(2.95, 1.5),
-          precomputed_heuristic=None):
-    print(f"start`: {start}, goal: {goal},obstacles: {obstacles}, repeat_tol: {repeat_tol}")
-    print(f"gaits: {gaits}")
-    # quit()
+          wave_h=None):
     if heur_type == "wave":
-        h = fill_grid(goal[:2], boundary, grid_step, obstacles=obstacles) if precomputed_heuristic is None else precomputed_heuristic
-    elif heur_type == "motion_prim":
-        h = goal_rooted_motion_prim(goal, boundary, gaits, obstacles=obstacles) if precomputed_heuristic is None else precomputed_heuristic
+        h = fill_grid(goal[:2], boundary, grid_step, obstacles=obstacles) if wave_h is None else wave_h
     else:
-        h = precomputed_heuristic if precomputed_heuristic is not None else {}
+        h = {}
     # Initialize open and closed lists
     open_list = []
     heapq.heappush(open_list, (0, start, -1))
@@ -158,7 +101,7 @@ def astar(start,
         current = node[1]
 
         if (coll_det(current, obstacles, boundary=boundary, robot_dims=robot_dims)
-                or (len(closed_list) > 0 and is_point_within_distance_r2(current[:2], closed_list, repeat_tol))):
+                or (len(closed_list) > 0 and is_point_within_distance(current[:2], closed_list, repeat_tol))):
             closed_list.append(current[:2])
             continue
 
@@ -180,7 +123,6 @@ def astar(start,
                 movements.append(move)
                 current = prev
             path.append(start)
-            print(f"Path found: {path[::-1]}, movements: {movements[::-1]}")
             return path[::-1], movements[::-1], h
 
         if single_push:
@@ -256,6 +198,13 @@ def astar_w_mp_timeout(astar_kwargs, timeout=2):
             process.terminate()
             break
 
+    # path, movements = None, []
+    # if process.is_alive():
+    #     print(f"A* exceeded timelimit {timeout} seconds.")
+    #     process.terminate()
+    # elif not queue.empty():
+    #     path, movements, _ = queue.get()
+
     return path, movements
 
 
@@ -276,14 +225,13 @@ class TensegrityAStarPlanner(torch.nn.Module):
                  tol=1.0,
                  goal=None,
                  rot_tol=2 * np.pi,
-                 repeat_tol=0.1,
+                 repeat_tol=0.01,
                  single_push=False,
                  stochastic=True,
                  heur_type="dist",
-                 grid_step=[0.1, 0.1],
+                 grid_step=0.1,
                  robot_rod_length=2.95,
-                 robot_dims=(2.95, 1.5),
-                 wave_h=None):
+                 robot_dims=(2.95, 1.5)):
         super().__init__()
 
         # self.curr_pose = curr_pose
@@ -303,11 +251,12 @@ class TensegrityAStarPlanner(torch.nn.Module):
         self.heur_type = heur_type
         self.grid_step = grid_step
         self.end_pts = None
+
         self.path = None
         self.movements = None
 
         self.wave_h = None
-        if wave_h is None and heur_type == 'wave':
+        if heur_type == 'wave':
             self.wave_h = fill_grid(
                 self.goal[:2],
                 self.boundary,
@@ -388,7 +337,7 @@ class TensegrityAStarPlanner(torch.nn.Module):
             heur_type=self.heur_type,
             boundary=self.boundary,
             grid_step=self.grid_step,
-            precomputed_heuristic=self.wave_h,
+            wave_h=self.wave_h,
         )
         path, tmp_movements = astar_w_mp_timeout(kwargs, 3)
         # print(path[1])

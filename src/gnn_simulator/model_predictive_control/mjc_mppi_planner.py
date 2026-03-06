@@ -526,7 +526,7 @@ class MjcMPPIPlanner(torch.nn.Module):
     # ------------------------------------------------------------------
 
     def reset_sim_pose(self, curr_pose_time, prev_pose_time,
-                       rest_lengths=None, motor_speeds=None):
+                       rest_lengths=None, motor_speeds=None, batch_size=1):
         """Set the primary sim state from pose observations."""
         curr_pose, curr_timestamp = curr_pose_time
         curr_pose = self.map(curr_pose).reshape(-1, 7).numpy()  # (num_rods, 7)
@@ -562,7 +562,7 @@ class MjcMPPIPlanner(torch.nn.Module):
 
         self._set_sim_state(self.sim, qpos, qvel, rest_lens_np, motor_speeds_np)
 
-    def reset_sim_state(self, curr_state, motor_speeds=None, rest_lengths=None):
+    def reset_sim_state(self, curr_state, motor_speeds=None, rest_lengths=None, batch_size=1):
         """Reset the primary sim from a full state tensor (num_rods x 13)."""
         curr_state = self.map(curr_state).reshape(-1, 13).numpy()
         qpos = curr_state[:, :7].flatten()
