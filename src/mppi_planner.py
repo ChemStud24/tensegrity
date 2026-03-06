@@ -425,13 +425,12 @@ if __name__ == '__main__':
 	# obstacles = ((0,250, -650, 800), (1550,1800, -1600, -600))
 	# boundary = (-1000, 3500, -1800, 800)
 
-	start = (100, 1400, -np.pi/2)
+	start = (400, 1300, -np.pi/2)
 	goal = (1900, 500, -np.pi/2)
 	# obstacles = ((550,650, 1200,2400), (1750,1850, 600,1600))
 	# obstacles = ((550,650, 300,500), (1750,1850, 1300,1500))
-	obstacles = []
-	boundary = (-300, 2200, 100, 1700)
-	# boundary = (-300, 2200, 100, 1700)
+	obstacles = ((460,730,430,800),(1330,1600,1030,1400))
+	boundary = (200, 2100, 300, 1400)
 
 	# start = (1, 1.4, -np.pi/2)
 	# goal = (1.9, 0.4, -np.pi/2)
@@ -563,15 +562,15 @@ if __name__ == '__main__':
 		'repeat_tol': 0.4,
 	}
 	_repo_root = os.path.dirname(_script_dir)
-	_model_path = os.path.join(_repo_root, '..', 'data_sets', 'tensegrity_real_datasets', 'new_platform_models', '3bar_ds8_multi_8_mppi_turn_prims_v2.2', 'best_rollout_model.pt')
+	_model_path = os.path.join(_repo_root, '3bar_ds8_multi_8_mppi_turn_prims_v2.2', 'best_rollout_model.pt')
 	mppi_params = {
 		"sim": _model_path,
 		'strategy': 'min',
 		'device': 'cuda',
 		'cost_weights': (1.0, 0.0, 0.0),
-		'ctrl_interval': 1.0,
+		'ctrl_interval': 0.5,
 		'horizon': 2.0,
-		'n_samples': 200,
+		'n_samples': 100,
 		'use_motion_prim_heuristic': False,
 	}
 	
