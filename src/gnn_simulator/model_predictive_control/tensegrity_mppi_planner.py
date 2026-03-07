@@ -24,6 +24,7 @@ class TensegrityMPPIPlanner(torch.nn.Module):
                  u_bounds: tuple = (-1., 1.),
                  gamma: float = 1.0,
                  rest_len_bounds: tuple = (0.3, 2.0),
+                 cable_len_bounds: tuple = (0.9, 2.3),
                  goal: tuple | None = None,
                  obstacles: tuple = (),
                  boundary: tuple = (),
@@ -57,9 +58,6 @@ class TensegrityMPPIPlanner(torch.nn.Module):
             # self.sim.curr_env_planar_objs = [env_mapping[k] for k in sim_config['environment'].keys()]
             self.sim.to(device)
 
-        if torch_compile:
-            self.sim.run_compile()
-
         self.dt = self.sim.data_processor.dt.item()
 
         self.min_vel_dt = min_vel_dt
@@ -68,6 +66,7 @@ class TensegrityMPPIPlanner(torch.nn.Module):
         self.ctrl_interval = round(ctrl_interval / self.dt)
         self.dtype = self.sim.dtype
         self.device = device
+        self.torch_compile = torch_compile
 
         self.has_ceiling = ceiling
 
@@ -92,6 +91,7 @@ class TensegrityMPPIPlanner(torch.nn.Module):
 
         self.ctrl_min, self.ctrl_max = u_bounds
         self.rest_min, self.rest_max = rest_len_bounds
+        self.cable_len_min, self.cable_len_max = cable_len_bounds
         self.n_ctrls = len(self.sim.robot.actuated_cables)
         self.prev_ctrls = torch.zeros(
             (1, self.n_ctrls, self.horizon // self.ctrl_interval),
@@ -566,7 +566,7 @@ class TensegrityMPPIPlanner(torch.nn.Module):
         return lower.flatten(), upper.flatten()
 
     def mppi_simple(self, curr_state, curr_rest_lens, curr_motor_speeds, nsamples):
-        lower, upper = self.compute_ctrl_lims(curr_rest_lens, curr_motor_speeds)
+        lower, upper = self.compute_ctrl_lims(curr_rest_lens, curr_motor_speeds, curr_state)
         # lower = -ones(6, ref_tensor=curr_state)
         # upper = ones(6, ref_tensor=curr_state)
         #

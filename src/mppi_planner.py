@@ -49,6 +49,10 @@ from Tensegrity_model_inputs import *
 from gnn_simulator.model_predictive_control.hybrid_planner import HybridAStarMPPIPlanner
 import torch
 
+torch.backends.cuda.matmul.allow_tf32 = True
+torch._dynamo.config.cache_size_limit = 512
+
+
 class PlannerMPPI:
 
 	def __init__(self, start, goal, boundary, init_cable_lengths, obstacles=[], grid_step=10, tol=0.1,
@@ -63,6 +67,7 @@ class PlannerMPPI:
 
 		self.grid_step = grid_step
 		self.tol = tol
+		self.first_compile = True
 
 		pub_topic = '/action_mppi_msg'
 		self.pub = rospy.Publisher(pub_topic, ActionHybridMPPI, queue_size=10)
@@ -253,6 +258,10 @@ class PlannerMPPI:
 		if len(latest_poses) == 0:
 			self.logger.info("No poses available")
 			return
+
+		if self.planner.mppi_controller.torch_compile and self.first_compile:
+			self.planner.mppi_controller.sim.run_compile()
+			self.first_compile = False
 
 		# Check if we've reached the goal
 		last_pose = latest_poses[-1][0].reshape(3, 7)  # (3 rods, 7D)
@@ -562,7 +571,7 @@ if __name__ == '__main__':
 		'repeat_tol': 0.4,
 	}
 	_repo_root = os.path.dirname(_script_dir)
-	_model_path = os.path.join(_repo_root, '3bar_ds8_multi_8_mppi_turn_prims_v2.2', 'best_rollout_model.pt')
+	_model_path = os.path.join(_repo_root, '../data_sets/tensegrity_real_datasets/new_platform_models/3bar_co_train_high_fric_real_dl', 'best_rollout_model.pt')
 	mppi_params = {
 		"sim": _model_path,
 		'strategy': 'min',
@@ -572,9 +581,11 @@ if __name__ == '__main__':
 		'horizon': 2.0,
 		'n_samples': 100,
 		'use_motion_prim_heuristic': False,
+		'torch_compile': True
 	}
 	
 	planner_params = {
+		'planner_type': 'mppi_turn_prims',  # astar_only or mppi_turn_prims
 		'mppi_idle_time': 1e10,#change for astar only: -1e10, for mppi: 1e10
         'mppi_idle_dist': 1.0,
 		'mppi_params': mppi_params,

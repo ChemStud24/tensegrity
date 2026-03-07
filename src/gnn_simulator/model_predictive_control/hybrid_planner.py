@@ -85,7 +85,7 @@ class HybridAStarMPPIPlanner(torch.nn.Module):
     def reset_sim_state(self, curr_state, motor_speeds, rest_lengths, batch_size=1):
         self.mppi_controller.reset_sim_state(curr_state, motor_speeds, rest_lengths, batch_size)
 
-    def plan1(self, prev_n_pose_time_tups, rest_lens, motor_speeds):
+    def plan(self, prev_n_pose_time_tups, rest_lens, motor_speeds):
         curr_pose, curr_timestamp = prev_n_pose_time_tups[-1]
         com = curr_pose.reshape(-1, 7)[:, :2].mean(axis=0, keepdims=True)
         curr_dir = self.mppi_controller.get_curr_dir(curr_pose)
