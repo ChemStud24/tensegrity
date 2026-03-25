@@ -42,6 +42,7 @@ class TensegrityRobot:
         self.gyroscope = [[0]*3 for _ in range(3)]
         self.encoder_counts = [0]*self.num_motors
         self.encoder_length = [0]*self.num_motors
+        self.absolute_encoder_length = [0]*self.num_motors
         self.RANGE = 80
         self.LEFT_RANGE = 80
         self.max_speed = 60
