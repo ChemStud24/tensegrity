@@ -92,6 +92,7 @@ class TensegrityRobot:
         self.gyroscope = [[0] * 3 for _ in range(3)]
         self.encoder_counts = [0] * self.num_motors
         self.encoder_length = [0] * self.num_motors
+        self.absolute_encoder_length = [0] * self.num_motors
         self.RANGE024 = 100
         self.RANGE135 = 100
         self.max_cable_length = 240 
@@ -329,8 +330,10 @@ class TensegrityRobot:
             motor.encoder_counts = int(self.encoder_counts[motor_id])
             if(motor.id % 2 == 1):
                 motor.encoder_length = float(self.encoder_length[motor_id])# NEW
+                motor.absolute_encoder_length = 180 + float(self.encoder_length[motor_id])
             else:
-                motor.encoder_length = float(-self.encoder_length[motor_id])'''
+                motor.encoder_length = float(-self.encoder_length[motor_id])
+                motor.absolute_encoder_length = 180 - float(self.encoder_length[motor_id])
             #motor.encoder_length = float(self.encoder_length[motor_id])
             control_msg.motors.append(motor)
 
