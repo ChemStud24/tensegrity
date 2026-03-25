@@ -10,3 +10,4 @@ float64 d_error
 float64 cum_error
 int64 encoder_counts
 float64 encoder_length
+float64 absolute_encoder_length
