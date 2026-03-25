@@ -77,7 +77,7 @@ class SyncDataWriter:
         data['info'] = {'min_length':control_msg.info.min_length,'RANGE':control_msg.info.RANGE,'RANGE024':control_msg.info.RANGE024,'RANGE135':control_msg.info.RANGE135,'MAX_RANGE':control_msg.info.MAX_RANGE,'MIN_RANGE':control_msg.info.MIN_RANGE,'max_speed':control_msg.info.max_speed,'tol':control_msg.info.tol,'low_tol':control_msg.info.low_tol,'P':control_msg.info.P,'I':control_msg.info.I,'D':control_msg.info.D}
         data['motors'] = {}
         for motor in control_msg.motors:
-            data['motors'][motor.id] = {'target':motor.target,'position':motor.position,'speed':motor.speed,'done':motor.done,'error':motor.error,'d_error':motor.d_error,'cum_error':motor.cum_error,'encoder_counts':motor.encoder_counts,'encoder_length':motor.encoder_length}
+            data['motors'][motor.id] = {'target':motor.target,'position':motor.position,'speed':motor.speed,'done':motor.done,'error':motor.error,'d_error':motor.d_error,'cum_error':motor.cum_error,'encoder_counts':motor.encoder_counts,'encoder_length':motor.encoder_length, 'absolute_encoder_length': motor.absolute_encoder_length}
         data['sensors'] = {}
         for sensor in control_msg.sensors:
             data['sensors'][sensor.id] = {'length':sensor.length,'capacitance':sensor.capacitance}
