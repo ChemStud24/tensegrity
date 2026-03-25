@@ -670,7 +670,7 @@ class Tracker:
         data['info'] = {'min_length':strain_msg.info.min_length,'RANGE':strain_msg.info.RANGE,'RANGE024':strain_msg.info.RANGE024,'RANGE135':strain_msg.info.RANGE135,'MAX_RANGE':strain_msg.info.MAX_RANGE,'MIN_RANGE':strain_msg.info.MIN_RANGE,'max_speed':strain_msg.info.max_speed,'tol':strain_msg.info.tol,'low_tol':strain_msg.info.low_tol,'P':strain_msg.info.P,'I':strain_msg.info.I,'D':strain_msg.info.D,'dist_weight':strain_msg.info.dist_weight,'ang_weight':strain_msg.info.ang_weight,'prog_weight':strain_msg.info.prog_weight}
         data['motors'] = {}
         for motor in strain_msg.motors:
-            data['motors'][motor.id] = {'target':motor.target,'position':motor.position,'speed':motor.speed,'done':motor.done,'error':motor.error,'d_error':motor.d_error,'cum_error':motor.cum_error,'encoder_counts':motor.encoder_counts,'encoder_length':motor.encoder_length}
+            data['motors'][motor.id] = {'target':motor.target,'position':motor.position,'speed':motor.speed,'done':motor.done,'error':motor.error,'d_error':motor.d_error,'cum_error':motor.cum_error,'encoder_counts':motor.encoder_counts,'encoder_length':motor.encoder_length, 'absolute_encoder_length':motor.absolute_encoder_length}
         data['sensors'] = {}
         for sensor in strain_msg.sensors:
             data['sensors'][sensor.id] = {'length':sensor.length,'capacitance':sensor.capacitance}
