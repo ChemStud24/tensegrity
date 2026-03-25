@@ -216,9 +216,11 @@ class TensegrityRobot:
            motor.done = self.done[motor_id]
            motor.encoder_counts = int(self.encoder_counts[motor_id])
            if(motor.id % 2 == 1):
-               motor.encoder_length = 180 + self.encoder_length[motor_id]# NEW
+               motor.encoder_length = float(self.encoder_length[motor_id])# NEW
+               motor.absolute_encoder_length = 180 + float(self.encoder_length[motor_id])
            else:
-               motor.encoder_length = 180 - self.encoder_length[motor_id]
+               motor.encoder_length = float(-self.encoder_length[motor_id])
+               motor.absolute_encoder_length = 180 - float(self.encoder_length[motor_id])
            #motor.encoder_length = self.encoder_length[motor_id]
            control_msg.motors.append(motor)
         # sensors
