@@ -327,11 +327,11 @@ class TensegrityRobot:
             motor.speed = float(self.speed[motor_id])
             motor.done = bool(self.done[motor_id]) if self.done is not None else False
             motor.encoder_counts = int(self.encoder_counts[motor_id])
-            '''if(motor.id % 2 == 1):
-                motor.encoder_length = 180 + self.encoder_length[motor_id]# NEW
+            if(motor.id % 2 == 1):
+                motor.encoder_length = float(self.encoder_length[motor_id])# NEW
             else:
-                motor.encoder_length = 180 - self.encoder_length[motor_id]'''
-            motor.encoder_length = float(self.encoder_length[motor_id])
+                motor.encoder_length = float(-self.encoder_length[motor_id])'''
+            #motor.encoder_length = float(self.encoder_length[motor_id])
             control_msg.motors.append(motor)
 
         for sensor_id in range(self.num_sensors):
