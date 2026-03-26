@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import os
-import sys
 import time
 import math
 from math import cos, sin
@@ -29,7 +28,7 @@ class S_Q_Pressed(Exception):
     pass
 
 class TensegrityRobot:
-    def __init__(self, calibration_filename):
+    def __init__(self):
         self.num_sensors = 9
         self.num_motors = 6
         self.num_imus = 2
@@ -45,14 +44,13 @@ class TensegrityRobot:
         self.d_error = [0] * self.num_motors
         self.command = [0] * self.num_motors
         self.speed = [0] * self.num_motors
-        # self.flip = [-1, 1, -1, 1, -1, 1] # flip direction of motors
         self.accelerometer = [[0]*3 for _ in range(3)]
         self.gyroscope = [[0]*3 for _ in range(3)]
         self.encoder_counts = [0]*self.num_motors
         self.encoder_length = [0]*self.num_motors
         self.RANGE024 = 100
         self.RANGE135 = 100
-        self.max_speed = 99
+        self.max_speed = 0
         self.tol = 0.15
         self.low_tol = 0.15
         self.P = 10.0
@@ -109,11 +107,10 @@ class TensegrityRobot:
         # finishing setup.
         print("Opened connection press s to stop motor and q to quit")
 
-        # # init tracker
-        # if '/tracking_service' in rosnode.get_node_names():
-        #     self.trajectory = obstacle_trajectory
-        #     self.init_tracker()
-        self.is_tracker_initialized = False
+        # init tracker
+        if '/tracking_service' in rosnode.get_node_names():
+            self.trajectory = obstacle_trajectory
+            self.init_tracker()
         
         # communicating with the planner
         self.action_sub = rospy.Subscriber('/action_msg',Action,self.mpc_callback)
@@ -130,8 +127,8 @@ class TensegrityRobot:
         rospy.init_node('tensegrity')
         self.control_pub = rospy.Publisher('control_msg', TensegrityStamped, queue_size=10) ## correct ??
 
-        # package_path = rospkg.RosPack().get_path('tensegrity')
-        # calibration_file = os.path.join(package_path,'calibration/new_calibration.json')
+        package_path = rospkg.RosPack().get_path('tensegrity')
+        calibration_file = os.path.join(package_path,'calibration/new_calibration.json')
         
         self.m, self.b, self.flip = self.read_calibration_file(self.calibration_file)
         
@@ -142,24 +139,23 @@ class TensegrityRobot:
         states = np.array([[0.0, 1.0, 0.1, 0.0, 1.0, 1.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]])#steps gait
         states = np.array([[0.0, 1.0, 1.0, 0.0, 1.0, 0.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]) # one step and recover
         """
-        self.states = np.array([[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 1, 0.1],[1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.0, 1, 0.1, 0.0],[0.1, 1.0, 1.0, 0.1, 1.0, 1.0],[1.0, 0.0, 1.0, 0.1, 0.0, 1]]) # quasi-static rolling
+        self.states = np.array([[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 0.8, 0.1],[1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.0, 0.8, 0.1, 0.0],[0.1, 1.0, 1.0, 0.1, 1.0, 1.0],[1.0, 0.0, 1.0, 0.1, 0.0, 0.8]]) # quasi-static rolling
         #self.states = np.array([[1, 1, 1, 0, 1, 1], [1, 0, 1, 0, 1, 1], [0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]]) # counterclockwise
         #self.states = np.array([[0, 0, 0, 1, 0, 1], [0, 0, 0, 0, 0, 0.7], [0, 0, 0.7, 0, 1, 1], [1, 1, 1, 1, 1, 1]]) # clockwise 
         #self.states = np.array([[1, 1, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0], [0, 1, 1, 0, 0.8, 0], [1, 1, 1, 1, 1, 1], [1, 0, 1, 0, 0, 0], [1, 0, 0, 0, 0, 0], [1, 1, 0, 0.8, 0, 0], [1, 1, 1, 1, 1, 1], [0, 1, 1, 0, 0, 0], [0, 0, 1, 0, 0, 0], [1, 0, 1, 0, 0, 0.8], [1, 1, 1, 1, 1, 1]]) #clockwise
         #self.states = np.array([[0, 1, 1, 1, 1, 1], [0, 1, 1, 1, 1, 0], [0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]]) # counterclockwise
         # self.states = np.array([[1,1,1,1,1,1],[0.2,1,1,1,1,1],[1,1,1,1,1,1],[1,0.2,1,1,1,1],[1,1,1,1,1,1],[1,1,0.2,1,1,1],[1,1,1,1,1,1],[1,1,1,0.2,1,1],[1,1,1,1,1,1],[1,1,1,1,0.2,1],[1,1,1,1,1,1],[1,1,1,1,1,0.2]])
-        self.states = np.array([[1,1,1,1,1,1],[1,1,1,1,1,1],[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 1.0, 0.1]])
         self.num_steps = len(self.states)
-        self.state = 1 # do a one full roll
+        self.state = 0
         self.offset = 3
         self.done = np.array([False] * self.num_motors)
         self.stop_msg = ' '.join(['0'] * (self.num_motors+2*self.offset))
-        # self.init_speed = 70
+        self.init_speed = 70
 
         # gaits
         # roll = np.array([[1,1,1,1,1,1],[1,1,1,1,1,1],[1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 1.0, 0.1]])
         roll = np.array([[1,1,1,1,1,1],[1,1,1,1,1,1],[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 1.0, 0.1]])
-        cw = np.array([[1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1], [0, 0, 0, 1, 0, 1], [0, 0, 0, 0, 0, 1], [0, 0, 0.7, 0, 1, 1]])
+        cw = np.array([[1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1], [0, 0, 0, 1, 0, 1], [0, 0, 0, 0, 0, 0.7], [0, 0, 0.7, 0, 1, 1]])
         ccw = np.array([[1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1], [1, 1, 1, 0, 1, 1], [1, 0, 1, 0, 1, 1], [0, 0, 0, 0, 0, 0]])
         self.all_gaits = {'roll':roll,'ccw':ccw,'cw':cw}
 
@@ -182,36 +178,9 @@ class TensegrityRobot:
                 flip = data.get('flip')
             else:
                 raise FileError('Invalid calibration file')
-            return m, b, flip
+            return m, b
         except FileError as ce:
             print("Error occurred:", ce)
-
-    # def quat2vec(self, q):
-    #     q0 = float(q[0])
-    #     q1 = float(q[1])
-    #     q2 = float(q[2])
-    #     q3 = float(q[3])
-    #     roll = -math.atan2(2*(q0*q1+q2*q3), 1-2*(q1*q1+q2*q2))#convert quarternion to Euler angle for roll angle
-    #     #convert quarternion to Euler angle for pitch angle
-    #     sinp = 2*(q0*q2-q3*q1)
-    #     #deal with gimlock
-    #     if abs(sinp) >= 1:
-    #         pitch = math.copysign(np.pi/2, sinp)
-    #     else:
-    #         pitch = math.asin(sinp)
-        
-    #     #yaw = -math.atan2(2*(q0*q3+q1*q2), 1-2*(q2*q2+q3*q3))-np.pi/2
-    #     #convert quarternion to Euler angle for pitch angle
-    #     yaw = -math.atan2(2*(q0*q3+q1*q2), 1-2*(q2*q2+q3*q3))+np.pi/2
-
-    #     k=np.array([cos(yaw)*cos(pitch), sin(pitch),sin(yaw)*cos(pitch)])
-    #     r = R.from_rotvec(-np.pi/2 * np.array([0, 1, 0]))
-    #     k = r.apply(k)
-    #     y=np.array([0,1,0])
-    #     s=np.cross(k,y)
-    #     v=np.cross(s,k)
-    #     vrot=v*cos(roll)+np.cross(k,v)*sin(roll)
-    #     return np.cross(k,vrot)
 
     def send_command(self, input_string, addr, delay_time):
         self.sock_send.sendto(input_string.encode('utf-8'), addr)
@@ -257,19 +226,7 @@ class TensegrityRobot:
            sensor.length = self.length[sensor_id]
            sensor.capacitance = self.cap[sensor_id]
            control_msg.sensors.append(sensor)
-        # imu
-        # for imu_id in range(self.num_imus):
-        #    IMU = Imu()
-        #    IMU.id = imu_id
-        #    if any(self.imu[imu_id]) == None:
-        #        IMU.x = None
-        #        IMU.y = None
-        #        IMU.z = None
-        #    else:
-        #        IMU.x = self.imu[imu_id][0]
-        #        IMU.y = self.imu[imu_id][1]
-        #        IMU.z = self.imu[imu_id][2]
-        #    imu_msg.imus.append(IMU)
+        # onboard IMU
         for rod in range(3):
             IMU = Imu()
             IMU.ax = self.accelerometer[rod][0]
@@ -294,8 +251,6 @@ class TensegrityRobot:
 
         # publish
         self.control_pub.publish(control_msg)
-        # strain_pub.publish(strain_msg)
-        # imu_pub.publish(imu_msg)
         
     def read(self):
         data, addr = self.sock_receive.recvfrom(255)  # Receive data (up to 255 bytes)
@@ -346,7 +301,7 @@ class TensegrityRobot:
 
             self.encoder_length = [counts/self.encoder_resolution/self.gear_ratio*np.pi*self.winch_diameter for counts in self.encoder_counts]
             
-            #add control code here
+            # control code here
             if not 0.2 in self.cap: #Default capacitance value of MPR121
                 for i in range(len(self.cap)) :
                     self.length[i] = (self.cap[i] - self.b[i]) / self.m[i] #mm 
@@ -356,15 +311,6 @@ class TensegrityRobot:
                         self.pos[i] = (self.length[i] - self.min_length) / self.RANGE135# calculate the current position of the motor
                     else:
                         self.pos[i] = (self.length[i] - self.min_length) / self.RANGE024# calculate the current position of the motor   
-            # #read imu data
-            # if(sensor_array[0] == 0) :
-            #     self.imu[1] = self.quat2vec(sensor_array[1:5])
-
-            # if(sensor_array[0] == 2) :
-            #     self.imu[0] = self.quat2vec(sensor_array[1:5])
-
-            #if(sensor_array[0] == 3) : If 3 IMU's used
-            #   self.imu[3] = self.quat2vec(sensor_array[1:5])
 
             self.accelerometer[self.which_Arduino][0] = sensor_array[7] # ax
             self.accelerometer[self.which_Arduino][1] = sensor_array[8] # ay
@@ -380,15 +326,10 @@ class TensegrityRobot:
                         print('Arduino '+str(i)+' wrongly initialized, please reboot Arduino')
                     else:     
                         self.send_command(self.stop_msg, self.addresses[i],0)
-
             else :
                 print('+')
                 for i in range(len(self.addresses)) :
                     self.send_command(self.stop_msg, self.addresses[i],0)
-            
-        # except :
-        #     print('There has been an error')
-        #     print('Received data:', received_data)
 
     def compute_command(self) :
         command_msg = self.stop_msg.split()
@@ -438,42 +379,6 @@ class TensegrityRobot:
                 # if it's a transition step
                     # update the ranges
                     if self.state % len(self.states) == 1:
-                    # if state % 2 == 1:
-                        # COM,principal_axis,endcaps = get_pose()
-
-                        # print('COM: ',COM)
-                        
-                        
-                        # print('Axis: ',principal_axis)
-                        # print('Endcaps: ',endcaps)
-                        # action = best_action(str(RANGE024) + "_" + str(RANGE135),action_dict,COM,principal_axis,trajectory)
-
-                        # if prev_gait == 'roll':
-                        #     prev_action = str(RANGE135) + "_" + str(RANGE024)
-                        # else:
-                        #     prev_action = prev_gait
-                        if '/tracking_service' in rosnode.get_node_names():
-                            if not self.is_tracker_initialized:
-
-                                # stop the motors
-                                for i in range(len(self.addresses)):
-                                    self.send_command(self.stop_msg, self.addresses[i], 0)
-                                
-                                # wait one second
-                                rospy.sleep(1)
-                                
-                                # init tracker
-                                self.trajectory = obstacle_trajectory
-                                self.is_tracker_initialized = self.init_tracker()
-
-                        # check for errors after the drop
-                        if self.check_for_errors():
-                            self.quitting = True
-                            print("\nStopping motors")
-                            self.keep_going = False
-                            # set duty cycle as 0 to turn off the motors
-                            for i in range(len(self.addresses)):
-                                self.send_command(self.stop_msg, self.addresses[i], 0)
 
                         prev_action = str(self.RANGE135) + "_" + str(self.RANGE024)
 
@@ -490,19 +395,7 @@ class TensegrityRobot:
                         self.RANGE024 = 100
                         self.RANGE135 = 100
 
-        # print('State: ',self.state)
-        # # print(state)
-        # print("Position: ",self.pos)
-        # print("Target: ",self.states[self.state])
-        # # print(pos)
-        # # print(states[state])
-        # print("Done: ",self.done)
-        # print("Length: ",self.length)
-        # print("Capacitance: ",self.cap)
-        # print(' '.join(command_msg))
         self.send_command(' '.join(command_msg), self.addresses[self.which_Arduino],0)
-        #self.send_command(self.stop_msg, self.addresses[self.which_Arduino],0)
-        # print('+++++')
 
     def mpc_callback(self,msg):
         print('Planning results are in!')
@@ -512,13 +405,6 @@ class TensegrityRobot:
         self.COMs = np.array([[com.x,com.y] for com in msg.COMs])
         self.PAs = np.array([[pa.x,pa.y] for pa in msg.PAs])
         endcaps = np.array([[end.x,end.y,end.z] for end in msg.endcaps])
-
-        # # ensure we incorporate the results in the next loop iteration
-        # global done
-        # global state
-        # for i in range(len(done)):
-        #     done[i] = True
-        # state = 0
 
         # restart the step
         for i in range(self.num_motors):
@@ -629,7 +515,7 @@ class TensegrityRobot:
                 self.done = np.array([False] * self.num_motors)
                 self.tol = 0.2
                 self.P = 5.0
-                self.max_speed = 70
+                self.max_speed = 0
 
             elif key == keyboard.KeyCode.from_char('n'):
                 self.states = np.array([[1.0]*self.num_motors]*self.num_steps)
@@ -756,7 +642,6 @@ class TensegrityRobot:
         print('i got to init_tracker')
 
         # get cable lengths
-        self.read() # recent change
         while None in self.addresses:
             self.read()
             print('getting cable lengths...')
@@ -794,29 +679,6 @@ class TensegrityRobot:
         except rospy.ServiceException as e:
             rospy.loginfo(f"Service call failed: {e}")
         return False
-
-    def check_for_errors(self):
-        self.read()
-
-        errors = False
-
-        # check cable lengths
-        for sensor,length in enumerate(self.length):
-            if sensor < 6:
-                if length < 50:
-                    print("Sensor ",str(sensor)," is unrealistically short.")
-                    errors = True
-                if length > 300:
-                    print("Sensor ",str(sensor)," is unrealistically long.")
-                    errors = True
-            else:
-                if length < 200:
-                    print("Sensor ",str(sensor)," is unrealistically short.")
-                    errors = True
-                if length > 400:
-                    print("Sensor ",str(sensor)," is unrealistically long.")
-                    errors = True
-        return errors
             
     def run(self):
         while not self.quitting :
@@ -838,10 +700,5 @@ class TensegrityRobot:
             
         
 if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        robot_name = sys.argv[1]
-        calibration_filename = robot_name + '.json'
-        tensegrity_robot = TensegrityRobot(calibration_filename)
-        tensegrity_robot.run()
-    else:
-        print('Tell me the robot name.')
+    tensegrity_robot = TensegrityRobot()
+    tensegrity_robot.run()

@@ -15,6 +15,7 @@ import socket
 #from tensegrity.msg import Motor, Info, MotorsStamped, Sensor, SensorsStamped, Imu, ImuStamped
 from tensegrity.msg import Motor, Info, Sensor, Imu, TensegrityStamped
 #from geometry_msgs.msg import QuaternionStamped
+from symmetry_reduction_utils import transform_gait, reverse_gait
 
 
 class FileError(Exception):
@@ -23,7 +24,7 @@ class S_Q_Pressed(Exception):
     pass
 
 class TensegrityRobot:
-    def __init__(self,calibration_filename):
+    def __init__(self,calibration_filename,gait_start,reverse,use_encoders):
         self.num_sensors = 9
         self.num_motors = 6
         self.num_imus = 2
@@ -47,7 +48,7 @@ class TensegrityRobot:
         self.encoder_length = [0]*self.num_motors
         self.RANGE = 100
         self.LEFT_RANGE = 100
-        self.max_speed = 60
+        self.max_speed = 99
         self.tol = 0.15
         self.low_tol = 0.15
         self.P = 10.0
@@ -92,6 +93,11 @@ class TensegrityRobot:
         # calibration file
         package_path = rospkg.RosPack().get_path('tensegrity')
         self.calibration_file = os.path.join(package_path,'calibration',calibration_filename)
+
+        # gait step and reverse
+        self.gait_start = gait_start
+        self.reverse = reverse
+        self.use_encoders = use_encoders
         
 
     def initialize(self):
@@ -139,9 +145,9 @@ class TensegrityRobot:
                            [1.0,1.0,1.0,1.0,1.0,1.0],
                            [1.0,1.0,1.0,1.0,1.0,0.2]]) # testing one at a time
     
-        # self.states = np.array([[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 1.0, 0.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
-        #                         [1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.0, 1.0, 0.1, 0.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
-        #                         [0.1, 1.0, 1.0, 0.1, 1.0, 1.0],[1.0, 0.0, 1.0, 0.1, 0.0, 1.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]) # quasi-static rolling with rest states
+        self.states = np.array([[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 1.0, 0.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+                                [1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.0, 1.0, 0.1, 0.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+                                [0.1, 1.0, 1.0, 0.1, 1.0, 1.0],[1.0, 0.0, 1.0, 0.1, 0.0, 1.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]) # quasi-static rolling with rest states
         # self.states = np.array([[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 1.0, 0.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],[1.1, 1.1, 1.1, 1.1, 1.1, 1.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],[1.1, 1.1, 1.1, 1.1, 1.1, 1.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]])
         # self.states = np.array([[0, 0, 0, 1, 0, 1], [0, 0, 0, 0, 0, 1], [0, 0, 0.7, 0, 1.2, 1], [1, 1, 1, 1, 1, 1], [0, 0, 0, 1, 1, 0], [0, 0, 0, 1, 0, 0], [0.7, 0, 0, 1, 0, 1.2], [1, 1, 1, 1, 1, 1], [0, 0, 0, 0, 1, 1], [0, 0, 0, 0, 1, 0], [0, 0.7, 0, 1.2, 1, 0], [1, 1, 1, 1, 1, 1]]) # cw
         # self.states = np.array([[1, 1, 1, 0, 1, 1], [1, 0, 1, 0, 1, 1], [0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]]) # ccw
@@ -169,12 +175,19 @@ class TensegrityRobot:
         #                    [1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[1.0, 0.1, 0.1, 1.0, 0.1, 1.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
         #                    [0.1, 1.0, 1.0, 0.1, 1.0, 1.0],[0.1, 1.0, 0.1, 1.0, 1.0, 0.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]) # quasi-static rolling with rest states
 
+        nodes = {'1':(0,2,5),'2':(1,2,4),'3':(0,3,4)}
+        print(type(self.gait_start))
+        print(self.gait_start)
+        bottom_nodes = nodes.get(self.gait_start)
+        self.states = transform_gait(self.states,bottom_nodes)
+        if self.reverse:
+            self.states = reverse_gait(self.states,bottom_nodes)
+
         self.num_steps = len(self.states)
         self.state = 0
         self.offset = 3
         self.done = np.array([False] * self.num_motors)
         self.stop_msg = ' '.join(['0'] * (self.num_motors+2*self.offset))
-        self.go_msg = '0 0 0 GO'
         self.init_speed = 70
 
     def read_calibration_file(self, filename):
@@ -357,10 +370,16 @@ class TensegrityRobot:
                         self.length[i] = (self.cap[i] - self.b[i]) / self.m[i] #mm 
                     #check if motor reached the target
                     for i in range(self.num_motors):
-                        if i < 3:
-                            self.pos[i] = (self.length[i] - self.min_length) / self.LEFT_RANGE# calculate the current position of the motor
+                        if self.use_encoders:
+                            if i < 3:
+                                self.pos[i] = (self.encoder_length[i] - self.min_length) / self.LEFT_RANGE# calculate the current position of the motor
+                            else:
+                                self.pos[i] = (self.encoder_length[i] - self.min_length) / self.RANGE# calculate the current position of the motor   
                         else:
-                            self.pos[i] = (self.length[i] - self.min_length) / self.RANGE# calculate the current position of the motor   
+                            if i < 3:
+                                self.pos[i] = (self.length[i] - self.min_length) / self.LEFT_RANGE# calculate the current position of the motor
+                            else:
+                                self.pos[i] = (self.length[i] - self.min_length) / self.RANGE# calculate the current position of the motor   
                 # #read imu data
                 # if(sensor_array[0] == 0) :
                 #     self.imu[1] = self.quat2vec(sensor_array[1:5])
@@ -653,9 +672,24 @@ class TensegrityRobot:
         
 if __name__ == '__main__':
     if len(sys.argv) > 1:
-        robot_name = sys.argv[1]
-        calibration_filename = robot_name + '.json'
-        tensegrity_robot = TensegrityRobot(calibration_filename)
-        tensegrity_robot.run()
+        if len(sys.argv) > 2:
+            gait_start = sys.argv[2]
+            if len(sys.argv) > 3:
+                if sys.argv[3] == 'f':
+                    reverse = False
+                else:
+                    reverse = True
+                if len(sys.argv) > 4:
+                    use_encoders = True
+                else:
+                    use_encoders = False
+                robot_name = sys.argv[1]
+                calibration_filename = robot_name + '.json'
+                tensegrity_robot = TensegrityRobot(calibration_filename,gait_start,reverse,use_encoders)
+                tensegrity_robot.run()
+            else:
+                print('Tell me the orientation')
+        else:
+            print('Tell me the gait step')
     else:
         print('Tell me the robot name.')

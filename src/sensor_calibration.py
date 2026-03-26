@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import os
 import sys
-import time
+# import time
 import math
 from math import cos, sin
 import json
@@ -21,7 +21,7 @@ class FileError(Exception):
     pass
 
 class TensegrityRobot:
-    def __init__(self):
+    def __init__(self,calibration_filename):
         self.num_sensors = 9
         self.num_motors = 6
         self.num_imus = 2
@@ -37,13 +37,13 @@ class TensegrityRobot:
         self.d_error = [0] * self.num_motors
         self.command = [0] * self.num_motors
         self.speed = [0] * self.num_motors
-        self.flip = [1, 1, -1, 1, -1, -1] # flip direction of motors
+        # self.flip = [1, 1, -1, 1, -1, -1] # flip direction of motors
         self.accelerometer = [[0]*3 for _ in range(3)]
         self.gyroscope = [[0]*3 for _ in range(3)]
         self.encoder_counts = [0]*self.num_motors
         self.encoder_length = [0]*self.num_motors
-        self.RANGE = 100
-        self.LEFT_RANGE = 100
+        self.RANGE = 90
+        self.LEFT_RANGE = 90
         self.max_speed = 80
         self.tol = 0.15
         self.low_tol = 0.15
@@ -82,6 +82,10 @@ class TensegrityRobot:
         self.three_pressed = False
         self.four_pressed = False
         self.five_pressed = False
+
+        # calibration file
+        package_path = rospkg.RosPack().get_path('tensegrity')
+        self.calibration_file = os.path.join(package_path,'calibration',calibration_filename)
         
 
     def initialize(self):
@@ -92,13 +96,13 @@ class TensegrityRobot:
         rospy.init_node('tensegrity')
         self.control_pub = rospy.Publisher('control_msg', TensegrityStamped, queue_size=10) ## correct ??
 
-        package_path = rospkg.RosPack().get_path('tensegrity')
-        calibration_file = os.path.join(package_path,'calibration/new_calibration.json')
+        # package_path = rospkg.RosPack().get_path('tensegrity')
+        # calibration_file = os.path.join(package_path,'calibration/new_calibration.json')
         
         #self.m = np.array([0.04437, 0.06207, 0.02356, 0.04440, 0.04681, 0.05381, 0.02841, 0.03599, 0.03844])
         #self.b = np.array([15.763, 13.524, 15.708, 10.084, 15.628, 15.208, 16.356, 12.575, 13.506])
         
-        self.m, self.b = self.read_calibration_file(calibration_file)
+        self.m, self.b, self.flip = self.read_calibration_file(self.calibration_file)
         
         """
         # # BEST GAIT
@@ -118,6 +122,8 @@ class TensegrityRobot:
         self.done = np.array([False] * self.num_motors)
         self.stop_msg = ' '.join(['0'] * (self.num_motors+2*self.offset))
         self.init_speed = 70
+        self.last_calib_print = rospy.Time.now()
+        self.calib_print_interval = rospy.Duration(0.2) # seconds
 
     def read_calibration_file(self, filename):
         try : 
@@ -135,9 +141,10 @@ class TensegrityRobot:
                 data = json.load(open(filename))
                 m = np.array(data.get('m'))
                 b = np.array(data.get('b'))
+                flip = data.get('flip')
             else:
                 raise FileError('Invalid calibration file')
-            return m, b
+            return m, b, flip
         except FileError as ce:
             print("Error occurred:", ce)
 
@@ -172,7 +179,7 @@ class TensegrityRobot:
         self.sock_send.sendto(input_string.encode('utf-8'), addr)
         if delay_time < 0:
             delay_time = 0
-        time.sleep(delay_time/1000)
+        # time.sleep(delay_time/1000)
         
     def sendRosMSG(self):
         # send ROS messages
@@ -247,16 +254,17 @@ class TensegrityRobot:
         data, addr = self.sock_receive.recvfrom(255)  # Receive data (up to 255 bytes)
         # Decode the data (assuming it's sent as a string)
         received_data = data.decode('utf-8')
-        print('Received Data: ',received_data)
+        # print('Received Data: ',received_data)
         try :
             # Received data in the form "N_Arduino C0 C1 C2 C3 e0 e1 ax ay az gx gy gz" where N_Arduino indicates the number of the Arduino of the received data
             sensor_values = received_data.split()
             # Convert the string values to actual float values and store them in an array
             sensor_array = [float(value) for value in sensor_values]
-            # print(sensor_array)
+            if None in self.addresses:
+                print(sensor_array)
             if(addr not in self.addresses) :
                 self.addresses[int(sensor_array[0])] = addr
-            print('Sensor Array: ',sensor_array)
+            # print('Sensor Array: ',sensor_array)
             """
             Following code of function read(self) configurated for a 3 bar tensegrity with following sensors
             Rod 0 (red) has sensors C, E, and I (2, 4, and 8) and motors 2 and 4
@@ -336,7 +344,7 @@ class TensegrityRobot:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             print('There has been an error: ',this_error)
             print('Line number: ',exc_traceback.tb_lineno)
-            print('Received data:', received_data)
+            # print('Received data:', received_data)
 
     def on_press(self, key):
         try : 
@@ -461,10 +469,19 @@ class TensegrityRobot:
                 self.read()
                 if(None not in self.addresses) :
                     self.sendRosMSG()    
-                    print('=================')
-                    for i in range(self.num_sensors) :
-                        print(f"Capacitance {chr(i + 97)}: {self.cap[i]:.2f} \t Length: {self.length[i]:.2f} \n")
-                    print('=================')
+                    # Print as fast as possible
+                    # print('=================')
+                    # for i in range(self.num_sensors) :
+                    #     print(f"Capacitance {chr(i + 97)}: {self.cap[i]:.2f} \t Length: {self.length[i]:.2f} \n")
+                    # print('=================')
+                    # Print at interval
+                    current_time = rospy.Time.now()
+                    if current_time - self.last_calib_print >= self.calib_print_interval:
+                        print("=====Calibration Values=====")
+                        for i in range(self.num_sensors) :
+                            print(f"Capacitance {chr(i + 97)}: {self.cap[i]:.2f} \t Length: {self.length[i]:.2f} \n")
+                        print("============================")
+                        self.last_calib_print = current_time
             except Exception as this_error:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 print('There has been an error: ',this_error)
@@ -472,5 +489,10 @@ class TensegrityRobot:
             
         
 if __name__ == '__main__':
-    tensegrity_robot = TensegrityRobot()
-    tensegrity_robot.run()
+    if len(sys.argv) > 1:
+        robot_name = sys.argv[1]
+        calibration_filename = robot_name + '.json'
+        tensegrity_robot = TensegrityRobot(calibration_filename)
+        tensegrity_robot.run()
+    else:
+        print('Tell me the robot name.')

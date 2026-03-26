@@ -20,7 +20,7 @@ unsigned int localPort = 2390; // local port to listen on
 //Configuration Arduino//
 /////////////////////////
 
-#define N_Arduino 0 // To change in function of which Arduino is used
+#define N_Arduino 2 // To change in function of which Arduino is used
 
 int motor_numbers[3][2] = {{2,4},{1,3},{0,5}};
 #define Nb_motors 6 // To change in function of the number of motor used
@@ -307,13 +307,13 @@ void loop() {
 
   // re-map the capacitance data because Will did a dum-dum when designing the motherboard
   // delete this when you do a better job with the motherboard design
-  temp[0] = capacitance[3];
-  temp[1] = capacitance[0];
-  temp[2] = capacitance[1];
-  temp[3] = capacitance[2];
-  for (int sensor = 0; sensor < NUM_SENSORS; sensor++) {
-    capacitance[sensor] = temp[sensor];
-  }
+  // temp[0] = capacitance[3];
+  // temp[1] = capacitance[0];
+  // temp[2] = capacitance[1];
+  // temp[3] = capacitance[2];
+  // for (int sensor = 0; sensor < NUM_SENSORS; sensor++) {
+  //   capacitance[sensor] = temp[sensor];
+  // }
 
   /////////////////////////
   //Retrieve Encoder Data//

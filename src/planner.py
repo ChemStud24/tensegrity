@@ -30,7 +30,8 @@ class MotionPlanner:
 		# print(np.array(self.action_dict.values()))
 
 		# ordered list of motion primitives
-		self.primitives = ['100_100','120_120','140_140','100_120','120_100','100_140','140_100','120_140','140_120','ccw','cw']
+		# self.primitives = ['100_100','120_120','140_140','100_120','120_100','100_140','140_100','120_140','140_120','ccw','cw']
+		self.primitives = ['100_100','120_120','100_120','120_100','ccw','cw']
 
 		self.primitive_workspace = []
 		for prim in self.primitives:
@@ -38,6 +39,15 @@ class MotionPlanner:
 			angle = self.rotation_angle_from_matrix(full_prim[0])
 			simple_prim = [float(full_prim[1][0]), float(full_prim[1][1]),angle]
 			self.primitive_workspace.append(simple_prim)
+
+		# # reverse primitive workspace
+		# self.num_primitives = len(self.primitives)
+		# for prim in self.primitives:
+		# 	full_prim = self.action_dict[prim+"__"+prim]
+		# 	angle = self.rotation_angle_from_matrix(full_prim[0])
+		# 	simple_prim = [float(-full_prim[1][0]), float(-full_prim[1][1]),angle]
+		# 	self.primitive_workspace.append(simple_prim)
+		# self.reverse_the_gait = False
 
 		# define start, goal, and obstacles
 		self.current_state = start
@@ -53,7 +63,7 @@ class MotionPlanner:
 		self.obstacle_dim = (0.2,0.2)
 		self.goal_tol = 0.1
 		self.goal_rot_tol = np.pi/2
-		self.repeat_tol = 0.04 #Won't resample states this close
+		self.repeat_tol = 0.01 #Won't resample states this close # changed from 0.04 to 0.01
 		self.grid_step = 0.01 #Only used in wave heuristic
 
 		# run A star planner for the known start, goal, and obstacles
@@ -133,6 +143,11 @@ class MotionPlanner:
 		if len(path) > 0:
 			self.action_sequence = self.int_path_to_string_path(path)
 
+		# if path[0] > self.num_primitives:
+		# 	self.reverse_the_gait = True
+		# else:
+		# 	self.reverse_the_gait = False
+
 	def run(self, rate):
 		while not rospy.is_shutdown():
 			rate.sleep()
@@ -209,9 +224,14 @@ if __name__ == '__main__':
 	# obstacles = ((0.3,0.2), (0.3,0.6), (1.5, 1.0), (1.5,0.6))
 	# boundary = (-1, 3, -0.2, 1.4)
 
+	# start = (-0.15, 1.1, -np.pi/2)
+	# goal = (1.6, 0.2, -np.pi/2)
+	# obstacles = ((0.5,0), (0.5,0.4), (1.5, 1.0), (1.5,0.6))
+	# boundary = (-1, 3, -0.2, 1.4)
+
 	start = (-0.15, 1.1, -np.pi/2)
-	goal = (1.6, 0.2, -np.pi/2)
-	obstacles = ((0.5,0), (0.5,0.4), (1.5, 1.0), (1.5,0.6))
+	goal = (0, 0, 0)
+	obstacles = ()
 	boundary = (-1, 3, -0.2, 1.4)
 
 	# meteroid

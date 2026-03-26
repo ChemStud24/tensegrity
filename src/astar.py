@@ -13,6 +13,7 @@ def rel_mov(x, y, theta):
 
 def angle_norm(x):
     return x % (2*np.pi)
+    # return 0
 
 def heuristic(a, b, obstacles, heur_type, grid_step, k=0,grid = []):
     if heur_type == "wave":
@@ -57,6 +58,8 @@ def astar(start, goal, gaits, obstacles=(),tolerance = 0.1, rot_tol = np.pi/4, r
 
         # If the goal is reached, reconstruct and return the path
         if l2_dist(current[:2], goal[:2])<= tolerance and min(abs(angle_norm(current[2]) - goal[2]), np.pi - abs(angle_norm(current[2]) - goal[2])) <= rot_tol :
+        # New version (Ignore Orientation)
+        # if l2_dist(current[:2], goal[:2]) <= tolerance:
             path = []
             movements = []
             while current in came_from:

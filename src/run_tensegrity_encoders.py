@@ -47,7 +47,7 @@ class TensegrityRobot:
         self.encoder_length = [0]*self.num_motors
         self.RANGE = 100
         self.LEFT_RANGE = 100
-        self.max_speed = 60
+        self.max_speed = 70
         self.tol = 0.15
         self.low_tol = 0.15
         self.P = 10.0
@@ -174,7 +174,6 @@ class TensegrityRobot:
         self.offset = 3
         self.done = np.array([False] * self.num_motors)
         self.stop_msg = ' '.join(['0'] * (self.num_motors+2*self.offset))
-        self.go_msg = '0 0 0 GO'
         self.init_speed = 70
 
     def read_calibration_file(self, filename):
@@ -358,9 +357,9 @@ class TensegrityRobot:
                     #check if motor reached the target
                     for i in range(self.num_motors):
                         if i < 3:
-                            self.pos[i] = (self.length[i] - self.min_length) / self.LEFT_RANGE# calculate the current position of the motor
+                            self.pos[i] = (self.encoder_length[i] - self.min_length) / self.LEFT_RANGE# calculate the current position of the motor
                         else:
-                            self.pos[i] = (self.length[i] - self.min_length) / self.RANGE# calculate the current position of the motor   
+                            self.pos[i] = (self.encoder_length[i] - self.min_length) / self.RANGE# calculate the current position of the motor   
                 # #read imu data
                 # if(sensor_array[0] == 0) :
                 #     self.imu[1] = self.quat2vec(sensor_array[1:5])

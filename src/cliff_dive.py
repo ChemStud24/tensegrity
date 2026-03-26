@@ -15,6 +15,7 @@ import socket
 #from tensegrity.msg import Motor, Info, MotorsStamped, Sensor, SensorsStamped, Imu, ImuStamped
 from tensegrity.msg import Motor, Info, Sensor, Imu, TensegrityStamped
 #from geometry_msgs.msg import QuaternionStamped
+from symmetry_reduction_utils import transform_gait, reverse_gait
 
 
 class FileError(Exception):
@@ -47,7 +48,7 @@ class TensegrityRobot:
         self.encoder_length = [0]*self.num_motors
         self.RANGE = 100
         self.LEFT_RANGE = 100
-        self.max_speed = 60
+        self.max_speed = 99
         self.tol = 0.15
         self.low_tol = 0.15
         self.P = 10.0
@@ -139,9 +140,9 @@ class TensegrityRobot:
                            [1.0,1.0,1.0,1.0,1.0,1.0],
                            [1.0,1.0,1.0,1.0,1.0,0.2]]) # testing one at a time
     
-        # self.states = np.array([[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 1.0, 0.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
-        #                         [1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.0, 1.0, 0.1, 0.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
-        #                         [0.1, 1.0, 1.0, 0.1, 1.0, 1.0],[1.0, 0.0, 1.0, 0.1, 0.0, 1.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]) # quasi-static rolling with rest states
+        self.states = np.array([[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 1.0, 0.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+                                [1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.0, 1.0, 0.1, 0.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+                                [0.1, 1.0, 1.0, 0.1, 1.0, 1.0],[1.0, 0.0, 1.0, 0.1, 0.0, 1.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]) # quasi-static rolling with rest states
         # self.states = np.array([[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 1.0, 0.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],[1.1, 1.1, 1.1, 1.1, 1.1, 1.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],[1.1, 1.1, 1.1, 1.1, 1.1, 1.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]])
         # self.states = np.array([[0, 0, 0, 1, 0, 1], [0, 0, 0, 0, 0, 1], [0, 0, 0.7, 0, 1.2, 1], [1, 1, 1, 1, 1, 1], [0, 0, 0, 1, 1, 0], [0, 0, 0, 1, 0, 0], [0.7, 0, 0, 1, 0, 1.2], [1, 1, 1, 1, 1, 1], [0, 0, 0, 0, 1, 1], [0, 0, 0, 0, 1, 0], [0, 0.7, 0, 1.2, 1, 0], [1, 1, 1, 1, 1, 1]]) # cw
         # self.states = np.array([[1, 1, 1, 0, 1, 1], [1, 0, 1, 0, 1, 1], [0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]]) # ccw
@@ -169,12 +170,16 @@ class TensegrityRobot:
         #                    [1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[1.0, 0.1, 0.1, 1.0, 0.1, 1.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
         #                    [0.1, 1.0, 1.0, 0.1, 1.0, 1.0],[0.1, 1.0, 0.1, 1.0, 1.0, 0.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]) # quasi-static rolling with rest states
 
+        # start out rolling one step
+        self.roll = np.array([[1,1,1,1,1,1],[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 1.0, 0.1],[1,1,1,1,1,1]])
+        bottom_nodes = (0,2,5)
+        self.states = transform_gait(self.roll,bottom_nodes)
+
         self.num_steps = len(self.states)
         self.state = 0
         self.offset = 3
         self.done = np.array([False] * self.num_motors)
         self.stop_msg = ' '.join(['0'] * (self.num_motors+2*self.offset))
-        self.go_msg = '0 0 0 GO'
         self.init_speed = 70
 
     def read_calibration_file(self, filename):
@@ -431,10 +436,18 @@ class TensegrityRobot:
         if all(self.done):
             self.state += 1
             self.state %= self.num_steps
-            for i in range(self.num_motors):
-                self.done[i] = False
-                self.prev_error[i] = 0
-                self.cum_error[i] = 0
+
+            # we reached the end of the gait
+            if self.state == 0:
+                self.max_speed = 0
+                # stop the motors
+                for i in range(len(self.addresses)):
+                    self.send_command(self.stop_msg, self.addresses[i], 0)
+            else:
+                for i in range(self.num_motors):
+                    self.done[i] = False
+                    self.prev_error[i] = 0
+                    self.cum_error[i] = 0
         print('State: ',self.state)
         # print(state)
         print("Position: ",self.pos)
@@ -487,6 +500,41 @@ class TensegrityRobot:
             # max_speed = 80
             self.RANGE = 90
             self.LEFT_RANGE = self.RANGE   
+
+        elif key == keyboard.KeyCode.from_char('1'):
+            bottom_nodes = (0,2,5)
+            states = np.array([[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.1, 1.0, 1.0, 0.1, 1.0, 0.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+                               [1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.1, 1.0, 0.1, 0.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+                               [0.1, 1.0, 1.0, 0.1, 1.0, 1.0],[1.0, 0.1, 1.0, 0.1, 0.1, 1.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]) # quasi-static rolling with rest states
+            self.states = transform_gait(states,bottom_nodes)
+        elif key == keyboard.KeyCode.from_char('2'):
+            bottom_nodes = (1,2,4)
+            states = np.array([[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.1, 1.0, 1.0, 0.1, 1.0, 0.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+                               [1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.1, 1.0, 0.1, 0.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+                               [0.1, 1.0, 1.0, 0.1, 1.0, 1.0],[1.0, 0.1, 1.0, 0.1, 0.1, 1.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]) # quasi-static rolling with rest states
+            self.states = transform_gait(states,bottom_nodes)
+        elif key == keyboard.KeyCode.from_char('3'):
+            bottom_nodes = (0,3,4)
+            states = np.array([[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.1, 1.0, 1.0, 0.1, 1.0, 0.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+                               [1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.1, 1.0, 0.1, 0.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+                               [0.1, 1.0, 1.0, 0.1, 1.0, 1.0],[1.0, 0.1, 1.0, 0.1, 0.1, 1.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]) # quasi-static rolling with rest states
+            self.states = transform_gait(states,bottom_nodes)
+        elif key == keyboard.KeyCode.from_char('f'):
+            self.max_speed = 99
+            for i in range(self.num_motors):
+                    self.done[i] = False
+                    self.prev_error[i] = 0
+                    self.cum_error[i] = 0
+            self.state = 0
+        elif key == keyboard.KeyCode.from_char('b'):
+            self.states = reverse_gait(self.states)
+            self.max_speed = 99
+            for i in range(self.num_motors):
+                    self.done[i] = False
+                    self.prev_error[i] = 0
+                    self.cum_error[i] = 0
+            self.state = 0
+
         # elif key == keyboard.KeyCode.from_char('f'):
         #     self.keep_going = False
         #     msg = self.stop_msg.split()

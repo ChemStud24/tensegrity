@@ -12,6 +12,7 @@ import pyttsx3
 short_lengths = range(180,80,-20)
 # short_lengths = range(220,70,-30)
 long_lengths = range(250,350,20)
+# long_lengths = range(250,350,-20) # Zac Change
 
 def speak(text,engine):
     engine.say(text)
@@ -30,8 +31,13 @@ def calibrate(sensors,short_lengths,long_lengths,filepath,filename='new_calibrat
     all_lengths = []
     for sensor in sensors:
         print('\nCalibrating sensor ' + sensor.capitalize() + '...')
-        speak('Calibrating sensor ' + sensor.capitalize(),engine)
-        rospy.sleep(2)
+        # speak('Calibrating sensor ' + sensor.capitalize(),engine)
+        print('\a')
+        rospy.sleep(0.2)
+        print('\a')
+        rospy.sleep(0.2)
+        print('\a')
+        rospy.sleep(4.0)
 
         # figure out if it's a short sensor or a long sensor
         if letter2number(sensor) < 6:
@@ -42,7 +48,8 @@ def calibrate(sensors,short_lengths,long_lengths,filepath,filename='new_calibrat
         # calibrate at five lengths
         cap = []
         print('Set length to...')
-        speak('Set length to',engine)
+        # speak('Set length to',engine)
+
         for i,length in enumerate(lengths):
 
             if quit:
@@ -50,22 +57,30 @@ def calibrate(sensors,short_lengths,long_lengths,filepath,filename='new_calibrat
 
             # speak instructions
             print(str(length) + ' mm')
-            speak(str(length) + ' millimeters',engine)
-            rospy.sleep(0.5)
-            speak('Measuring',engine)
+            # speak(str(length) + ' millimeters',engine)
+            print('\a')
+            rospy.sleep(0.2)
+            print('\a')
+            rospy.sleep(1.0)
+            # speak('Measuring',engine)
+            print('\a')
 
             # measure capacitance
             cap.append(sensor_listener.capacitance[letter2number(sensor)])
             print('At length ' + str(length) + ' mm, sensor ' + sensor.capitalize() + ' has a capacitance of ' + str(cap[i]) + ' pF\n')
 
-            speak('Next',engine)
+            rospy.sleep(1.0)
+            # speak('Next',engine)
+            print('\a')
         # perform the linear fit
         fit = np.polyfit(lengths,cap,1)
         m[letter2number(sensor)] = fit[0]
         b[letter2number(sensor)] = fit[1]
 
     # save calibration results
-    data = {'m':np.ndarray.tolist(m),'b':np.ndarray.tolist(b)}
+    # data = {'m':np.ndarray.tolist(m),'b':np.ndarray.tolist(b)}
+    data['m'] = np.ndarray.tolist(m)
+    data['b'] = np.ndarray.tolist(b)
     json.dump(data,open(filename,'w'))
 
 
@@ -101,12 +116,18 @@ if __name__ == '__main__':
     move_on = False
     quit = False
 
-    # which sensors should be calibrated?
     if len(sys.argv) > 1:
-        sensors = sys.argv[1]
-    else:
-        sensors = 'abcdefghi'
+        robot_name = sys.argv[1]
+        filename = robot_name + '.json'
 
-    rospack = rospkg.RosPack()
-    package_path = rospack.get_path('tensegrity')
-    calibrate(sensors,short_lengths,long_lengths,os.path.join(package_path,'calibration'))
+        # which sensors should be calibrated?
+        if len(sys.argv) > 2:
+            sensors = sys.argv[2]
+        else:
+            sensors = 'abcdefghi'
+
+        rospack = rospkg.RosPack()
+        package_path = rospack.get_path('tensegrity')
+        calibrate(sensors,short_lengths,long_lengths,os.path.join(package_path,'calibration'),filename)
+    else:
+        print("Usage: python voice_calibration_offline.py [robot_name] [which_sensors]")
