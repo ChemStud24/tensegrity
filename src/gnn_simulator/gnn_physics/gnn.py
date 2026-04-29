@@ -713,6 +713,7 @@ class RecurrentMotorEncodeProcessDecode(RecurrentEncodeProcessDecode):
             nmlp_layers: int,
             mlp_hidden_dim: int,
             processor_shared_weights: bool = False,
+            apply_regional_compilation: bool = False,
     ):
         """
         GNN class
@@ -725,6 +726,9 @@ class RecurrentMotorEncodeProcessDecode(RecurrentEncodeProcessDecode):
         @param nmlp_layers: number of mlp layers per mlp
         @param mlp_hidden_dim: hidden dim size
         @param processor_shared_weights: flag for shared or sep weights for interaction networks
+        @param apply_regional_compilation: if True, torch.compile each inner MLP in
+            encoder/processor/decoder/cable decoder so identical blocks share a compiled
+            artifact (faster cold compile vs. compiling the whole module).
         """
         super().__init__(node_types,
                          edge_types,
@@ -740,6 +744,38 @@ class RecurrentMotorEncodeProcessDecode(RecurrentEncodeProcessDecode):
             n_out=n_out // 3,
             nmlp_layers=nmlp_layers,
             mlp_hidden_dim=mlp_hidden_dim,
+        )
+
+        if apply_regional_compilation:
+            self._apply_regional_compilation()
+
+    def _apply_regional_compilation(self):
+        compile_kwargs = dict(fullgraph=False, dynamic=True)
+
+        for name in list(self._encoder.node_encoders.keys()):
+            self._encoder.node_encoders[name] = torch.compile(
+                self._encoder.node_encoders[name], **compile_kwargs
+            )
+        for name in list(self._encoder.edge_encoders.keys()):
+            self._encoder.edge_encoders[name] = torch.compile(
+                self._encoder.edge_encoders[name], **compile_kwargs
+            )
+
+        stacks = self._processor.gnn_stacks
+        inets = list(stacks) if isinstance(stacks, nn.ModuleList) else [stacks]
+        for inet in inets:
+            inet.update_fn = torch.compile(inet.update_fn, **compile_kwargs)
+            for ename in list(inet.mp_dict.keys()):
+                inet.mp_dict[ename].msg_fn = torch.compile(
+                    inet.mp_dict[ename].msg_fn, **compile_kwargs
+                )
+
+        self._decoder.node_decode_fn = torch.compile(
+            self._decoder.node_decode_fn, **compile_kwargs
+        )
+
+        self._cable_edge_decoder.cable_edge_decode_fn = torch.compile(
+            self._cable_edge_decoder.cable_edge_decode_fn, **compile_kwargs
         )
 
     def forward(self, graph: GraphData):

@@ -56,7 +56,7 @@ torch._dynamo.config.cache_size_limit = 512
 class PlannerMPPI:
 
 	def __init__(self, start, goal, boundary, init_cable_lengths, obstacles=[], grid_step=10, tol=0.1,
-	             planner_params={}, pose_queue_size=20):
+	            planner_params={}, pose_queue_size=20):
 
 		start = (start[0] / 1000, start[1] / 1000, start[2])
 		goal = (goal[0] / 1000, goal[1] / 1000, goal[2])
@@ -67,7 +67,6 @@ class PlannerMPPI:
 
 		self.grid_step = grid_step
 		self.tol = tol
-		self.first_compile = True
 
 		pub_topic = '/action_mppi_msg'
 		self.pub = rospy.Publisher(pub_topic, ActionHybridMPPI, queue_size=10)
@@ -94,11 +93,6 @@ class PlannerMPPI:
 
 		# Store mppi_params for later access
 		self.mppi_params = planner_params['mppi_params']
-		# Make a copy of astar_params to avoid modifying the original
-		# astar_params_scaled = copy.deepcopy(planner_params['astar_params'])
-		# # astar_params_scaled['gait_deltas'] = [(g[0] * 10.0, g[1] * 10.0, g[2]) for g in planner_params['astar_params']['gait_deltas']]
-		# astar_params_scaled['gait_deltas'] = [(g[1] * -1.0, g[0], g[2]) for g in planner_params['astar_params']['gait_deltas']]
-		# self.astar_params = astar_params_scaled
 
 		# Convert obstacles from 2-tuple (center) to 4-tuple (bounding box) format if needed
 		# converted_obstacles = self._convert_obstacles(obstacles, obstacle_size)
@@ -117,7 +111,16 @@ class PlannerMPPI:
 		self.tol = tol	
 
 		self.init_rest_lens = self._compute_init_rest_lens(init_cable_lengths)
+		if planner_params['mppi_params']['torch_compile']:
+			self._init_dummy_torch_compile()
 		# self.init_rest_lens = self._compute_init_rest_lens_mjc(init_cable_lengths)
+
+		# Used for restarting sim
+		self.start_up_sim_state = self.planner.mppi_controller.sim.get_curr_state()
+		self.start_up_rest_lens = torch.hstack([
+			c.rest_length for c in self.planner.mppi_controller.sim.robot.actuated_cables.values()
+		])
+		self.disconnect_time = 0
 
 		# Store configuration
 		self.current_state = start
@@ -137,6 +140,28 @@ class PlannerMPPI:
 		self.COMs = []
 		self.endcaps = []
 		self.PAs = []
+
+	def _init_dummy_torch_compile(self):
+		self.planner.mppi_controller.sim.run_compile()
+		init_state = self.planner.mppi_controller.sim.get_curr_state()
+		init_pose = init_state.reshape(-1, 13, 1)[:, :7].reshape(init_state.shape[0], -1, 1)
+		poses = [(init_pose.clone(), 0.0), (init_pose.clone(), 0.01)]
+		curr_rest_lens = torch.hstack([
+			c.rest_length for c in self.planner.mppi_controller.sim.robot.actuated_cables.values()
+		]).cpu().numpy()
+		motor_speeds = np.zeros_like(curr_rest_lens)
+
+		for _ in range(3):
+			_ = self.planner._plan_mppi_only(
+				poses, curr_rest_lens.copy(), motor_speeds.copy()
+			) # Trigger torch compile with dummy planning
+
+		self.logger.info("Dummy JIT compile done.")
+
+		# reset rest lengths to original values
+		curr_rest_lens = torch.from_numpy(curr_rest_lens).to(init_state.device)
+		for i, c in enumerate(self.planner.mppi_controller.sim.robot.actuated_cables.values()):
+			c.set_rest_length(curr_rest_lens[:, i:i+1])
 
 	def _convert_obstacles(self, obstacles, obstacle_size):
 		"""Convert obstacles from 2-tuple (center) to 4-tuple (bounding box) format.
@@ -258,10 +283,6 @@ class PlannerMPPI:
 		if len(latest_poses) == 0:
 			self.logger.info("No poses available")
 			return
-
-		if self.planner.mppi_controller.torch_compile and self.first_compile:
-			self.planner.mppi_controller.sim.run_compile()
-			self.first_compile = False
 
 		# Check if we've reached the goal
 		last_pose = latest_poses[-1][0].reshape(3, 7)  # (3 rods, 7D)
@@ -416,15 +437,32 @@ class PlannerMPPI:
 	def run(self):
 		"""Continuously compute and publish controls based on latest pose_queue"""
 		rospy.loginfo("MPPI planner started, waiting for controller to connect...")
+		was_connected = False
 		while not rospy.is_shutdown():
 			if self.pub.get_num_connections() > 0:
+				if not was_connected:
+					self.logger.info("Controller connected, starting planning loop")
+					was_connected = True
+	
+				self.disconnect_time = 0
 				self.ready_for_next_action = True
-				self.logger.info("Controller connected, starting planning loop")
-				break
+				self.compute_and_publish_control()
+			elif was_connected and self.pub.get_num_connections() == 0:
+				if self.disconnect_time == 0:
+					self.disconnect_time = time.time()
+					self.logger.warning("Controller disconnected, if not reconnected within 5 secs, the planner will reset, starting timer...")
+				elif time.time() - self.disconnect_time > 5:
+					self.logger.warning("Controller disconnected for >5s, resetting sim state...")
+					motor_speeds = np.zeros(self.start_up_rest_lens.shape)
+					self.planner.reset_sim_state(
+						self.start_up_sim_state.clone(),
+						motor_speeds,
+						self.start_up_rest_lens.clone()
+					)
+					self.prev_pose_and_t.clear()
+					was_connected = False
+					self.disconnect_time = 0
 			rospy.sleep(0.5)
-
-		while not rospy.is_shutdown():
-			self.compute_and_publish_control()
 
 
 if __name__ == '__main__':

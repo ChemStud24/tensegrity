@@ -1055,8 +1055,9 @@ class MultiSimMultiStepMotorTensegrityGNNSimulator(MultiSimMultiStepTensegrityGN
 
     def run_compile(self):
         self.data_processor.compile(fullgraph=False, dynamic=True)
-        self._encode_process_decode.compile(fullgraph=True)
-        print('Compiled MultiSimMultiStepMotorTensegrityGNNSimulator')
+        self._encode_process_decode.compile(fullgraph=True, dynamic=True)
+        # self._encode_process_decode._apply_regional_compilation()
+        print('JIT compile MultiSimMultiStepMotorTensegrityGNNSimulator activated.')
 
     def reset(self, **kwargs):
         super().reset(**kwargs)
