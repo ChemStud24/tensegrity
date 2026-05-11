@@ -31,7 +31,7 @@ def calibrate(sensors,short_lengths,long_lengths,filepath,filename='new_calibrat
     all_lengths = []
     for sensor in sensors:
         print('\nCalibrating sensor ' + sensor.capitalize() + '...')
-        # speak('Calibrating sensor ' + sensor.capitalize(),engine)
+        speak('Calibrating sensor ' + sensor.capitalize(),engine)
         print('\a')
         rospy.sleep(0.2)
         print('\a')
@@ -48,7 +48,7 @@ def calibrate(sensors,short_lengths,long_lengths,filepath,filename='new_calibrat
         # calibrate at five lengths
         cap = []
         print('Set length to...')
-        # speak('Set length to',engine)
+        speak('Set length to',engine)
 
         for i,length in enumerate(lengths):
 
@@ -57,20 +57,20 @@ def calibrate(sensors,short_lengths,long_lengths,filepath,filename='new_calibrat
 
             # speak instructions
             print(str(length) + ' mm')
-            # speak(str(length) + ' millimeters',engine)
+            speak(str(length) + ' millimeters',engine)
             print('\a')
             rospy.sleep(0.2)
             print('\a')
-            rospy.sleep(1.0)
-            # speak('Measuring',engine)
+            rospy.sleep(2.0)
+            speak('Measuring',engine)
             print('\a')
 
             # measure capacitance
             cap.append(sensor_listener.capacitance[letter2number(sensor)])
             print('At length ' + str(length) + ' mm, sensor ' + sensor.capitalize() + ' has a capacitance of ' + str(cap[i]) + ' pF\n')
 
-            rospy.sleep(1.0)
-            # speak('Next',engine)
+            rospy.sleep(2.0)
+            speak('Next',engine)
             print('\a')
         # perform the linear fit
         fit = np.polyfit(lengths,cap,1)

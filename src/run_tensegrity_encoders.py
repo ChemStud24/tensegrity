@@ -44,6 +44,7 @@ class TensegrityRobot:
         self.accelerometer = [[0]*3 for _ in range(3)]
         self.gyroscope = [[0]*3 for _ in range(3)]
         self.encoder_counts = [0]*self.num_motors
+        self.encoder_offset = [0]*self.num_motors
         self.encoder_length = [0]*self.num_motors
         self.RANGE = 100
         self.LEFT_RANGE = 100
@@ -88,6 +89,13 @@ class TensegrityRobot:
         self.three_pressed = False
         self.four_pressed = False
         self.five_pressed = False
+        self.pressed_key = None
+        self.awaiting_command = False
+        self.motor2arduino = {0:2, 1:1, 2:0, 3:1, 4:0, 5:2}
+        self.calibrating_length = False
+        self.advance_motor = False
+        self.yn_response = None
+        self.waiting_yn = False
 
         # calibration file
         package_path = rospkg.RosPack().get_path('tensegrity')
@@ -118,7 +126,13 @@ class TensegrityRobot:
         states = np.array([[0.0, 1.0, 0.1, 0.0, 1.0, 1.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]])#steps gait
         states = np.array([[0.0, 1.0, 1.0, 0.0, 1.0, 0.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]) # one step and recover
         """
+
+        self.states = np.array([[0.0, 1.0, 1.0, 0.0, 1.0, 0.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]) # one step and recover
+
+        # self.states = np.array([[0.0, 1.0, 0.1, 0.0, 1.0, 1.0], [0.8, 0.1, 1.0, 1.0, 0.1, 1.0], [0.8, 0.1, 0.0, 1.0, 1.0, 0.0], [0.1, 1.0, 1.0, 0.1, 1.0, 1.0], [0.1, 0.0, 1.0, 1.0, 0.0, 1.0],[0.8, 1.0, 0.1, 1.0, 1.0, 0.1]])#6 steps gait
+
         # self.states = np.array([[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 0.8, 0.1],[1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.0, 0.8, 0.1, 0.0],[0.1, 1.0, 1.0, 0.1, 1.0, 1.0],[1.0, 0.0, 1.0, 0.1, 0.0, 0.8]]) # quasi-static rolling
+        # self.states = np.array([[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.1, 1.0, 1.0, 0.1, 0.8, 0.1],[1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.1, 0.8, 0.1, 0.1],[0.1, 1.0, 1.0, 0.1, 1.0, 1.0],[1.0, 0.1, 1.0, 0.1, 0.1, 0.8]]) # quasi-static rolling Zac and Steph
         #self.states = np.array([[1, 1, 1, 0, 1, 1], [1, 0, 1, 0, 1, 1], [0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]]) # counterclockwise
         #self.states = np.array([[0, 0, 0, 1, 0, 1], [0, 0, 0, 0, 0, 0.7], [0, 0, 0.7, 0, 1, 1], [1, 1, 1, 1, 1, 1]]) # clockwise 
         #self.states = np.array([[1, 1, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0], [0, 1, 1, 0, 0.8, 0], [1, 1, 1, 1, 1, 1], [1, 0, 1, 0, 0, 0], [1, 0, 0, 0, 0, 0], [1, 1, 0, 0.8, 0, 0], [1, 1, 1, 1, 1, 1], [0, 1, 1, 0, 0, 0], [0, 0, 1, 0, 0, 0], [1, 0, 1, 0, 0, 0.8], [1, 1, 1, 1, 1, 1]]) #clockwise
@@ -126,18 +140,18 @@ class TensegrityRobot:
         # self.states = np.array([[1,1,1,1,1,1],[0.2,1,1,1,1,1],[1,1,1,1,1,1],[1,0.2,1,1,1,1],[1,1,1,1,1,1],[1,1,0.2,1,1,1],[1,1,1,1,1,1],[1,1,1,0.2,1,1],[1,1,1,1,1,1],[1,1,1,1,0.2,1],[1,1,1,1,1,1],[1,1,1,1,1,0.2]])
         # self.states = np.array([[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 1, 0.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],[1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.0, 1.0, 0.1, 0.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],[0.1, 1.0, 1.0, 0.1, 1.0, 1.0],[1.0, 0.0, 1.0, 0.1, 0.0, 1.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]) # quasi-static rolling
 
-        self.states = np.array([[1.0,1.0,1.0,1.0,1.0,1.0],
-                           [0.2,1.0,1.0,1.0,1.0,1.0],
-                           [1.0,1.0,1.0,1.0,1.0,1.0],
-                           [1.0,0.2,1.0,1.0,1.0,1.0],
-                           [1.0,1.0,1.0,1.0,1.0,1.0],
-                           [1.0,1.0,0.2,1.0,1.0,1.0],
-                           [1.0,1.0,1.0,1.0,1.0,1.0],
-                           [1.0,1.0,1.0,0.2,1.0,1.0],
-                           [1.0,1.0,1.0,1.0,1.0,1.0],
-                           [1.0,1.0,1.0,1.0,0.2,1.0],
-                           [1.0,1.0,1.0,1.0,1.0,1.0],
-                           [1.0,1.0,1.0,1.0,1.0,0.2]]) # testing one at a time
+        # self.states = np.array([[1.0,1.0,1.0,1.0,1.0,1.0],
+        #                    [0.2,1.0,1.0,1.0,1.0,1.0],
+        #                    [1.0,1.0,1.0,1.0,1.0,1.0],
+        #                    [1.0,0.2,1.0,1.0,1.0,1.0],
+        #                    [1.0,1.0,1.0,1.0,1.0,1.0],
+        #                    [1.0,1.0,0.2,1.0,1.0,1.0],
+        #                    [1.0,1.0,1.0,1.0,1.0,1.0],
+        #                    [1.0,1.0,1.0,0.2,1.0,1.0],
+        #                    [1.0,1.0,1.0,1.0,1.0,1.0],
+        #                    [1.0,1.0,1.0,1.0,0.2,1.0],
+        #                    [1.0,1.0,1.0,1.0,1.0,1.0],
+        #                    [1.0,1.0,1.0,1.0,1.0,0.2]]) # testing one at a time
     
         # self.states = np.array([[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 1.0, 0.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
         #                         [1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.0, 1.0, 0.1, 0.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
@@ -305,13 +319,13 @@ class TensegrityRobot:
         data, addr = self.sock_receive.recvfrom(255)  # Receive data (up to 255 bytes)
         # Decode the data (assuming it's sent as a string)
         received_data = data.decode('utf-8')
-        print(received_data)
+        # print(received_data)
         try :
             # Received data in the form "N_Arduino q0 q1 q2 q3 C0 C1 C2" where N_Arduino indicates the number of the Arduino of the received data
             sensor_values = received_data.split()
             # Convert the string values to actual float values and store them in an array
             sensor_array = [float(value) for value in sensor_values]
-            print(sensor_array)
+            # print(sensor_array)
             if(addr not in self.addresses):
                 self.addresses[int(sensor_array[0])] = addr
             #print(sensor_array)
@@ -348,7 +362,7 @@ class TensegrityRobot:
                     self.encoder_counts[5] = sensor_array[6]
                     self.encoder_counts[0] = sensor_array[5]
 
-                self.encoder_length = [self.starting_length - flip * counts/self.encoder_resolution/self.gear_ratio*np.pi*self.winch_diameter for counts,flip in zip(self.encoder_counts,self.flip)]
+                self.encoder_length = [self.starting_length - flip * (counts - offset)/self.encoder_resolution/self.gear_ratio*np.pi*self.winch_diameter for counts, flip, offset in zip(self.encoder_counts, self.flip, self.encoder_offset)]
                 
                 #add control code here
                 if not 0.2 in self.cap: #Default capacitance value of MPR121
@@ -449,43 +463,51 @@ class TensegrityRobot:
         print('+++++')
 
     def on_press(self, key):
-        print('press')
-        # try : 
-        if key == keyboard.KeyCode.from_char('q'):
+        # q/s always quit regardless of mode
+        if key == keyboard.KeyCode.from_char('q') or key == keyboard.KeyCode.from_char('s'):
             self.quitting = True
             self.keep_going = False
-            print('I hear you Q')
-            # raise S_Q_Pressed()
-            print("\nStopping motors")
-            self.keep_going = False
-            # set duty cycle as 0 to turn off the motors
             for i in range(len(self.addresses)):
-                self.send_command(self.stop_msg, self.addresses[i], 0)
-        elif key == keyboard.KeyCode.from_char('s'):
-            self.quitting = True
-            self.keep_going = False
-            # raise S_Q_Pressed()
-            print('I hear you S')
-            print("\nStopping motors")
-            self.keep_going = False
-            # set duty cycle as 0 to turn off the motors
-            for i in range(len(self.addresses)):
-                self.send_command(self.stop_msg, self.addresses[i], 0)
-        elif key == keyboard.KeyCode.from_char('r'):
-            self.states = np.array([[1.0]*self.num_motors]*self.num_steps)
-            self.done = np.array([False] * self.num_motors)
-            self.tol = 0.2
-            self.P = 5.0
-            self.max_speed = 90
-
-        elif key == keyboard.KeyCode.from_char('n'):
-            self.states = np.array([[1.0]*self.num_motors]*self.num_steps)
-            self.done = np.array([False] * self.num_motors)
-            self.tol = 0.03
-            self.P = 5.0
-            # max_speed = 80
-            self.RANGE = 90
-            self.LEFT_RANGE = self.RANGE   
+                if self.addresses[i] is not None:
+                    self.send_command(self.stop_msg, self.addresses[i], 0)
+        elif self.waiting_yn:
+            # during y/n prompts, only y/n are accepted; all other keys ignored
+            if key == keyboard.KeyCode.from_char('y'):
+                self.yn_response = 'y'
+            elif key == keyboard.KeyCode.from_char('n'):
+                self.yn_response = 'n'
+        else:
+            if key == keyboard.KeyCode.from_char('r'):
+                self.states = np.array([[1.0]*self.num_motors]*self.num_steps)
+                self.done = np.array([False] * self.num_motors)
+                self.tol = 0.2
+                self.P = 5.0
+                self.max_speed = 90
+            elif key == keyboard.KeyCode.from_char('n'):
+                self.states = np.array([[1.0]*self.num_motors]*self.num_steps)
+                self.done = np.array([False] * self.num_motors)
+                self.tol = 0.03
+                self.P = 5.0
+                self.RANGE = 90
+                self.LEFT_RANGE = self.RANGE
+            elif key == keyboard.KeyCode.from_char('c'):
+                if self.calibrating_length:
+                    for i in range(len(self.addresses)):
+                        if self.addresses[i] is not None:
+                            self.send_command(self.stop_msg, self.addresses[i], 0)
+                    self.advance_motor = True
+            elif key == keyboard.KeyCode.from_char('f'):
+                if self.pressed_key in range(self.num_motors) and self.awaiting_command:
+                    command_msg = self.stop_msg.split()
+                    command_msg[self.pressed_key + self.offset] = str(self.max_speed * self.flip[self.pressed_key])
+                    self.send_command(' '.join(command_msg), self.addresses[self.motor2arduino[self.pressed_key]], 0)
+                    self.awaiting_command = False
+            elif key == keyboard.KeyCode.from_char('b'):
+                if self.pressed_key in range(self.num_motors) and self.awaiting_command:
+                    command_msg = self.stop_msg.split()
+                    command_msg[self.pressed_key + self.offset] = str(-self.max_speed * self.flip[self.pressed_key])
+                    self.send_command(' '.join(command_msg), self.addresses[self.motor2arduino[self.pressed_key]], 0)
+                    self.awaiting_command = False
         # elif key == keyboard.KeyCode.from_char('f'):
         #     self.keep_going = False
         #     msg = self.stop_msg.split()
@@ -572,39 +594,105 @@ class TensegrityRobot:
         #     for i in range(len(self.addresses)):
         #         self.send_command(self.stop_msg, self.addresses[i], 0)
                 
-    def on_release(self,key):
-        print('release')
-        if  key == keyboard.KeyCode.from_char('0'):
-            self.zero_pressed = False
-            for i in range(len(self.addresses)) :
-                    self.send_command(self.stop_msg, self.addresses[i],0)
-        elif key == keyboard.KeyCode.from_char('1'):
-            self.one_pressed = False
-            for i in range(len(self.addresses)) :
-                    self.send_command(self.stop_msg, self.addresses[i],0)
-        elif key == keyboard.KeyCode.from_char('2'):
-            self.two_pressed = False
-            for i in range(len(self.addresses)) :
-                    self.send_command(self.stop_msg, self.addresses[i],0)
-        elif key == keyboard.KeyCode.from_char('3'):
-            self.three_pressed = False
-            for i in range(len(self.addresses)) :
-                    self.send_command(self.stop_msg, self.addresses[i],0)
-        elif key == keyboard.KeyCode.from_char('4'):
-            self.four_pressed = False
-            for i in range(len(self.addresses)) :
-                    self.send_command(self.stop_msg, self.addresses[i],0)
-        elif key == keyboard.KeyCode.from_char('5'):
-            self.five_pressed = False
-            for i in range(len(self.addresses)) :
-                    self.send_command(self.stop_msg, self.addresses[i],0)
-        elif key == keyboard.KeyCode.from_char('f'):
-            for i in range(len(self.addresses)) :
-                    self.send_command(self.stop_msg, self.addresses[i],0)
-        elif key == keyboard.KeyCode.from_char('b'):
-            for i in range(len(self.addresses)) :
-                    self.send_command(self.stop_msg, self.addresses[i],0)
+    def on_release(self, key):
+        if key == keyboard.KeyCode.from_char('f') or key == keyboard.KeyCode.from_char('b'):
+            for i in range(len(self.addresses)):
+                if self.addresses[i] is not None:
+                    self.send_command(self.stop_msg, self.addresses[i], 0)
+            self.awaiting_command = True
             
+    def _wait_yn(self):
+        self.awaiting_command = False
+        self.yn_response = None
+        self.waiting_yn = True
+        while self.yn_response not in ('y', 'n') and not self.quitting:
+            time.sleep(0.05)
+        self.waiting_yn = False
+        return self.yn_response
+
+    def calibrate_flip(self):
+        print("\n=== Flip Direction Calibration ===")
+        print("f/b: move motor  |  c: confirm and show counts  |  q: quit\n")
+        original_flip = list(self.flip)
+        self.calibrating_length = True
+        for i in range(self.num_motors):
+            if self.quitting:
+                break
+            self.pressed_key = i
+            self.awaiting_command = True
+            self.advance_motor = False
+            self.read()
+            start_counts = self.encoder_counts[i]
+            print(f"Motor {i}: use f/b to move, press c when done.")
+            while not self.advance_motor and not self.quitting:
+                self.read()
+            end_counts = self.encoder_counts[i]
+            diff = end_counts - start_counts
+            print(f"  counts: start={start_counts:.0f}  end={end_counts:.0f}  diff={diff:+.0f}")
+
+            print("  Did tendon CONTRACT? (y/n)")
+            contracted = self._wait_yn()
+            if self.quitting:
+                break
+            print("  Did encoder counts INCREASE? (y/n)")
+            counts_up = self._wait_yn()
+            if self.quitting:
+                break
+
+            if counts_up == 'n':
+                print(f"  WARNING: encoder wired backwards for motor {i} — swap encoder wires. flip unchanged.")
+            elif contracted == 'n':
+                self.flip[i] *= -1
+                print(f"  flip[{i}] -> {self.flip[i]}")
+            else:
+                print(f"  flip[{i}] = {self.flip[i]} (no change)")
+
+            self.awaiting_command = False
+            self.pressed_key = None
+
+        self.calibrating_length = False
+
+        changes = [i for i in range(self.num_motors) if self.flip[i] != original_flip[i]]
+        if changes:
+            print(f"\nRecommended flip for {self.calibration_file}:")
+            print(f"  \"flip\": {self.flip}")
+        with open(self.calibration_file, 'r') as f:
+            data = json.load(f)
+        data['flip'] = self.flip
+        with open(self.calibration_file, 'w') as f:
+            json.dump(data, f, indent='\t')
+        print(f"Flip saved.\n")
+
+    def calibrate_starting_length(self):
+        print(f"\n=== Starting Length Calibration ===")
+        print(f"Set each motor to starting length ({self.starting_length}mm) — may require f or b depending on current position.")
+        print("f/b: move  |  c: confirm  |  q: quit\n")
+        self.calibrating_length = True
+        for i in range(self.num_motors):
+            if self.quitting:
+                break
+            self.pressed_key = i
+            self.awaiting_command = True
+            self.advance_motor = False
+            self.read()
+            start_counts = self.encoder_counts[i]
+            print(f"Motor {i}: f/b to position, c to confirm.")
+            while not self.advance_motor and not self.quitting:
+                self.read()
+            end_counts = self.encoder_counts[i]
+            diff = end_counts - start_counts
+            print(f"  counts: start={start_counts:.0f}  end={end_counts:.0f}  diff={diff:+.0f}")
+
+            print("  Did encoder counts INCREASE? (y/n)")
+            self._wait_yn()
+
+            self.awaiting_command = False
+            self.pressed_key = None
+        self.calibrating_length = False
+        if not self.quitting:
+            self.encoder_offset = list(self.encoder_counts)
+            print("Starting length set.\n")
+
     def run(self):
         print("Initializing")
         self.initialize()
@@ -619,8 +707,20 @@ class TensegrityRobot:
         
         # rate = rospy.Rate(30) # 30 Hz
 
-        # finishing setup.
-        print("Opened connection press s to stop motor and q to quit")
+        # finishing setup — wait for all Arduinos to check in before calibrating
+        print("Waiting for all Arduinos to connect...")
+        while None in self.addresses:
+            self.read()
+
+        if '--calibrate-flip' in sys.argv:
+            self.calibrate_flip()
+
+        if not self.quitting:
+            self.calibrate_starting_length()
+
+        if not self.quitting:
+            input("Press Enter to start the gait (s/q to stop at any time)...")
+            print("Running.")
         while not self.quitting :
             try : 
                 self.read()
