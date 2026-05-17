@@ -634,14 +634,8 @@ class TensegrityRobot:
             contracted = self._wait_yn()
             if self.quitting:
                 break
-            print("  Did encoder counts INCREASE? (y/n)")
-            counts_up = self._wait_yn()
-            if self.quitting:
-                break
 
-            if counts_up == 'n':
-                print(f"  WARNING: encoder wired backwards for motor {i} — swap encoder wires. flip unchanged.")
-            elif contracted == 'n':
+            if contracted == 'n':
                 self.flip[i] *= -1
                 print(f"  flip[{i}] -> {self.flip[i]}")
             else:

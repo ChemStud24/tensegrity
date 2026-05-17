@@ -122,8 +122,7 @@ class TensegrityRobot:
         self.done = np.array([False] * self.num_motors)
         self.stop_msg = ' '.join(['0'] * (self.num_motors+2*self.offset))
         self.init_speed = 70
-        self.last_calib_print = rospy.Time.now()
-        self.calib_print_interval = rospy.Duration(0.2) # seconds
+        self._calib_printed = False
 
     def read_calibration_file(self, filename):
         try : 
@@ -469,19 +468,13 @@ class TensegrityRobot:
                 self.read()
                 if(None not in self.addresses) :
                     self.sendRosMSG()    
-                    # Print as fast as possible
-                    # print('=================')
-                    # for i in range(self.num_sensors) :
-                    #     print(f"Capacitance {chr(i + 97)}: {self.cap[i]:.2f} \t Length: {self.length[i]:.2f} \n")
-                    # print('=================')
-                    # Print at interval
-                    current_time = rospy.Time.now()
-                    if current_time - self.last_calib_print >= self.calib_print_interval:
-                        print("=====Calibration Values=====")
-                        for i in range(self.num_sensors) :
-                            print(f"Capacitance {chr(i + 97)}: {self.cap[i]:.2f} \t Length: {self.length[i]:.2f} \n")
-                        print("============================")
-                        self.last_calib_print = current_time
+                    if self._calib_printed:
+                        print('\033[20A\r', end='', flush=True)
+                    print("=====Calibration Values=====")
+                    for i in range(self.num_sensors):
+                        print(f"Capacitance {chr(i + 97)}: {self.cap[i]:.2f} \t Length: {self.length[i]:.2f} \n")
+                    print("============================", flush=True)
+                    self._calib_printed = True
             except Exception as this_error:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 print('There has been an error: ',this_error)

@@ -16,7 +16,7 @@ Usage:
 run() flow:
     1. Parse args, load gait JSON, load calibration (m, b, flip) from <robot_name>.json
     2. Open UDP sockets, wait for all 3 Arduinos to connect
-    3. If --calibrate-flip: run calibrate_flip() — f/b to move, c to confirm, y/n prompts, saves flip to JSON
+    3. If --calibrate-flip: run calibrate_flip() — f/b to move, c to confirm, y/n contraction prompt, saves flip to JSON
     4. Run calibrate_starting_length() — f/b to position each motor, c to confirm, records encoder_offset
     5. Prompt "Press Enter to start gait"
     6. Main loop: read() -> sendRosMSG() -> compute_command()
@@ -449,14 +449,8 @@ class TensegrityRobot:
             contracted = self._wait_yn()
             if self.quitting:
                 break
-            print("  Did encoder counts INCREASE? (y/n)")
-            counts_up = self._wait_yn()
-            if self.quitting:
-                break
 
-            if counts_up == 'n':
-                print(f"  WARNING: encoder wired backwards for motor {i} — swap encoder wires. flip unchanged.")
-            elif contracted == 'n':
+            if contracted == 'n':
                 self.flip[i] *= -1
                 print(f"  flip[{i}] -> {self.flip[i]}")
             else:

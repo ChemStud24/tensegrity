@@ -248,13 +248,15 @@ void setup() {
   // Default address is 0x5A, if tied to 3.3V its 0x5B
   // If tied to SDA its 0x5C and if SCL then 0x5D
   if (!cap.begin(0x5A)) {
-    while (1)
+    while (1) {
       // Serial.println("MPR121 NOT FOUND");
       sensorDataString ="MPR121 NOT FOUND";
       // Udp.beginPacket("10.42.0.1", 2390); // Replace with the Python code IP and port
       Udp.beginPacket(PC_IP, 2390); // Replace with the Python code IP and port
       Udp.write(sensorDataString.c_str());
       Udp.endPacket();
+    }
+      
   }
   // Serial.println("Configuring MPR121...");
   // 2. configure the settings
@@ -314,6 +316,11 @@ void loop() {
   // for (int sensor = 0; sensor < NUM_SENSORS; sensor++) {
   //   capacitance[sensor] = temp[sensor];
   // }
+  temp[2] = capacitance[3];
+  temp[3] = capacitance[2];
+  capacitance[2] = temp[2];
+  capacitance[3] = temp[3];
+
 
   /////////////////////////
   //Retrieve Encoder Data//
