@@ -11,8 +11,8 @@ from tensegrity.msg import TensegrityStamped
 from gtts import gTTS
 from playsound import playsound
 
-# short_lengths = range(180,80,-20)
-short_lengths = range(220,70,-30)
+short_lengths = range(180,80,-20)
+# short_lengths = range(220,70,-30)
 long_lengths = range(250,350,20)
 
 def speak(text,filepath):
@@ -34,6 +34,11 @@ def calibrate(sensors,short_lengths,long_lengths,filepath,filename='calibration.
     for sensor in sensors:
         print('\nCalibrating sensor ' + sensor.capitalize() + '...')
         speak('Calibrating sensor ' + sensor.capitalize(),filepath)
+        print('\a')
+        rospy.sleep(0.2)
+        print('\a')
+        rospy.sleep(0.2)
+        print('\a')
         rospy.sleep(2)
 
         # figure out if it's a short sensor or a long sensor
@@ -54,21 +59,27 @@ def calibrate(sensors,short_lengths,long_lengths,filepath,filename='calibration.
             # speak instructions
             print(str(length) + ' mm')
             speak(str(length) + ' millimeters',filepath)
-            rospy.sleep(0.5)
+            print('\a')
+            rospy.sleep(0.2)
+            print('\a')
+            rospy.sleep(1.0)
             speak('Measuring',filepath)
+            
 
             # measure capacitance
             cap.append(sensor_listener.capacitance[letter2number(sensor)])
             print('At length ' + str(length) + ' mm, sensor ' + sensor.capitalize() + ' has a capacitance of ' + str(cap[i]) + ' pF\n')
 
             speak('Next',filepath)
+            print('\a')
         # perform the linear fit
         fit = np.polyfit(lengths,cap,1)
         m[letter2number(sensor)] = fit[0]
         b[letter2number(sensor)] = fit[1]
 
     # save calibration results
-    data = {'m':np.ndarray.tolist(m),'b':np.ndarray.tolist(b)}
+    data['m'] = np.ndarray.tolist(m)
+    data['b'] = np.ndarray.tolist(b)
     json.dump(data,open(filename,'w'))
 
 
@@ -105,10 +116,15 @@ if __name__ == '__main__':
 
     # which sensors should be calibrated?
     if len(sys.argv) > 1:
-        sensors = sys.argv[1]
-    else:
-        sensors = 'abcdefghi'
+        robot_name = sys.argv[1]
+        filename = robot_name + '.json'
+
+        # which sensors should be calibrated?
+        if len(sys.argv) > 2:
+            sensors = sys.argv[2]
+        else:
+            sensors = 'abcdefghi'
 
     rospack = rospkg.RosPack()
     package_path = rospack.get_path('tensegrity')
-    calibrate(sensors,short_lengths,long_lengths,os.path.join(package_path,'calibration'))
+    calibrate(sensors,short_lengths,long_lengths,os.path.join(package_path,'calibration'),filename)

@@ -35,8 +35,8 @@ class SyncDataWriter:
         # self.imu_topic = "/imu_msg"
         # self.mocap_topic = "/phasespace_markers"
         self.reconstruction_topic = "/reconstruction_msg"
-        color_im_sub = message_filters.Subscriber(self.color_topic, Image)
-        depth_im_sub = message_filters.Subscriber(self.depth_topic, Image)
+        # color_im_sub = message_filters.Subscriber(self.color_topic, Image)
+        # depth_im_sub = message_filters.Subscriber(self.depth_topic, Image)
         control_sub = message_filters.Subscriber(self.control_topic, TensegrityStamped)
         # strain_sub = message_filters.Subscriber(self.strain_topic, SensorsStamped)
         # imu_sub = message_filters.Subscriber(self.imu_topic, ImuStamped)
@@ -44,9 +44,9 @@ class SyncDataWriter:
         # reconstruction_sub = message_filters.Subscriber(self.reconstruction_topic,NodesStamped)
 
         # time synchronizer
-        self.time_synchornizer = message_filters.ApproximateTimeSynchronizer([color_im_sub,depth_im_sub,control_sub],queue_size=20, slop=0.1)
+        # self.time_synchornizer = message_filters.ApproximateTimeSynchronizer([color_im_sub,depth_im_sub,control_sub],queue_size=20, slop=0.1)
         # ,self.time_synchornizer = message_filters.ApproximateTimeSynchronizer([color_im_sub,depth_im_sub,control_sub], queue_size=10, slop=0.1)l_sub], queue_size=10, slop=0.1)
-        # self.time_synchornizer = message_filters.ApproximateTimeSynchronizer([control_sub,reconstruction_sub], queue_size=10, slop=0.1)
+        self.time_synchornizer = message_filters.ApproximateTimeSynchronizer([control_sub], queue_size=10, slop=0.1)
         self.time_synchornizer.registerCallback(self.callback)
 
         # output dirs
@@ -62,14 +62,14 @@ class SyncDataWriter:
 
         self.count = 0
 
-    def callback(self, color_msg, depth_msg, control_msg):
-    # def callback(self, control_msg, reconstruction_msg):
+    # def callback(self, color_msg, depth_msg, control_msg):
+    def callback(self, control_msg):
         print("Received synchronized data", self.count)
 
-        color_im = self.bridge.imgmsg_to_cv2(color_msg, 'bgr8') # double check this
-        depth_im = self.bridge.imgmsg_to_cv2(depth_msg, 'mono16')
-        cv2.imwrite(os.path.join(self.color_dir, str(self.count).zfill(4) + ".png"), color_im)
-        cv2.imwrite(os.path.join(self.depth_dir, str(self.count).zfill(4) + ".png"), depth_im)
+        # color_im = self.bridge.imgmsg_to_cv2(color_msg, 'bgr8') # double check this
+        # depth_im = self.bridge.imgmsg_to_cv2(depth_msg, 'mono16')
+        # cv2.imwrite(os.path.join(self.color_dir, str(self.count).zfill(4) + ".png"), color_im)
+        # cv2.imwrite(os.path.join(self.depth_dir, str(self.count).zfill(4) + ".png"), depth_im)
         
         # format syncronized data
         data = {}
