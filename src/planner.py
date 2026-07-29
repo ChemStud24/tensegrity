@@ -54,7 +54,7 @@ class MotionPlanner:
 		#Tunable parameters
 		self.obstacle_dim = (0.2,0.2)
 		self.goal_tol = 0.1
-		self.goal_rot_tol = np.pi/2
+		self.goal_rot_tol = np.pi
 		self.repeat_tol = 0.04 #Won't resample states this close
 		self.grid_step = 0.01 #Only used in wave heuristic
 
@@ -137,6 +137,7 @@ class MotionPlanner:
 
 	def run(self, rate):
 		while not rospy.is_shutdown():
+			# print('Current state (x, y, heading): ' + str(self.current_state))
 			rate.sleep()
 
 	def get_pose(self):
@@ -158,8 +159,8 @@ class MotionPlanner:
 					
 					unit_vector = rotation_matrix[:,2]
 					center = [pose.position.x,pose.position.y,pose.position.z]
-					endcaps.append(np.array(center) - L/2*unit_vector)
 					endcaps.append(np.array(center) + L/2*unit_vector)
+					endcaps.append(np.array(center) - L/2*unit_vector)
 					
 					centers.append(center)
 					vectors += unit_vector
@@ -252,10 +253,15 @@ if __name__ == '__main__':
 	# obstacles = ((0.5,0.3),(0.5,0.5),(1.1,0.5),(1.1,0.4))
 	# boundary = (-1,3,-0.2,1.4)
 
-	start = (1, 1.4, -np.pi/2)
-	goal = (1.9, 0.4, -np.pi/2)
-	obstacles = ((1.6, 0.5), (1.6, 0.7), (1.6, 0.8), (1.6, 0.7))
-	boundary = (-3, 2.2, 0.1, 1.7)
+	# start = (1, 1.4, -np.pi/2)
+	# goal = (1.9, 0.4, -np.pi/2)
+	# obstacles = ((1.6, 0.5), (1.6, 0.7), (1.6, 0.8), (1.6, 0.7))
+	# boundary = (-3, 2.2, 0.1, 1.7)
+
+	start = (0.5, 1.1, -np.pi/2)#evens towards computer
+	goal = (1.7,0.2,-np.pi/2)
+	obstacles = ((0.5,0.3),(0.5,0.5),(1.1,0.5),(1.1,0.4))
+	boundary = (-1,3,-0.2,1.4)
 
 	rospy.init_node('motion_planner')
 	planner = MotionPlanner(start, goal, boundary, obstacles, heur_type="dist")
