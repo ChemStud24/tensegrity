@@ -88,6 +88,8 @@ class TensegrityRobot:
         self.command = [0] * self.num_motors
         self.speed = [0] * self.num_motors
         self.flip = [1, 1, 1, 1, 1, 1]  # flip direction of motors
+        self.encoder_max_count = [-11118, 10126, -10515, 18373, -13073, 10633] #odd indicies are positive and even indicies are negative; max before flip
+        self.encoder_min_count = [7546, -6578, 6015, -4878, 6740, -6668] ##odd indicies are negative and even indicies are positive;   
         self.accelerometer = [[0] * 3 for _ in range(3)]
         self.gyroscope = [[0] * 3 for _ in range(3)]
         self.encoder_counts = [0] * self.num_motors
@@ -296,6 +298,19 @@ class TensegrityRobot:
         v = np.cross(s, k)
         vrot = v * cos(roll) + np.cross(k, v) * sin(roll)
         return np.cross(k, vrot)
+        
+    def check_encoder_wraparound(self):
+        for i in range(self.num_motors):
+            if self.flip[i] == 1:
+                crossed_max = self.encoder_max_count[i] < self.encoder_min_count[i] and self.encoder_counts[i] <= self.encoder_max_count[i] or self.encoder_max_count[i] > self.encoder_min_count[i] and self.encoder_counts[i] >= self.encoder_max_count[i]
+                if crossed_max:
+                    self.flip[i] = -1
+                    print(f"Motor {i} flipping")
+            else:
+                crossed_min = self.encoder_max_count[i] < self.encoder_min_count[i] and self.encoder_counts[i] >= self.encoder_max_count[i] or self.encoder_max_count[i] > self.encoder_min_count[i] and self.encoder_counts[i] <= self.encoder_max_count[i]
+                if crossed_min:
+                    self.flip[i] = 1
+                    print(f"Motor {i} flipping")
 
     def send_command(self, input_string, addr, delay_time):
         self.sock_send.sendto(input_string.encode("utf-8"), addr)
@@ -398,49 +413,32 @@ class TensegrityRobot:
                         self.send_command(self.stop_msg, self.addresses[i], 0) #testing, uncomment later
                 # quit()
                 
-            # if int(sensor_array[0]) == 0:
-            #     self.cap[4] = sensor_array[1]
-            #     self.cap[2] = sensor_array[2]
-            #     self.cap[8] = sensor_array[3]
-            #     self.encoder_counts[4] = sensor_array[6]
-            #     self.encoder_counts[2] = sensor_array[5]
-            # if int(sensor_array[0]) == 1:
-            #     self.cap[3] = sensor_array[1]
-            #     self.cap[1] = sensor_array[2]
-            #     self.cap[7] = sensor_array[3]
-            #     self.encoder_counts[3] = sensor_array[6]
-            #     self.encoder_counts[1] = sensor_array[5]
-            # if int(sensor_array[0]) == 2:
-            #     self.cap[5] = sensor_array[1]
-            #     self.cap[0] = sensor_array[2]
-            #     self.cap[6] = sensor_array[3]
-            #     self.encoder_counts[5] = sensor_array[6]
-            #     self.encoder_counts[0] = sensor_array[5]
-            if(int(sensor_array[0]) == 0) :
-                self.cap[0] = sensor_array[1]
-                self.cap[1] = sensor_array[2]
-                self.cap[8] = sensor_array[4]
-                self.encoder_counts[1] = sensor_array[5]
-                self.encoder_counts[0] = sensor_array[6]
-            if(int(sensor_array[0]) == 1) :
-                self.cap[2] = sensor_array[1]
-                self.cap[3] = sensor_array[2] 
-                self.cap[7] = sensor_array[4]
-                self.encoder_counts[3] = sensor_array[5]
-                self.encoder_counts[2] = sensor_array[6]
-            if(int(sensor_array[0]) == 2) :
+            if int(sensor_array[0]) == 0:
                 self.cap[4] = sensor_array[1]
-                self.cap[5] = sensor_array[2] 
-                self.cap[6] = sensor_array[4]
-                self.encoder_counts[5] = sensor_array[5]
+                self.cap[2] = sensor_array[2]
+                self.cap[8] = sensor_array[4]
                 self.encoder_counts[4] = sensor_array[6]
+                self.encoder_counts[2] = sensor_array[5]
+            if int(sensor_array[0]) == 1:
+                self.cap[3] = sensor_array[1]
+                self.cap[1] = sensor_array[2]
+                self.cap[7] = sensor_array[4]
+                self.encoder_counts[3] = sensor_array[6]
+                self.encoder_counts[1] = sensor_array[5]
+            if int(sensor_array[0]) == 2:
+                self.cap[5] = sensor_array[1]
+                self.cap[0] = sensor_array[2]
+                self.cap[6] = sensor_array[4]
+                self.encoder_counts[5] = sensor_array[6]
+                self.encoder_counts[0] = sensor_array[5]
+
+            self.check_encoder_wraparound()
 
             self.encoder_length = [
                 counts / self.encoder_resolution / self.gear_ratio * np.pi * self.winch_diameter
                 for counts in self.encoder_counts
             ]
 
-            #add control code here
             if not 0.2 in self.cap: #Default capacitance value of MPR121
                 for i in range(len(self.cap)) :
                     self.length[i] = (self.cap[i] - self.b[i]) / self.m[i] #mm 

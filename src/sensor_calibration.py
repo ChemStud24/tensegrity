@@ -12,6 +12,7 @@ from scipy.spatial.transform import Rotation as R
 import rospy
 import rospkg
 import socket
+from openpyxl import load_workbook
 #from tensegrity.msg import Motor, Info, MotorsStamped, Sensor, SensorsStamped, Imu, ImuStamped
 from tensegrity.msg import Motor, Info, Sensor, Imu, TensegrityStamped
 #from geometry_msgs.msg import QuaternionStamped
@@ -37,7 +38,7 @@ class TensegrityRobot:
         self.d_error = [0] * self.num_motors
         self.command = [0] * self.num_motors
         self.speed = [0] * self.num_motors
-        self.flip = [1, 1, 1, 1, 1, 1] # flip direction of motors
+        self.flip = [-1, 1, 1, 1, 1, 1] # flip direction of motors
         self.accelerometer = [[0]*3 for _ in range(3)]
         self.gyroscope = [[0]*3 for _ in range(3)]
         self.encoder_counts = [0]*self.num_motors
@@ -45,7 +46,7 @@ class TensegrityRobot:
         self.absolute_encoder_length = [0]*self.num_motors
         self.RANGE = 80
         self.LEFT_RANGE = 80
-        self.max_speed = 60
+        self.max_speed = 100
         self.tol = 0.15
         self.low_tol = 0.15
         self.P = 6.0
@@ -61,6 +62,13 @@ class TensegrityRobot:
         self.control_pub = None
         self.my_listener = None
         self.quitting = False
+        '''
+        self.excel_file = '../calibration/calibration_patrick.xlsx'
+        self.save_requested = False
+        self.selected_sensor = None
+        self.calibration_lengths = [180, 160, 140, 120, 100]
+        self.calibration_step = [0] * self.num_sensors
+        '''
         self.done = None
         self.m = None
         self.b = None
@@ -93,7 +101,32 @@ class TensegrityRobot:
         self.calibrate_three = True
         self.calibrate_four = True
         self.calibrate_five = True
-        
+
+    def write_calibration_point(self):
+        try:
+            length_to_row = {
+                180: 3,
+                160: 4,
+                140: 5,
+                120: 6,
+                100: 7
+            }
+
+            row = length_to_row[length]
+
+            wb = load_workbook(self.excel_file)
+            sheet = wb.active
+
+            sheet.cell(row=row, column=col_cap).value = cap_value
+            wb.save(self.excel_file)
+
+            print(f"[SAVE] Sensor {sensor} | Length {length} | Cap {cap_value}")
+
+            # advance to next step
+            self.calibration_step[sensor] += 1
+        except Exception as e:
+            print("[ERROR] Failed to write:", e)
+
     def initialize(self):
 
         self.my_listener = keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
@@ -212,7 +245,7 @@ class TensegrityRobot:
            motor.id = motor_id
            motor.position = self.pos[motor_id]
            motor.target = self.states[self.state,motor_id]
-           motor.speed = self.command[motor_id] * self.max_speed #abs(command[motor_id]) * max_speed
+           motor.speed = self.command[motor_id] * self.max_speed * self.flip[motor_id]#abs(command[motor_id]) * max_speed
            # motor.direction = command[motor_id] > 0
            motor.done = self.done[motor_id]
            motor.encoder_counts = int(self.encoder_counts[motor_id])
@@ -286,25 +319,25 @@ class TensegrityRobot:
                 self.which_Arduino = int(sensor_array[0])
                 if(sensor_array[1] == 0.2 or sensor_array[2] == 0.2 or sensor_array[3] == 0.2 ):
                     print('MPR121 or I2C of Arduino '+str(int(sensor_array[0]))+' wrongly initialized, please reboot Arduino')
-                '''if(int(sensor_array[0]) == 0) :
+                if(int(sensor_array[0]) == 0) :
                     self.cap[4] = sensor_array[1]
                     self.cap[2] = sensor_array[2]
-                    self.cap[8] = sensor_array[3]
-                    lf.encoder_counts[4] = sensor_array[6]
+                    self.cap[8] = sensor_array[4]
+                    self.encoder_counts[4] = sensor_array[6]
                     self.encoder_counts[2] = sensor_array[5]
                 if(int(sensor_array[0]) == 1) :
                     self.cap[3] = sensor_array[1]
                     self.cap[1] = sensor_array[2] 
-                    self.cap[7] = sensor_array[3]
+                    self.cap[7] = sensor_array[4]
                     self.encoder_counts[3] = sensor_array[6]
                     self.encoder_counts[1] = sensor_array[5]
                 if(int(sensor_array[0]) == 2) :
                     self.cap[5] = sensor_array[1]
                     self.cap[0] = sensor_array[2] 
-                    self.cap[6] = sensor_array[3]
+                    self.cap[6] = sensor_array[4]
                     self.encoder_counts[5] = sensor_array[6]
                     self.encoder_counts[0] = sensor_array[5]
-'''
+                '''
                 if(int(sensor_array[0]) == 0) :
                     self.cap[0] = sensor_array[1]
                     self.cap[1] = sensor_array[2]
@@ -323,7 +356,7 @@ class TensegrityRobot:
                     self.cap[6] = sensor_array[4]
                     self.encoder_counts[5] = sensor_array[5]
                     self.encoder_counts[4] = sensor_array[6]
-
+                '''
                 self.encoder_length = [counts/self.encoder_resolution/self.gear_ratio*np.pi*self.winch_diameter for counts in self.encoder_counts]
 
                 #add control code here
@@ -502,6 +535,10 @@ class TensegrityRobot:
                     for i in range(self.num_sensors) :
                         print(f"Capacitance {chr(i + 97)}: {self.cap[i]:.2f} \t Length: {self.length[i]:.2f} \n")
                     print('=================')
+                    #if self.save_requested:
+                    #    self.write_calibration_point()
+                    #    self.save_requested = False
+                    #    self.sensor_to_save = None
             except Exception as this_error:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 print('There has been an error: ',this_error)

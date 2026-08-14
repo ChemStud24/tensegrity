@@ -38,14 +38,15 @@ class TensegrityRobot:
         self.d_error = [0] * self.num_motors
         self.command = [0] * self.num_motors
         self.speed = [0] * self.num_motors
-        self.flip = [1, -1, 1, 1, -1, -1] # flip direction of motors
+        self.flip = [1, 1, 1, 1, 1, 1] # flip direction of motors
         self.accelerometer = [[0]*3 for _ in range(3)]
         self.gyroscope = [[0]*3 for _ in range(3)]
         self.encoder_counts = [0]*self.num_motors
         self.encoder_length = [0]*self.num_motors
+        self.absolute_encoder_length = [0] * self.num_motors
         self.RANGE = 100
         self.LEFT_RANGE = 100
-        self.max_speed = 70
+        self.max_speed = 80
         self.tol = 0.15
         self.low_tol = 0.15
         self.P = 10.0
@@ -97,7 +98,7 @@ class TensegrityRobot:
         self.control_pub = rospy.Publisher('control_msg', TensegrityStamped, queue_size=10) ## correct ??
 
         package_path = rospkg.RosPack().get_path('tensegrity')
-        calibration_file = os.path.join(package_path,'calibration/new_calibration.json')
+        calibration_file = '../calibration/calibration_patrick.xls'
         
         #self.m = np.array([0.04437, 0.06207, 0.02356, 0.04440, 0.04681, 0.05381, 0.02841, 0.03599, 0.03844])
         #self.b = np.array([15.763, 13.524, 15.708, 10.084, 15.628, 15.208, 16.356, 12.575, 13.506])
@@ -119,7 +120,7 @@ class TensegrityRobot:
         # self.states = np.array([[1,1,1,1,1,1],[0.2,1,1,1,1,1],[1,1,1,1,1,1],[1,0.2,1,1,1,1],[1,1,1,1,1,1],[1,1,0.2,1,1,1],[1,1,1,1,1,1],[1,1,1,0.2,1,1],[1,1,1,1,1,1],[1,1,1,1,0.2,1],[1,1,1,1,1,1],[1,1,1,1,1,0.2]])
         # self.states = np.array([[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 1, 0.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],[1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.0, 1.0, 0.1, 0.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],[0.1, 1.0, 1.0, 0.1, 1.0, 1.0],[1.0, 0.0, 1.0, 0.1, 0.0, 1.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]) # quasi-static rolling
 
-        # self.states = np.array([[1.0,1.0,1.0,1.0,1.0,1.0],
+        #self.states = np.array([[1.0,1.0,1.0,1.0,1.0,1.0],
         #                    [0.2,1.0,1.0,1.0,1.0,1.0],
         #                    [1.0,1.0,1.0,1.0,1.0,1.0],
         #                    [1.0,0.2,1.0,1.0,1.0,1.0],
@@ -132,11 +133,11 @@ class TensegrityRobot:
         #                    [1.0,1.0,1.0,1.0,1.0,1.0],
         #                    [1.0,1.0,1.0,1.0,1.0,0.2]]) # testing one at a time
     
-        self.states = np.array([[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 1.0, 0.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
-                                [1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.0, 1.0, 0.1, 0.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
-                                [0.1, 1.0, 1.0, 0.1, 1.0, 1.0],[1.0, 0.0, 1.0, 0.1, 0.0, 1.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]) # quasi-static rolling with rest states
-        # self.states = np.array([[0, 0, 0, 1, 0, 1], [0, 0, 0, 0, 0, 1], [0, 0, 0.7, 0, 1.2, 1], [1, 1, 1, 1, 1, 1], [0, 0, 0, 1, 1, 0], [0, 0, 0, 1, 0, 0], [0.7, 0, 0, 1, 0, 1.2], [1, 1, 1, 1, 1, 1], [0, 0, 0, 0, 1, 1], [0, 0, 0, 0, 1, 0], [0, 0.7, 0, 1.2, 1, 0], [1, 1, 1, 1, 1, 1]]) # cw
-        # self.states = np.array([[1, 1, 1, 0, 1, 1], [1, 0, 1, 0, 1, 1], [0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]]) # ccw
+        #self.states = np.array([[1.0, 1.0, 0.0, 1.0, 1.0, 0.0],[0.0, 1.0, 1.0, 0.0, 1.0, 0.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+        #                        [1.0, 0.0, 1.0, 1.0, 0.0, 1.0],[1.0, 1.0, 0.0, 1.0, 0.0, 0.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+        #                        [0.0, 1.0, 1.0, 0.0, 1.0, 1.0],[1.0, 0.0, 1.0, 0.1, 0.0, 1.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]) # quasi-static rolling with rest states
+        #self.states = np.array([[0, 0, 0, 1, 0, 1], [0, 0, 0, 0, 0, 1], [0, 0, 0.7, 0, 1.2, 1], [1, 1, 1, 1, 1, 1], [0, 0, 0, 1, 1, 0], [0, 0, 0, 1, 0, 0], [0.7, 0, 0, 1, 0, 1.2], [1, 1, 1, 1, 1, 1], [0, 0, 0, 0, 1, 1], [0, 0, 0, 0, 1, 0], [0, 0.7, 0, 1.2, 1, 0], [1, 1, 1, 1, 1, 1]]) # cw
+        self.states = np.array([[1, 1, 1, 0, 1, 1], [1, 0, 1, 0, 1, 1], [0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]]) # ccw
 
         # single step of cw
         # self.states = np.array([[0, 0, 0, 1, 0, 1], [0, 0, 0, 0, 0, 1], [0, 0, 0.7, 0, 1.2, 1], [1, 1, 1, 1, 1, 1]]) # 1st step
@@ -154,7 +155,7 @@ class TensegrityRobot:
         # self.states = np.array([[0.1,0.1,0.1,0,0,0],[1,1,0.1,0,0,0],[0.1,1,1,0,0,0]])
 
         # back and forth for demos
-        # states = np.array([[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.1, 1.0, 1.0, 0.1, 1.0, 0.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+        #self.states = np.array([[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0, 1.0, 0.9, 0, 1.0, 1.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
         #                    [1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.1, 1.0, 0.1, 0.1],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
         #                    [0.1, 1.0, 1.0, 0.1, 1.0, 1.0],[1.0, 0.1, 1.0, 0.1, 0.1, 1.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
         #                    [1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[0.1, 0.1, 1.0, 0.1, 1.0, 1.0],[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
@@ -255,7 +256,13 @@ class TensegrityRobot:
            # motor.direction = command[motor_id] > 0
            motor.done = self.done[motor_id]
            motor.encoder_counts = int(self.encoder_counts[motor_id])
-           motor.encoder_length = self.encoder_length[motor_id]
+           #motor.encoder_length = self.encoder_length[motor_id]
+           if(motor.id % 2 == 1):
+              motor.encoder_length = float(self.encoder_length[motor_id])# NEW
+              motor.absolute_encoder_length = 180 + float(self.encoder_length[motor_id])
+           else:
+              motor.encoder_length = float(-self.encoder_length[motor_id])
+              motor.absolute_encoder_length = 180 - float(self.encoder_length[motor_id])           
            control_msg.motors.append(motor)
         # sensors
         for sensor_id in range(self.num_sensors):
@@ -323,19 +330,19 @@ class TensegrityRobot:
                 if(int(sensor_array[0]) == 0) :
                     self.cap[4] = sensor_array[1]
                     self.cap[2] = sensor_array[2]
-                    self.cap[8] = sensor_array[3]
+                    self.cap[8] = sensor_array[4]
                     self.encoder_counts[4] = sensor_array[6]
                     self.encoder_counts[2] = sensor_array[5]
                 if(int(sensor_array[0]) == 1) :
                     self.cap[3] = sensor_array[1]
                     self.cap[1] = sensor_array[2] 
-                    self.cap[7] = sensor_array[3]
+                    self.cap[7] = sensor_array[4]
                     self.encoder_counts[3] = sensor_array[6]
                     self.encoder_counts[1] = sensor_array[5]
                 if(int(sensor_array[0]) == 2) :
                     self.cap[5] = sensor_array[1]
                     self.cap[0] = sensor_array[2] 
-                    self.cap[6] = sensor_array[3]
+                    self.cap[6] = sensor_array[4]
                     self.encoder_counts[5] = sensor_array[6]
                     self.encoder_counts[0] = sensor_array[5]
 

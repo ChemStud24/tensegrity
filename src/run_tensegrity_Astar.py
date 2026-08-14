@@ -33,7 +33,7 @@ class TensegrityRobot:
         self.num_motors = 6
         self.num_imus = 2
         self.num_arduino = 3
-        self.min_length = 100
+        self.min_length = 80
         self.pos = [0] * self.num_motors
         self.cap = [0] * self.num_sensors
         self.length = [0] * self.num_sensors
@@ -52,9 +52,9 @@ class TensegrityRobot:
         self.absolute_encoder_length = [0]*self.num_motors
         self.RANGE024 = 100
         self.RANGE135 = 100
-        self.max_speed = 70
+        self.max_speed = 80
         self.tol = 0.15
-        self.low_tol = 0.15
+        self.low_tol = 0.2
         self.P = 10.0
         self.I = 0.01
         self.D = 0.5
@@ -152,7 +152,7 @@ class TensegrityRobot:
 
         # gaits
         # roll = np.array([[1,1,1,1,1,1],[1,1,1,1,1,1],[1.0, 0.1, 1.0, 1.0, 0.1, 1.0],[1.0, 1.0, 0.1, 1.0, 1.0, 0.1],[0.0, 1.0, 1.0, 0.0, 1.0, 0.1]])
-        roll = np.array([[1, 1, 0.1, 1, 1, 0.1], [0, 1, 1, 0, 1, 0.1], [1, 1, 1, 1, 1, 1]]) #new tensegrity
+        roll = np.array([[1, 1, 0.1, 1, 1, 0.1], [0, 1, 1, 0, 1, 1], [1, 1, 1, 1, 1, 1]]) #new tensegrity
         #cw = np.array([[1, 1, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0], [0, 1, 1, 0, 0.8, 0], [1, 1, 1, 1, 1, 1]]) #new tensegrity
         cw = np.array([[0, 0, 1, 0, 1, 0], [0, 0, 0, 0, 1, 0], [1, 0.8, 0, 0, 1, 0], [1, 1, 1, 1, 1, 1]]) #based off observed video
         #ccw = np.array([[1, 1, 1, 0, 1, 1], [1, 0, 1, 0, 1, 1], [0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]])#new tensegrity
@@ -326,23 +326,23 @@ class TensegrityRobot:
                 print('MPR121 or I2C of Arduino '+str(self.which_Arduino)+' wrongly initialized, please reboot Arduino')
 
             if(int(sensor_array[0]) == 0) :
-                self.cap[0] = sensor_array[1]
-                self.cap[1] = sensor_array[2]
+                self.cap[4] = sensor_array[1]
+                self.cap[2] = sensor_array[2]
                 self.cap[8] = sensor_array[4]
-                self.encoder_counts[1] = sensor_array[6]
-                self.encoder_counts[0] = sensor_array[5]
+                self.encoder_counts[4] = sensor_array[6]
+                self.encoder_counts[2] = sensor_array[5]
             if(int(sensor_array[0]) == 1) :
-                self.cap[2] = sensor_array[1]
-                self.cap[3] = sensor_array[2] 
+                self.cap[3] = sensor_array[1]
+                self.cap[1] = sensor_array[2] 
                 self.cap[7] = sensor_array[4]
                 self.encoder_counts[3] = sensor_array[6]
-                self.encoder_counts[2] = sensor_array[5]
+                self.encoder_counts[1] = sensor_array[5]
             if(int(sensor_array[0]) == 2) :
-                self.cap[4] = sensor_array[1]
-                self.cap[5] = sensor_array[2] 
+                self.cap[5] = sensor_array[1]
+                self.cap[0] = sensor_array[2] 
                 self.cap[6] = sensor_array[4]
                 self.encoder_counts[5] = sensor_array[6]
-                self.encoder_counts[4] = sensor_array[5]
+                self.encoder_counts[0] = sensor_array[5]
 
             self.encoder_length = [counts/self.encoder_resolution/self.gear_ratio*np.pi*self.winch_diameter for counts in self.encoder_counts]
             
